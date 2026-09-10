@@ -2,7 +2,11 @@
 
 namespace App\Filament\Platform\Resources\Subscriptions\Tables;
 
+use App\Actions\Subscriptions\ManageSubscription;
+use App\Models\Subscription;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -38,6 +42,21 @@ class SubscriptionsTable
                 //
             ])
             ->recordActions([
+                Action::make('activate')
+                    ->icon('heroicon-o-play')
+                    ->requiresConfirmation()
+                    ->action(function (Subscription $record): void {
+                        app(ManageSubscription::class)->activate($record);
+                        Notification::make()->success()->title('Subscription activated')->send();
+                    }),
+                Action::make('extend')
+                    ->label('Extend 30 days')
+                    ->icon('heroicon-o-calendar-days')
+                    ->requiresConfirmation()
+                    ->action(function (Subscription $record): void {
+                        app(ManageSubscription::class)->extend($record);
+                        Notification::make()->success()->title('Subscription extended')->send();
+                    }),
                 EditAction::make(),
             ])
             ->toolbarActions([]);

@@ -23,7 +23,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::prefix('pos')
-    ->middleware([StartSession::class, 'auth:sanctum', 'context.tenant', 'context.store'])
+    ->middleware([StartSession::class, 'auth:sanctum', 'throttle:pos', 'context.tenant', 'context.store'])
     ->group(function (): void {
         Route::post('/devices/register', RegisterDeviceController::class)
             ->name('api.pos.devices.register');
@@ -36,7 +36,7 @@ Route::prefix('pos')
             Route::get('/printers', [PrinterController::class, 'index']);
             Route::put('/printers/{printer}/binding', [PrinterController::class, 'bind']);
             Route::get('/qz/certificate', [QzSecurityController::class, 'certificate']);
-            Route::post('/qz/sign', [QzSecurityController::class, 'sign']);
+            Route::post('/qz/sign', [QzSecurityController::class, 'sign'])->middleware('throttle:qz-signing');
 
             Route::middleware('subscription.active')->group(function (): void {
                 Route::get('/shifts/current', [ShiftController::class, 'current']);

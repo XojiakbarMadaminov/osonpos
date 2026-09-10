@@ -1,3 +1,22 @@
+# OsonPOS
+
+## Local domain
+
+The application is configured to use `http://osonpos.lc`. Install the included
+Nginx virtual host and local hosts entry once:
+
+```bash
+chmod +x bin/install-local-domain
+./bin/install-local-domain
+```
+
+The installer requests sudo only for `/etc/hosts` and the Nginx site. PHP is
+served by the local PHP 8.4 FPM socket. For frontend development, run:
+
+```bash
+pnpm dev
+```
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

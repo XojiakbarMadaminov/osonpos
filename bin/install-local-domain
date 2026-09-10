@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+project_root="/home/xojiakbar/PhpstormProjects/osonpos"
+nginx_source="$project_root/docker/nginx/osonpos.lc.conf"
+nginx_target="/etc/nginx/sites-available/osonpos.lc"
+
+if ! grep -qE '(^|[[:space:]])osonpos\.lc([[:space:]]|$)' /etc/hosts; then
+    echo '127.0.0.1 osonpos.lc' | sudo tee -a /etc/hosts >/dev/null
+fi
+
+sudo install -m 0644 "$nginx_source" "$nginx_target"
+sudo ln -sfn "$nginx_target" /etc/nginx/sites-enabled/osonpos.lc
+sudo nginx -t
+sudo systemctl reload nginx
+
+php "$project_root/artisan" optimize:clear
+
+echo 'osonpos.lc is ready: http://osonpos.lc'

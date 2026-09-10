@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import type { PosProduct } from '../types/bootstrap';
 
 export interface CartItem {
+    clientId?: string;
     productId: number;
     name: string;
     unitPrice: number;

@@ -23,14 +23,15 @@ it('loads both Filament panel login pages', function () {
     $this->get('/admin/login')->assertOk();
 });
 
-it('authenticates a user into both Filament panels', function () {
+it('authenticates authorized users into their Filament panels', function () {
     $user = User::factory()->create();
+    $platformUser = User::factory()->platformAdmin()->create();
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create();
     $organization->users()->attach($user);
     $store->users()->attach($user);
 
-    $this->actingAs($user)->get('/platform')->assertOk();
+    $this->actingAs($platformUser)->get('/platform')->assertOk();
     $this->actingAs($user)->get('/admin')->assertOk();
 });
 

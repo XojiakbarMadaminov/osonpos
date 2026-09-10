@@ -36,7 +36,11 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return app()->environment(['local', 'testing']);
+        return match ($panel->getId()) {
+            'platform' => $this->is_platform_admin,
+            'admin' => $this->organizations()->exists(),
+            default => false,
+        };
     }
 
     /**
@@ -48,6 +52,7 @@ class User extends Authenticatable implements FilamentUser
     {
         return [
             'email_verified_at' => 'datetime',
+            'is_platform_admin' => 'boolean',
             'password' => 'hashed',
         ];
     }

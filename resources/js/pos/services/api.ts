@@ -190,6 +190,7 @@ export class ApiService {
     }
 
     async createOrder(input: {
+        clientId?: string;
         type: OrderType;
         tableId?: number | null;
         customerPhone?: string;
@@ -198,6 +199,7 @@ export class ApiService {
         deliveryFee?: number;
     }): Promise<CreatedOrder> {
         const body: Record<string, unknown> = { type: input.type };
+        if (input.clientId) body.id = input.clientId;
         if (input.tableId) body.table_id = input.tableId;
         if (input.type === 'DELIVERY') {
             body.customer = { phone: input.customerPhone, name: input.customerName || null };
@@ -212,6 +214,7 @@ export class ApiService {
     async addOrderItems(orderId: string, items: CartItem[]): Promise<void> {
         for (const item of items) {
             await this.jsonRequest(`/api/pos/orders/${orderId}/items`, 'POST', {
+                id: item.clientId,
                 product_id: item.productId,
                 quantity: item.quantity,
                 note: item.note || null,
@@ -230,8 +233,8 @@ export class ApiService {
         return payload.data;
     }
 
-    async createPayment(orderId: string, method: string, amount: number): Promise<void> {
-        await this.jsonRequest(`/api/pos/orders/${orderId}/payments`, 'POST', { method, amount });
+    async createPayment(orderId: string, method: string, amount: number, clientId?: string): Promise<void> {
+        await this.jsonRequest(`/api/pos/orders/${orderId}/payments`, 'POST', { id: clientId, method, amount });
     }
 
     private async jsonRequest(url: string, method: string, body?: object): Promise<Response> {

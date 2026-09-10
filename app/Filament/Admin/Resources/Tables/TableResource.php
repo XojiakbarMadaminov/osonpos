@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Tables;
 
 use App\Domain\Authorization\StoreAccess;
+use App\Domain\Subscription\SubscriptionAccess;
 use App\Filament\Admin\Resources\Tables\Pages\CreateTable;
 use App\Filament\Admin\Resources\Tables\Pages\EditTable;
 use App\Filament\Admin\Resources\Tables\Pages\ListTables;
@@ -40,9 +41,19 @@ class TableResource extends Resource
         ];
     }
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        $organization = app(TenantContext::class)->current();
+
+        return parent::shouldRegisterNavigation()
+            && $organization
+            && app(SubscriptionAccess::class)->hasFeature($organization, 'tables');
+    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->with('store')
             ->forTenant(app(TenantContext::class)->requireCurrent())
             ->whereIn('store_id', app(StoreAccess::class)->accessibleStoreIds(request()->user()));
     }

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+project_root="${1:-/var/www/osonpos}"
+cd "$project_root"
+
+composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm build
+
+php artisan down --retry=30
+trap 'php artisan up' EXIT
+
+php artisan migrate --force
+php artisan optimize
+php artisan filament:optimize
+php artisan queue:restart
+
+php artisan up
+trap - EXIT

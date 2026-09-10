@@ -85,7 +85,7 @@ it('keeps onboarding roles and membership isolated from another tenant', functio
 });
 
 it('loads the platform onboarding form', function () {
-    $platformUser = User::factory()->create();
+    $platformUser = User::factory()->platformAdmin()->create();
 
     $this->actingAs($platformUser)
         ->get('/platform/onboard-organization')

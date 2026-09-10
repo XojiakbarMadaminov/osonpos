@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Domain\Authorization\StoreAccess;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -13,10 +14,11 @@ class StoreContext
 
     public function resolveFor(User $user, TenantContext $tenantContext, int|string|null $preferredStoreId = null): Store
     {
-        $query = $user->stores()
-            ->where('stores.organization_id', $tenantContext->requireCurrent()->getKey())
-            ->where('stores.is_active', true)
-            ->orderBy('stores.id');
+        $query = Store::query()
+            ->where('organization_id', $tenantContext->requireCurrent()->getKey())
+            ->whereIn('id', app(StoreAccess::class)->accessibleStoreIds($user))
+            ->where('is_active', true)
+            ->orderBy('id');
 
         $store = $preferredStoreId === null
             ? $query->first()

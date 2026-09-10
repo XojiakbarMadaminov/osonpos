@@ -18,6 +18,8 @@ use App\Models\Store;
 use App\Models\Subscription;
 use App\Models\Table;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 function bootstrapContext(): array
 {
@@ -102,4 +104,25 @@ it('invalidates cached catalog and store configuration after admin-style changes
 
     expect(collect($response->json('data.products'))->pluck('id'))->toContain($product->id)
         ->and(collect($response->json('data.tables'))->pluck('id'))->toContain($table->id);
+});
+
+it('keeps warm bootstrap queries bounded and reuses cached configuration', function () {
+    [$organization, $store, $user, , $session] = bootstrapContext();
+    $category = Category::factory()->for($organization)->create();
+    Product::factory()->count(20)->for($organization)->for($category)->create();
+    Table::factory()->count(10)->for($organization)->for($store)->create();
+    Cache::flush();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+    $this->actingAs($user)->withSession($session)->getJson('/api/pos/bootstrap')->assertOk();
+    $coldQueries = count(DB::getQueryLog());
+
+    DB::flushQueryLog();
+    $this->actingAs($user)->withSession($session)->getJson('/api/pos/bootstrap')->assertOk();
+    $warmQueries = count(DB::getQueryLog());
+    DB::disableQueryLog();
+
+    expect($warmQueries)->toBeLessThan($coldQueries)
+        ->and($warmQueries)->toBeLessThanOrEqual(20);
 });

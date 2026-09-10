@@ -27,6 +27,7 @@ class DeviceResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->with('store')
             ->forTenant(app(TenantContext::class)->requireCurrent())
             ->whereIn('store_id', app(StoreAccess::class)->accessibleStoreIds(request()->user()));
     }

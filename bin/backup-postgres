@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+backup_dir="${1:?Usage: backup-postgres /absolute/backup/directory [retention-days]}"
+retention_days="${2:-14}"
+
+if [[ "$backup_dir" != /* || "$backup_dir" == "/" || "$backup_dir" == "/home" ]]; then
+    echo 'Use a dedicated absolute backup directory.' >&2
+    exit 1
+fi
+
+: "${PGHOST:?Set PGHOST}"
+: "${PGPORT:?Set PGPORT}"
+: "${PGDATABASE:?Set PGDATABASE}"
+: "${PGUSER:?Set PGUSER}"
+: "${PGPASSWORD:?Set PGPASSWORD}"
+
+umask 077
+mkdir -p "$backup_dir"
+backup_file="$backup_dir/osonpos-$(date -u +%Y%m%dT%H%M%SZ).dump"
+
+pg_dump --format=custom --no-owner --no-privileges --file="$backup_file"
+find "$backup_dir" -maxdepth 1 -type f -name 'osonpos-*.dump' -mtime "+$retention_days" -delete
+
+echo "$backup_file"

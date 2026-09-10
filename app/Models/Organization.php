@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\OrganizationStatus;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Spatie\Permission\Models\Role;
 
 #[Fillable(['name', 'slug', 'phone', 'status'])]
@@ -35,6 +37,11 @@ class Organization extends Model
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function latestSubscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class)->latestOfMany();
     }
 
     public function categories(): HasMany
@@ -95,5 +102,10 @@ class Organization extends Model
     public function shifts(): HasMany
     {
         return $this->hasMany(Shift::class);
+    }
+
+    protected function casts(): array
+    {
+        return ['status' => OrganizationStatus::class];
     }
 }

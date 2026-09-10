@@ -41,7 +41,9 @@ class ProductResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->forTenant(app(TenantContext::class)->requireCurrent());
+        return parent::getEloquentQuery()
+            ->with('category')
+            ->forTenant(app(TenantContext::class)->requireCurrent());
     }
 
     public static function getPages(): array

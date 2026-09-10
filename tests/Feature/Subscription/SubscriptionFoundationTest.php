@@ -157,7 +157,7 @@ it('enforces the plan user limit', function () {
 });
 
 it('allows the platform panel to manage plans features and subscriptions', function () {
-    $platformUser = User::factory()->create();
+    $platformUser = User::factory()->platformAdmin()->create();
 
     $this->actingAs($platformUser)->get('/platform/plans')->assertOk();
     $this->actingAs($platformUser)->get('/platform/features')->assertOk();

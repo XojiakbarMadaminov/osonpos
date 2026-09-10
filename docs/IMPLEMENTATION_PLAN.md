@@ -937,7 +937,7 @@ Manual acceptance:
 
 # Phase 17 — QZ Tray POS Integration
 
-Status: IN_PROGRESS
+Status: DONE
 
 Depends on:
 
@@ -1101,7 +1101,7 @@ Manual tests required:
 
 # Phase 18 — Organization Admin UX
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -1128,13 +1128,13 @@ Resources/pages:
 
 Tasks:
 
-- [ ] Apply policies to every resource/page.
-- [ ] Hide navigation where access is denied.
-- [ ] Keep owner/manager flows simple.
-- [ ] Add organization/store switch where required.
-- [ ] Add printer route management.
-- [ ] Add user/store assignment.
-- [ ] Add role/permission editing.
+- [x] Apply policies to every resource/page.
+- [x] Hide navigation where access is denied.
+- [x] Keep owner/manager flows simple.
+- [x] Add organization/store switch where required.
+- [x] Add printer route management.
+- [x] Add user/store assignment.
+- [x] Add role/permission editing.
 
 Acceptance criteria:
 
@@ -1152,7 +1152,7 @@ Tests:
 
 # Phase 19 — Platform Admin UX
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -1174,12 +1174,12 @@ Resources/pages:
 
 Tasks:
 
-- [ ] Organization onboarding UI.
-- [ ] Subscription extension/activation.
-- [ ] Plan management.
-- [ ] Feature assignment.
-- [ ] Organization status management.
-- [ ] Basic support visibility.
+- [x] Organization onboarding UI.
+- [x] Subscription extension/activation.
+- [x] Plan management.
+- [x] Feature assignment.
+- [x] Organization status management.
+- [x] Basic support visibility.
 
 Acceptance criteria:
 
@@ -1197,7 +1197,7 @@ Tests:
 
 # Phase 20 — Audit Log
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -1225,10 +1225,10 @@ Track:
 
 Tasks:
 
-- [ ] Create audit storage.
-- [ ] Add service/action integration.
-- [ ] Avoid noisy read logging.
-- [ ] Avoid sensitive unnecessary data.
+- [x] Create audit storage.
+- [x] Add service/action integration.
+- [x] Avoid noisy read logging.
+- [x] Avoid sensitive unnecessary data.
 
 Acceptance criteria:
 
@@ -1245,7 +1245,7 @@ Tests:
 
 # Phase 21 — MVP Reports
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -1269,12 +1269,12 @@ Reports:
 
 Tasks:
 
-- [ ] Implement optimized report queries.
-- [ ] Add date filter.
-- [ ] Add store filter.
-- [ ] Add authorization.
-- [ ] Avoid expensive unbounded queries.
-- [ ] Add indexes if query plan requires them.
+- [x] Implement optimized report queries.
+- [x] Add date filter.
+- [x] Add store filter.
+- [x] Add authorization.
+- [x] Avoid expensive unbounded queries.
+- [x] Add indexes if query plan requires them.
 
 Acceptance criteria:
 
@@ -1294,7 +1294,7 @@ Tests:
 
 # Phase 22 — Performance Hardening
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -1306,15 +1306,15 @@ Ensure POS and admin remain responsive.
 
 Tasks:
 
-- [ ] Review query counts.
-- [ ] Fix N+1 queries.
-- [ ] Add indexes based on actual query patterns.
-- [ ] Cache POS catalog/bootstrap configuration where appropriate.
-- [ ] Add cache invalidation.
-- [ ] Ensure pagination on admin lists.
-- [ ] Review Redis usage.
-- [ ] Review queue boundaries.
-- [ ] Ensure order/payment writes remain synchronous.
+- [x] Review query counts.
+- [x] Fix N+1 queries.
+- [x] Add indexes based on actual query patterns.
+- [x] Cache POS catalog/bootstrap configuration where appropriate.
+- [x] Add cache invalidation.
+- [x] Ensure pagination on admin lists.
+- [x] Review Redis usage.
+- [x] Review queue boundaries.
+- [x] Ensure order/payment writes remain synchronous.
 
 Acceptance criteria:
 
@@ -1326,7 +1326,7 @@ Acceptance criteria:
 
 # Phase 23 — Security and Tenant Hardening
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -1338,16 +1338,16 @@ Prevent tenant and authorization failures before launch.
 
 Tasks:
 
-- [ ] Attempt IDOR across organizations.
-- [ ] Attempt cross-store access.
-- [ ] Attempt permission bypass through direct API.
-- [ ] Attempt expired subscription bypass.
-- [ ] Review mass assignment.
-- [ ] Review organization/store ID handling.
-- [ ] Review device access.
-- [ ] Review printer route access.
-- [ ] Review rate limiting where useful.
-- [ ] Review sensitive logs.
+- [x] Attempt IDOR across organizations.
+- [x] Attempt cross-store access.
+- [x] Attempt permission bypass through direct API.
+- [x] Attempt expired subscription bypass.
+- [x] Review mass assignment.
+- [x] Review organization/store ID handling.
+- [x] Review device access.
+- [x] Review printer route access.
+- [x] Review rate limiting where useful.
+- [x] Review sensitive logs.
 
 Acceptance criteria:
 
@@ -1363,7 +1363,7 @@ Tests:
 
 # Phase 24 — Offline Compatibility Review
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -1377,18 +1377,18 @@ This phase does NOT implement full offline mode.
 
 Review:
 
-- [ ] Transactional ULIDs.
-- [ ] device_id coverage.
-- [ ] idempotent order create.
-- [ ] idempotent order item create.
-- [ ] idempotent payment create.
-- [ ] updated_at availability.
-- [ ] inactive/soft-deactivation behavior.
-- [ ] POS service abstractions.
-- [ ] StorageService placeholder.
-- [ ] SyncService placeholder.
-- [ ] display number strategy.
-- [ ] print flow independence from internet after local data exists.
+- [x] Transactional ULIDs.
+- [x] device_id coverage.
+- [x] idempotent order create.
+- [x] idempotent order item create.
+- [x] idempotent payment create.
+- [x] updated_at availability.
+- [x] inactive/soft-deactivation behavior.
+- [x] POS service abstractions.
+- [x] StorageService placeholder.
+- [x] SyncService placeholder.
+- [x] display number strategy.
+- [x] print flow independence from internet after local data exists.
 
 Acceptance criteria:
 
@@ -1398,7 +1398,7 @@ A future IndexedDB + SyncEngine can be added without replacing core backend doma
 
 # Phase 25 — Launch Readiness
 
-Status: TODO
+Status: IN_PROGRESS
 
 Depends on:
 

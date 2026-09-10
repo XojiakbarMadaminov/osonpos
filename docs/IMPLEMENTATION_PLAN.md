@@ -16,7 +16,7 @@ Rules:
 
 # Phase 0 — Project Bootstrap
 
-Status: TODO
+Status: DONE
 
 Goal:
 
@@ -24,21 +24,21 @@ Create the Laravel 13 foundation and development tooling.
 
 Tasks:
 
-- [ ] Create Laravel 13 project.
-- [ ] Configure PHP 8.4 requirements.
-- [ ] Configure PostgreSQL 17.
-- [ ] Configure Redis.
-- [ ] Install Filament 4.
-- [ ] Install Laravel Sanctum.
-- [ ] Install Spatie Laravel Permission.
-- [ ] Enable Spatie teams support with `organization_id`.
-- [ ] Install/configure Filament Shield.
-- [ ] Install Pest.
-- [ ] Configure Pint.
-- [ ] Install Vue 3 + TypeScript + Pinia + Tailwind + Vite.
-- [ ] Create `/platform`, `/admin`, `/pos` entry points.
-- [ ] Add project folders from TZ.
-- [ ] Add CI-safe `.env.example`.
+- [x] Create Laravel 13 project.
+- [x] Configure PHP 8.4 requirements.
+- [x] Configure PostgreSQL 17.
+- [x] Configure Redis.
+- [x] Install Filament 4.
+- [x] Install Laravel Sanctum.
+- [x] Install Spatie Laravel Permission.
+- [x] Enable Spatie teams support with `organization_id`.
+- [x] Install/configure Filament Shield.
+- [x] Install Pest.
+- [x] Configure Pint.
+- [x] Install Vue 3 + TypeScript + Pinia + Tailwind + Vite.
+- [x] Create `/platform`, `/admin`, `/pos` entry points.
+- [x] Add project folders from TZ.
+- [x] Add CI-safe `.env.example`.
 
 Acceptance criteria:
 
@@ -60,7 +60,7 @@ Tests:
 
 # Phase 1 — Organization and Store Foundation
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -89,15 +89,15 @@ Support:
 
 Tasks:
 
-- [ ] Create migrations.
-- [ ] Create models and relations.
-- [ ] Add organization membership relation to User.
-- [ ] Add store access relation to User.
-- [ ] Implement current organization resolution.
-- [ ] Implement current store resolution.
-- [ ] Add middleware/context initialization.
-- [ ] Prevent user-selected tenant IDs from becoming security source.
-- [ ] Add indexes for organization/store relations.
+- [x] Create migrations.
+- [x] Create models and relations.
+- [x] Add organization membership relation to User.
+- [x] Add store access relation to User.
+- [x] Implement current organization resolution.
+- [x] Implement current store resolution.
+- [x] Add middleware/context initialization.
+- [x] Prevent user-selected tenant IDs from becoming security source.
+- [x] Add indexes for organization/store relations.
 
 Acceptance criteria:
 
@@ -119,7 +119,7 @@ Tests:
 
 # Phase 2 — Roles, Permissions and Policies
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -131,22 +131,22 @@ Implement organization-scoped authorization.
 
 Tasks:
 
-- [ ] Configure Spatie teams with `organization_id`.
-- [ ] Define permission naming convention.
-- [ ] Add default permissions seeder.
-- [ ] Add default roles:
+- [x] Configure Spatie teams with `organization_id`.
+- [x] Define permission naming convention.
+- [x] Add default permissions seeder.
+- [x] Add default roles:
   - Owner
   - Manager
   - Cashier
   - Waiter
-- [ ] Create organization onboarding role assignment.
-- [ ] Configure Filament Shield for admin panel.
-- [ ] Create reusable authorization helpers.
-- [ ] Add store access checks.
-- [ ] Add base policy conventions.
-- [ ] Add role management UI in organization admin.
-- [ ] Ensure menu visibility follows authorization.
-- [ ] Ensure backend policies remain authoritative.
+- [x] Create organization onboarding role assignment.
+- [x] Configure Filament Shield for admin panel.
+- [x] Create reusable authorization helpers.
+- [x] Add store access checks.
+- [x] Add base policy conventions.
+- [x] Add role management UI in organization admin.
+- [x] Ensure menu visibility follows authorization.
+- [x] Ensure backend policies remain authoritative.
 
 Acceptance criteria:
 
@@ -166,7 +166,7 @@ Tests:
 
 # Phase 3 — Plans, Features and Subscriptions
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -190,16 +190,16 @@ Enums:
 
 Tasks:
 
-- [ ] Create migrations/models.
-- [ ] Create plan management in `/platform`.
-- [ ] Create feature management in `/platform`.
-- [ ] Create subscription management in `/platform`.
-- [ ] Implement `organizationHasFeature()` style service/helper.
-- [ ] Implement active subscription check.
-- [ ] Block new POS transactions for expired subscriptions.
-- [ ] Keep admin read access available when subscription expires.
-- [ ] Create starter seed plans/features if useful.
-- [ ] Add max_stores and max_users enforcement.
+- [x] Create migrations/models.
+- [x] Create plan management in `/platform`.
+- [x] Create feature management in `/platform`.
+- [x] Create subscription management in `/platform`.
+- [x] Implement `organizationHasFeature()` style service/helper.
+- [x] Implement active subscription check.
+- [x] Block new POS transactions for expired subscriptions.
+- [x] Keep admin read access available when subscription expires.
+- [x] Create starter seed plans/features if useful.
+- [x] Add max_stores and max_users enforcement.
 
 Acceptance criteria:
 
@@ -221,7 +221,7 @@ Tests:
 
 # Phase 4 — Organization Onboarding
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -249,14 +249,14 @@ Create Organization
 
 Tasks:
 
-- [ ] Create onboarding Action.
-- [ ] Create platform form/page for onboarding.
-- [ ] Assign owner membership.
-- [ ] Assign Owner role in organization context.
-- [ ] Create first store.
-- [ ] Apply selected plan/subscription.
-- [ ] Validate plan user/store limits.
-- [ ] Make process transactional where appropriate.
+- [x] Create onboarding Action.
+- [x] Create platform form/page for onboarding.
+- [x] Assign owner membership.
+- [x] Assign Owner role in organization context.
+- [x] Create first store.
+- [x] Apply selected plan/subscription.
+- [x] Validate plan user/store limits.
+- [x] Make process transactional where appropriate.
 
 Acceptance criteria:
 
@@ -277,7 +277,7 @@ Tests:
 
 # Phase 5 — Catalog
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -296,17 +296,17 @@ Database:
 
 Tasks:
 
-- [ ] Create category migration/model.
-- [ ] Create product migration/model.
-- [ ] Add `organization_id`.
-- [ ] Add `is_active`.
-- [ ] Add `sort_order`.
-- [ ] Store product prices as integer UZS.
-- [ ] Create admin Filament resources.
-- [ ] Add policies.
-- [ ] Add plan/feature checks only if required by TZ.
-- [ ] Add catalog cache strategy for POS bootstrap.
-- [ ] Invalidate cache after catalog changes.
+- [x] Create category migration/model.
+- [x] Create product migration/model.
+- [x] Add `organization_id`.
+- [x] Add `is_active`.
+- [x] Add `sort_order`.
+- [x] Store product prices as integer UZS.
+- [x] Create admin Filament resources.
+- [x] Add policies.
+- [x] Add plan/feature checks only if required by TZ.
+- [x] Add catalog cache strategy for POS bootstrap.
+- [x] Invalidate cache after catalog changes.
 
 Acceptance criteria:
 
@@ -327,7 +327,7 @@ Tests:
 
 # Phase 6 — Tables
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -344,12 +344,12 @@ Database:
 
 Tasks:
 
-- [ ] Create migration/model.
-- [ ] Add organization/store ownership.
-- [ ] Create Filament resource.
-- [ ] Add policy.
-- [ ] Implement active-order-derived table occupancy service/query.
-- [ ] Do not persist duplicated `occupied` state.
+- [x] Create migration/model.
+- [x] Add organization/store ownership.
+- [x] Create Filament resource.
+- [x] Add policy.
+- [x] Implement active-order-derived table occupancy service/query.
+- [x] Do not persist duplicated `occupied` state.
 
 Acceptance criteria:
 
@@ -367,7 +367,7 @@ Tests:
 
 # Phase 7 — Devices
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -384,14 +384,14 @@ Database:
 
 Tasks:
 
-- [ ] Create ULID device model.
-- [ ] Add organization/store ownership.
-- [ ] Add name/code/is_active/last_seen_at.
-- [ ] Implement DeviceContext.
-- [ ] Create registration/setup API.
-- [ ] Create admin device listing.
-- [ ] Create POS device setup shell.
-- [ ] Validate device belongs to current tenant/store.
+- [x] Create ULID device model.
+- [x] Add organization/store ownership.
+- [x] Add name/code/is_active/last_seen_at.
+- [x] Implement DeviceContext.
+- [x] Create registration/setup API.
+- [x] Create admin device listing.
+- [x] Create POS device setup shell.
+- [x] Validate device belongs to current tenant/store.
 
 Acceptance criteria:
 
@@ -409,7 +409,7 @@ Tests:
 
 # Phase 8 — Printer Foundation
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -435,19 +435,19 @@ Initial PrintType values:
 
 Tasks:
 
-- [ ] Create printer migration/model.
-- [ ] Create print route migration/model.
-- [ ] Add organization/store/device ownership where defined.
-- [ ] Create admin Filament resources.
-- [ ] Implement PrinterRoutingService.
-- [ ] Create PrinterService interface on POS frontend.
-- [ ] Isolate QZ Tray implementation.
-- [ ] Implement printer discovery on POS device.
-- [ ] Implement test print.
-- [ ] Implement device-local printer binding.
-- [ ] Allow both print types to route to one physical printer.
-- [ ] Allow admin to route kitchen ticket to another printer later.
-- [ ] Add reprint support marker foundation.
+- [x] Create printer migration/model.
+- [x] Create print route migration/model.
+- [x] Add organization/store/device ownership where defined.
+- [x] Create admin Filament resources.
+- [x] Implement PrinterRoutingService.
+- [x] Create PrinterService interface on POS frontend.
+- [x] Isolate QZ Tray implementation.
+- [x] Implement printer discovery on POS device.
+- [x] Implement test print.
+- [x] Implement device-local printer binding.
+- [x] Allow both print types to route to one physical printer.
+- [x] Allow admin to route kitchen ticket to another printer later.
+- [x] Add reprint support marker foundation.
 
 Acceptance criteria:
 
@@ -473,7 +473,7 @@ Manual test:
 
 # Phase 9 — Customers and Delivery Details
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -490,14 +490,14 @@ Database:
 
 Tasks:
 
-- [ ] Create ULID customer model.
-- [ ] Create delivery details model.
-- [ ] Add tenant/store ownership as defined in TZ.
-- [ ] Customer phone required where customer is used.
-- [ ] Delivery address snapshot stored on order.
-- [ ] Create admin customer list if useful.
-- [ ] Create POS customer lookup by phone.
-- [ ] Keep MVP fields minimal.
+- [x] Create ULID customer model.
+- [x] Create delivery details model.
+- [x] Add tenant/store ownership as defined in TZ.
+- [x] Customer phone required where customer is used.
+- [x] Delivery address snapshot stored on order.
+- [x] Create admin customer list if useful.
+- [x] Create POS customer lookup by phone.
+- [x] Keep MVP fields minimal.
 
 Acceptance criteria:
 
@@ -515,7 +515,7 @@ Tests:
 
 # Phase 10 — Order Domain Foundation
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -548,22 +548,22 @@ Actions:
 
 Tasks:
 
-- [ ] Create ULID orders.
-- [ ] Create ULID order_items.
-- [ ] Add snapshot `product_name`.
-- [ ] Add snapshot `unit_price`.
-- [ ] Add `kitchen_printed_at`.
-- [ ] Implement store-level display number generation.
-- [ ] Implement DINE_IN.
-- [ ] Implement TAKEAWAY.
-- [ ] Implement DELIVERY.
-- [ ] Validate table belongs to current store.
-- [ ] Validate customer belongs to current organization.
-- [ ] Implement idempotent order creation.
-- [ ] Implement idempotent order item creation.
-- [ ] Use DB transactions where required.
-- [ ] Add policies.
-- [ ] Do not implement inventory/modifiers.
+- [x] Create ULID orders.
+- [x] Create ULID order_items.
+- [x] Add snapshot `product_name`.
+- [x] Add snapshot `unit_price`.
+- [x] Add `kitchen_printed_at`.
+- [x] Implement store-level display number generation.
+- [x] Implement DINE_IN.
+- [x] Implement TAKEAWAY.
+- [x] Implement DELIVERY.
+- [x] Validate table belongs to current store.
+- [x] Validate customer belongs to current organization.
+- [x] Implement idempotent order creation.
+- [x] Implement idempotent order item creation.
+- [x] Use DB transactions where required.
+- [x] Add policies.
+- [x] Do not implement inventory/modifiers.
 
 Acceptance criteria:
 
@@ -588,7 +588,7 @@ Tests:
 
 # Phase 11 — Incremental Kitchen Printing
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -606,14 +606,14 @@ Actions:
 
 Tasks:
 
-- [ ] Query only `kitchen_printed_at IS NULL`.
-- [ ] Build kitchen ticket DTO/payload.
-- [ ] Resolve KITCHEN_TICKET printer route.
-- [ ] Trigger frontend PrinterService.
-- [ ] Mark items printed only after client-confirmed successful print.
-- [ ] Preserve order if print fails.
-- [ ] Add REPRINT flow.
-- [ ] Ensure reprint is visibly marked.
+- [x] Query only `kitchen_printed_at IS NULL`.
+- [x] Build kitchen ticket DTO/payload.
+- [x] Resolve KITCHEN_TICKET printer route.
+- [x] Trigger frontend PrinterService.
+- [x] Mark items printed only after client-confirmed successful print.
+- [x] Preserve order if print fails.
+- [x] Add REPRINT flow.
+- [x] Ensure reprint is visibly marked.
 
 Acceptance criteria:
 
@@ -638,7 +638,7 @@ Tests:
 
 # Phase 12 — Payments
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -671,15 +671,15 @@ Actions:
 
 Tasks:
 
-- [ ] Create ULID payments.
-- [ ] Add idempotency.
-- [ ] Prevent duplicate payment replay.
-- [ ] Calculate paid amount from payment records.
-- [ ] Calculate remaining amount.
-- [ ] Update payment status transactionally.
-- [ ] Support multiple payment records per order.
-- [ ] Add payment policies.
-- [ ] Do not physically delete payments.
+- [x] Create ULID payments.
+- [x] Add idempotency.
+- [x] Prevent duplicate payment replay.
+- [x] Calculate paid amount from payment records.
+- [x] Calculate remaining amount.
+- [x] Update payment status transactionally.
+- [x] Support multiple payment records per order.
+- [x] Add payment policies.
+- [x] Do not physically delete payments.
 
 Acceptance criteria:
 
@@ -703,7 +703,7 @@ Tests:
 
 # Phase 13 — Order Completion and Customer Receipt
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -722,14 +722,14 @@ Actions:
 
 Tasks:
 
-- [ ] Complete DINE_IN after payment rules are satisfied.
-- [ ] Complete TAKEAWAY according to MVP flow.
-- [ ] Support delivery unpaid/paid lifecycle defined by TZ.
-- [ ] Resolve CUSTOMER_RECEIPT printer route.
-- [ ] Print receipt through PrinterService.
-- [ ] Preserve payment/order if printer fails.
-- [ ] Free table when dine-in order is completed/cancelled.
-- [ ] Support receipt reprint with REPRINT marker.
+- [x] Complete DINE_IN after payment rules are satisfied.
+- [x] Complete TAKEAWAY according to MVP flow.
+- [x] Support delivery unpaid/paid lifecycle defined by TZ.
+- [x] Resolve CUSTOMER_RECEIPT printer route.
+- [x] Print receipt through PrinterService.
+- [x] Preserve payment/order if printer fails.
+- [x] Free table when dine-in order is completed/cancelled.
+- [x] Support receipt reprint with REPRINT marker.
 
 Acceptance criteria:
 
@@ -750,7 +750,7 @@ Tests:
 
 # Phase 14 — Shifts
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -776,15 +776,15 @@ Actions:
 
 Tasks:
 
-- [ ] Create ULID shifts.
-- [ ] Link store/device/user.
-- [ ] Add opening_cash.
-- [ ] Add closing_cash.
-- [ ] Prevent multiple invalid active shifts for same business rule.
-- [ ] Require active shift for POS operations as defined.
-- [ ] Associate cash payments with current operational context.
-- [ ] Add shift open/close POS UI.
-- [ ] Add permissions.
+- [x] Create ULID shifts.
+- [x] Link store/device/user.
+- [x] Add opening_cash.
+- [x] Add closing_cash.
+- [x] Prevent multiple invalid active shifts for same business rule.
+- [x] Require active shift for POS operations as defined.
+- [x] Associate cash payments with current operational context.
+- [x] Add shift open/close POS UI.
+- [x] Add permissions.
 
 Acceptance criteria:
 
@@ -805,7 +805,7 @@ Tests:
 
 # Phase 15 — POS Bootstrap API
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -843,11 +843,11 @@ Response:
 
 Tasks:
 
-- [ ] Create DTO/resource response.
-- [ ] Cache suitable catalog/config portions.
-- [ ] Add invalidation after admin changes.
-- [ ] Avoid N+1 queries.
-- [ ] Ensure tenant/store scoping.
+- [x] Create DTO/resource response.
+- [x] Cache suitable catalog/config portions.
+- [x] Add invalidation after admin changes.
+- [x] Avoid N+1 queries.
+- [x] Ensure tenant/store scoping.
 
 Acceptance criteria:
 
@@ -867,7 +867,7 @@ Tests:
 
 # Phase 16 — Vue POS Core UI
 
-Status: TODO
+Status: DONE
 
 Depends on:
 
@@ -898,21 +898,21 @@ Stores:
 
 Tasks:
 
-- [ ] Implement POS layout.
-- [ ] Implement category selection.
-- [ ] Implement product grid.
-- [ ] Implement local cart in Pinia.
-- [ ] Product click must not hit API.
-- [ ] Implement DINE_IN entry.
-- [ ] Implement TAKEAWAY entry.
-- [ ] Implement DELIVERY entry.
-- [ ] Implement open table/order.
-- [ ] Implement item notes.
-- [ ] Implement payment UI.
-- [ ] Implement permission-based actions.
-- [ ] Implement online status indicator.
-- [ ] Keep touch targets large.
-- [ ] Keep keyboard optional.
+- [x] Implement POS layout.
+- [x] Implement category selection.
+- [x] Implement product grid.
+- [x] Implement local cart in Pinia.
+- [x] Product click must not hit API.
+- [x] Implement DINE_IN entry.
+- [x] Implement TAKEAWAY entry.
+- [x] Implement DELIVERY entry.
+- [x] Implement open table/order.
+- [x] Implement item notes.
+- [x] Implement payment UI.
+- [x] Implement permission-based actions.
+- [x] Implement online status indicator.
+- [x] Keep touch targets large.
+- [x] Keep keyboard optional.
 
 Acceptance criteria:
 
@@ -937,38 +937,167 @@ Manual acceptance:
 
 # Phase 17 — QZ Tray POS Integration
 
-Status: TODO
+Status: IN_PROGRESS
 
 Depends on:
 
-- Phase 8
-- Phase 16
+* Phase 8
+* Phase 16
 
 Goal:
 
-Connect POS UI to local thermal printer.
+Connect the Vue POS application to local thermal printers through QZ Tray and support kitchen ticket and customer receipt printing through configurable printer routes.
 
 Tasks:
 
-- [ ] Implement QZ Tray adapter inside PrinterService.
-- [ ] Printer discovery.
-- [ ] Test print.
-- [ ] Kitchen print.
-- [ ] Customer receipt print.
-- [ ] Print error UX.
-- [ ] Reprint UX.
-- [ ] Prepare structure for signed/silent production printing.
+* [x] Install the official QZ Tray npm package:
+
+```bash
+npm install qz-tray
+```
+
+* [x] Import and use `qz-tray` only inside the POS printer integration layer.
+* [x] Vue components must not import or call `qz-tray` directly.
+* [x] Implement the QZ Tray adapter inside `PrinterService`.
+* [x] Implement QZ Tray WebSocket connection handling.
+* [x] Implement reconnect logic when QZ Tray is not connected.
+* [x] Implement printer discovery using QZ Tray.
+* [x] Display available local OS printers in `/pos/device-setup`.
+* [x] Allow an authorized user to select and save the physical printer mapping.
+* [x] Implement test print.
+* [x] Implement kitchen ticket printing.
+* [x] Implement customer receipt printing.
+* [x] Resolve the physical printer from database-configured `print_routes`.
+* [x] Support `CUSTOMER_RECEIPT` and `KITCHEN_TICKET` using the same physical printer.
+* [x] Support switching `KITCHEN_TICKET` to another physical printer without application code changes.
+* [x] Implement ESC/POS-compatible raw printing where supported by the configured thermal printer.
+* [x] Support paper cutting where the printer supports ESC/POS cutter commands.
+* [x] Implement print error UX.
+* [x] Print failure must not rollback or delete the saved order.
+* [x] Print failure must not rollback or delete a saved payment.
+* [x] Implement manual retry/reprint.
+* [x] Reprinted tickets and receipts must contain a visible `REPRINT` marker.
+* [x] For kitchen printing, confirm successful client-side printing before marking related order items as printed.
+* [x] Keep QZ Tray-specific implementation isolated so another printer bridge can be introduced later without changing POS business logic.
+* [x] Prepare production structure for signed/silent QZ Tray printing.
+* [x] Keep QZ private signing keys server-side only.
+* [x] Do not expose private signing keys to Vue, browser JavaScript, or public assets.
+* [x] Add a backend signing endpoint/service when production silent printing is enabled.
+
+Suggested frontend structure:
+
+```text
+resources/js/pos/services/
+├── printer.ts
+└── printers/
+    └── qz-tray.ts
+```
+
+Conceptual responsibility:
+
+```text
+Vue Component
+    ↓
+PrinterService
+    ↓
+QzTrayAdapter
+    ↓
+qz-tray npm package
+    ↓
+QZ Tray desktop application
+    ↓
+Local thermal printer
+```
+
+Printer connection flow:
+
+```text
+POS
+↓
+PrinterService.connect()
+↓
+QZ Tray WebSocket
+↓
+Local QZ Tray application
+↓
+Installed OS printers
+```
+
+Kitchen printing flow:
+
+```text
+Order saved
+↓
+Request kitchen print payload
+↓
+Resolve KITCHEN_TICKET print route
+↓
+PrinterService
+↓
+QZ Tray
+↓
+Physical printer
+↓
+Print success
+↓
+Confirm print to backend
+↓
+Set kitchen_printed_at
+```
+
+Customer receipt flow:
+
+```text
+Payment saved
+↓
+Request receipt payload
+↓
+Resolve CUSTOMER_RECEIPT print route
+↓
+PrinterService
+↓
+QZ Tray
+↓
+Physical printer
+```
 
 Acceptance criteria:
 
-- Real printer receives kitchen ticket.
-- Real printer receives customer receipt.
-- Same physical printer may print both.
-- Route change redirects kitchen ticket without code changes.
+* `qz-tray` npm package is installed and used only through the printer integration layer.
+* POS can detect whether QZ Tray is connected.
+* POS can reconnect to QZ Tray after connection loss.
+* POS can list printers installed on the local operating system.
+* An authorized user can configure printer selection from `/pos/device-setup`.
+* Test print works on a real thermal printer.
+* Real printer receives kitchen ticket.
+* Real printer receives customer receipt.
+* Same physical printer may print both `CUSTOMER_RECEIPT` and `KITCHEN_TICKET`.
+* Admin can change `KITCHEN_TICKET` routing to another printer without code changes.
+* Kitchen ticket includes only items that have not already been successfully printed.
+* Failed print keeps the order/payment safely stored.
+* User can retry failed printing.
+* Reprinted output contains `REPRINT`.
+* Vue components contain no direct QZ Tray implementation.
+* Production architecture is ready for signed/silent printing without exposing the private key to the client.
 
-Manual tests required.
+Manual tests required:
+
+1. QZ Tray installed and running.
+2. POS connects to QZ Tray.
+3. POS lists local printers.
+4. Test print succeeds.
+5. Kitchen ticket prints.
+6. Customer receipt prints.
+7. Both print types work on one physical printer.
+8. Kitchen route is changed to a second printer and works without code changes.
+9. QZ Tray is stopped and POS shows a connection error.
+10. QZ Tray is restarted and POS reconnects.
+11. Printer is unavailable and order remains saved.
+12. Reprint works and includes `REPRINT`.
+13. Incremental kitchen printing does not reprint previously printed items.
 
 ---
+
 
 # Phase 18 — Organization Admin UX
 

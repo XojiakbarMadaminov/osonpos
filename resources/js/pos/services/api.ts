@@ -1,0 +1,258 @@
+import type { CartItem } from '../stores/cart';
+import type { OrderType, PosBootstrap } from '../types/bootstrap';
+
+export interface RegisteredDevice {
+    id: string;
+    name: string;
+    code: string;
+    store_id: number;
+}
+
+export interface ConfiguredPrinter {
+    id: number;
+    name: string;
+    system_name: string | null;
+    device_id: string | null;
+    paper_width: number;
+}
+
+export interface CustomerSummary {
+    id: string;
+    name: string | null;
+    phone: string;
+}
+
+export interface KitchenTicket {
+    order_id: string;
+    display_number: string;
+    printer: { id: number; system_name: string; paper_width: number };
+    item_ids: string[];
+    lines: string[];
+    is_reprint: boolean;
+}
+
+export interface CustomerReceipt {
+    order_id: string;
+    printer: { id: number; system_name: string; paper_width: number };
+    lines: string[];
+    is_reprint: boolean;
+}
+
+export interface ShiftSummary {
+    id: string;
+    status: 'OPEN' | 'CLOSED';
+    opening_cash: number;
+    closing_cash: number | null;
+    opened_at: string;
+    closed_at: string | null;
+}
+
+export interface CreatedOrder {
+    id: string;
+    display_number: string;
+    type: OrderType;
+    status: string;
+    payment_status: string;
+    subtotal: number;
+    delivery_fee: number;
+    total: number;
+}
+
+export class ApiService {
+    async bootstrap(): Promise<PosBootstrap> {
+        const response = await fetch('/api/pos/bootstrap', {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error('POS setup could not be loaded.');
+        const payload = (await response.json()) as { data: PosBootstrap };
+
+        return payload.data;
+    }
+
+    async registerDevice(name: string, code: string): Promise<RegisteredDevice> {
+        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+        const response = await fetch('/api/pos/devices/register', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({ name, code }),
+        });
+
+        if (!response.ok) {
+            throw new Error(response.status === 422 ? 'Check the device name and code.' : 'Device registration failed.');
+        }
+
+        const payload = (await response.json()) as { data: RegisteredDevice };
+
+        return payload.data;
+    }
+
+    async printers(): Promise<ConfiguredPrinter[]> {
+        const response = await fetch('/api/pos/printers', {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        });
+
+        if (!response.ok) {
+            throw new Error('Configured printers could not be loaded.');
+        }
+
+        const payload = (await response.json()) as { data: ConfiguredPrinter[] };
+
+        return payload.data;
+    }
+
+    async findCustomerByPhone(phone: string): Promise<CustomerSummary | null> {
+        const response = await fetch(`/api/pos/customers/lookup?phone=${encodeURIComponent(phone)}`, {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        });
+
+        if (!response.ok) {
+            throw new Error('Customer lookup failed.');
+        }
+
+        const payload = (await response.json()) as { data: CustomerSummary | null };
+
+        return payload.data;
+    }
+
+    async bindPrinter(printerId: number, systemName: string): Promise<void> {
+        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+        const response = await fetch(`/api/pos/printers/${printerId}/binding`, {
+            method: 'PUT',
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: JSON.stringify({ system_name: systemName }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Printer binding could not be saved.');
+        }
+    }
+
+    async prepareKitchenTicket(orderId: string, reprint = false): Promise<KitchenTicket> {
+        const suffix = reprint ? '/reprint' : '';
+        const response = await this.jsonRequest(`/api/pos/orders/${orderId}/send-kitchen${suffix}`, 'POST');
+        const payload = (await response.json()) as { data: KitchenTicket };
+
+        return payload.data;
+    }
+
+    async confirmKitchenTicket(orderId: string, itemIds: string[]): Promise<void> {
+        await this.jsonRequest(`/api/pos/orders/${orderId}/send-kitchen/confirm`, 'POST', {
+            item_ids: itemIds,
+        });
+    }
+
+    async completeOrder(orderId: string): Promise<void> {
+        await this.jsonRequest(`/api/pos/orders/${orderId}/complete`, 'POST');
+    }
+
+    async prepareCustomerReceipt(orderId: string, reprint = false): Promise<CustomerReceipt> {
+        const suffix = reprint ? '/reprint' : '';
+        const response = await this.jsonRequest(`/api/pos/orders/${orderId}/receipt${suffix}`, 'POST');
+        const payload = (await response.json()) as { data: CustomerReceipt };
+
+        return payload.data;
+    }
+
+    async currentShift(): Promise<ShiftSummary | null> {
+        const response = await this.jsonRequest('/api/pos/shifts/current', 'GET');
+        const payload = (await response.json()) as { data: ShiftSummary | null };
+
+        return payload.data;
+    }
+
+    async openShift(openingCash: number): Promise<ShiftSummary> {
+        const response = await this.jsonRequest('/api/pos/shifts', 'POST', { opening_cash: openingCash });
+        const payload = (await response.json()) as { data: ShiftSummary };
+
+        return payload.data;
+    }
+
+    async closeShift(shiftId: string, closingCash: number): Promise<ShiftSummary> {
+        const response = await this.jsonRequest(`/api/pos/shifts/${shiftId}/close`, 'POST', {
+            closing_cash: closingCash,
+        });
+        const payload = (await response.json()) as { data: ShiftSummary };
+
+        return payload.data;
+    }
+
+    async createOrder(input: {
+        type: OrderType;
+        tableId?: number | null;
+        customerPhone?: string;
+        customerName?: string;
+        deliveryAddress?: string;
+        deliveryFee?: number;
+    }): Promise<CreatedOrder> {
+        const body: Record<string, unknown> = { type: input.type };
+        if (input.tableId) body.table_id = input.tableId;
+        if (input.type === 'DELIVERY') {
+            body.customer = { phone: input.customerPhone, name: input.customerName || null };
+            body.delivery = { address: input.deliveryAddress, fee: input.deliveryFee ?? 0 };
+        }
+        const response = await this.jsonRequest('/api/pos/orders', 'POST', body);
+        const payload = (await response.json()) as { data: CreatedOrder };
+
+        return payload.data;
+    }
+
+    async addOrderItems(orderId: string, items: CartItem[]): Promise<void> {
+        for (const item of items) {
+            await this.jsonRequest(`/api/pos/orders/${orderId}/items`, 'POST', {
+                product_id: item.productId,
+                quantity: item.quantity,
+                note: item.note || null,
+            });
+        }
+    }
+
+    async orders(): Promise<CreatedOrder[]> {
+        const response = await fetch('/api/pos/orders', {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+        });
+        if (!response.ok) throw new Error('Orders could not be loaded.');
+        const payload = (await response.json()) as { data: CreatedOrder[] };
+
+        return payload.data;
+    }
+
+    async createPayment(orderId: string, method: string, amount: number): Promise<void> {
+        await this.jsonRequest(`/api/pos/orders/${orderId}/payments`, 'POST', { method, amount });
+    }
+
+    private async jsonRequest(url: string, method: string, body?: object): Promise<Response> {
+        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+        const response = await fetch(url, {
+            method,
+            credentials: 'same-origin',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            body: body ? JSON.stringify(body) : undefined,
+        });
+
+        if (!response.ok) {
+            throw new Error('Kitchen print request failed.');
+        }
+
+        return response;
+    }
+}
+
+export const apiService = new ApiService();

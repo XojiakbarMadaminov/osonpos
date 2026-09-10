@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Filament\Admin\Resources\PrintRoutes\Pages;
+
+use App\Domain\Authorization\StoreAccess;
+use App\Filament\Admin\Resources\PrintRoutes\PrintRouteResource;
+use App\Models\Printer;
+use App\Models\PrintRoute;
+use App\Models\Store;
+use App\Support\TenantContext;
+use Filament\Resources\Pages\CreateRecord;
+use Illuminate\Database\Eloquent\Model;
+
+class CreatePrintRoute extends CreateRecord
+{
+    protected static string $resource = PrintRouteResource::class;
+
+    protected function handleRecordCreation(array $data): Model
+    {
+        $tenant = app(TenantContext::class)->requireCurrent();
+        $store = Store::query()->forTenant($tenant)->findOrFail($data['store_id']);
+        abort_unless(app(StoreAccess::class)->allows(request()->user(), $store), 403);
+        $printer = Printer::query()
+            ->forTenant($tenant)
+            ->where('store_id', $store->getKey())
+            ->findOrFail($data['printer_id']);
+
+        $route = new PrintRoute($data);
+        $route->organization()->associate($tenant);
+        $route->store()->associate($store);
+        $route->printer()->associate($printer);
+        $route->save();
+
+        return $route;
+    }
+}

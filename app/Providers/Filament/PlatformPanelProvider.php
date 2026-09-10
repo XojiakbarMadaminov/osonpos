@@ -28,6 +28,7 @@ class PlatformPanelProvider extends PanelProvider
             ->id('platform')
             ->path('platform')
             ->login()
+            ->viteTheme('resources/css/filament/platform/theme.css')
             ->colors([
                 'primary' => Color::Amber,
             ])

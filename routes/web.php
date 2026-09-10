@@ -7,6 +7,8 @@ Route::get('/', function () {
     return redirect('/admin');
 });
 
+Route::redirect('/panel', '/admin');
+
 Route::view('/pos', 'pos')->name('pos');
 Route::get('/pos/device-setup', DeviceSetupController::class)
     ->middleware(['auth', 'context.tenant', 'context.store'])

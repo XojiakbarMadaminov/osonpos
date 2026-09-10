@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Support\Facades\Schema;
 
 it('can promote an existing user as the first platform administrator', function () {
     $user = User::factory()->create(['email' => 'operator@example.test']);
@@ -20,4 +21,14 @@ it('ships production deployment and local domain configuration', function () {
         ->and(base_path('bin/backup-postgres'))->toBeFile()
         ->and(base_path('bin/deploy-production'))->toBeFile()
         ->and(config('app.url'))->toBe('http://osonpos.lc');
+});
+
+it('redirects legacy local panel paths to the organization admin panel', function () {
+    $this->get('/panel')
+        ->assertRedirect('/admin');
+});
+
+it('uses the canonical plan feature pivot table', function () {
+    expect(Schema::hasTable('plan_features'))->toBeTrue()
+        ->and(Schema::hasTable('plan_feature'))->toBeFalse();
 });

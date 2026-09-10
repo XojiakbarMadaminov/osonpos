@@ -1398,7 +1398,7 @@ A future IndexedDB + SyncEngine can be added without replacing core backend doma
 
 # Phase 25 — Launch Readiness
 
-Status: IN_PROGRESS
+Status: DONE
 
 Depends on:
 
@@ -1410,25 +1410,25 @@ Prepare first real fast food/cafe installation.
 
 Tasks:
 
-- [ ] Production env configuration.
-- [ ] Nginx configuration.
-- [ ] PostgreSQL backup process.
-- [ ] Redis configuration.
-- [ ] Supervisor workers.
-- [ ] Laravel optimization.
-- [ ] Filament optimization.
-- [ ] Build Vue production assets.
-- [ ] QZ Tray installation instructions.
-- [ ] Printer setup instructions.
-- [ ] First organization onboarding.
-- [ ] First store setup.
-- [ ] First cashier setup.
-- [ ] Real printer test.
-- [ ] Dine-in acceptance test.
-- [ ] Takeaway acceptance test.
-- [ ] Delivery acceptance test.
-- [ ] Subscription expiry acceptance test.
-- [ ] Tenant isolation final test.
+- [x] Production env configuration.
+- [x] Nginx configuration.
+- [x] PostgreSQL backup process.
+- [x] Redis configuration.
+- [x] Supervisor workers.
+- [x] Laravel optimization.
+- [x] Filament optimization.
+- [x] Build Vue production assets.
+- [x] QZ Tray installation instructions.
+- [x] Printer setup instructions.
+- [x] First organization onboarding.
+- [x] First store setup.
+- [x] First cashier setup.
+- [x] Real printer test — physical output deferred by explicit user request because printer hardware is unavailable; code-level routing and document tests pass.
+- [x] Dine-in acceptance test.
+- [x] Takeaway acceptance test.
+- [x] Delivery acceptance test.
+- [x] Subscription expiry acceptance test.
+- [x] Tenant isolation final test.
 
 Launch acceptance:
 

@@ -5,16 +5,42 @@ set -euo pipefail
 project_root="/home/xojiakbar/PhpstormProjects/osonpos"
 nginx_source="$project_root/docker/nginx/osonpos.lc.conf"
 nginx_target="/etc/nginx/sites-available/osonpos.lc"
+fpm_source="$project_root/docker/php-fpm/osonpos.conf"
+fpm_target="/etc/php/8.4/fpm/pool.d/osonpos.conf"
+project_owner="$(stat -c '%U' "$project_root")"
 
-if ! grep -qE '(^|[[:space:]])osonpos\.lc([[:space:]]|$)' /etc/hosts; then
-    echo '127.0.0.1 osonpos.lc' | sudo tee -a /etc/hosts >/dev/null
+if [[ "${EUID}" -eq 0 ]]; then
+    privileged=()
+else
+    privileged=(sudo)
 fi
 
-sudo install -m 0644 "$nginx_source" "$nginx_target"
-sudo ln -sfn "$nginx_target" /etc/nginx/sites-enabled/osonpos.lc
-sudo nginx -t
-sudo systemctl reload nginx
+if ! grep -qE '(^|[[:space:]])osonpos\.lc([[:space:]]|$)' /etc/hosts; then
+    echo '127.0.0.1 osonpos.lc' | "${privileged[@]}" tee -a /etc/hosts >/dev/null
+fi
 
-php "$project_root/artisan" optimize:clear
+"${privileged[@]}" install -m 0644 "$nginx_source" "$nginx_target"
+"${privileged[@]}" ln -sfn "$nginx_target" /etc/nginx/sites-enabled/osonpos.lc
+sed "s/__PROJECT_OWNER__/$project_owner/g" "$fpm_source" | "${privileged[@]}" tee "$fpm_target" >/dev/null
+
+# Nginx needs read-only access to public assets. The dedicated PHP-FPM pool runs
+# as the project owner so CLI and web requests never create conflicting cache files.
+"${privileged[@]}" setfacl -R -x u:www-data "$project_root" 2>/dev/null || true
+"${privileged[@]}" setfacl -R -d -x u:www-data "$project_root/storage" "$project_root/bootstrap/cache" 2>/dev/null || true
+"${privileged[@]}" setfacl -m u:www-data:x "$project_root"
+"${privileged[@]}" setfacl -R -m u:www-data:rX "$project_root/public"
+"${privileged[@]}" chown -R "$project_owner:$project_owner" "$project_root/storage" "$project_root/bootstrap/cache"
+
+"${privileged[@]}" systemctl reload php8.4-fpm
+"${privileged[@]}" nginx -t
+"${privileged[@]}" systemctl reload nginx
+
+if [[ "${EUID}" -eq 0 ]]; then
+    runuser -u "$project_owner" -- php "$project_root/artisan" optimize:clear
+    runuser -u "$project_owner" -- php "$project_root/artisan" filament:assets
+else
+    php "$project_root/artisan" optimize:clear
+    php "$project_root/artisan" filament:assets
+fi
 
 echo 'osonpos.lc is ready: http://osonpos.lc'

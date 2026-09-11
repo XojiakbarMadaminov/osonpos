@@ -72,6 +72,10 @@ async function saveBinding(): Promise<void> {
                 <div class="rounded-lg border border-emerald-700 bg-emerald-500/10 p-4 text-emerald-200">
                     {{ device.name }} is ready with code {{ device.code }}.
                 </div>
+                <a class="flex min-h-12 w-full items-center justify-center rounded-lg bg-amber-400 px-5 font-semibold text-slate-950" href="/pos">
+                    Continue to POS
+                </a>
+                <p class="text-center text-sm text-slate-400">Printer connection is optional now and can be completed later.</p>
                 <button class="min-h-12 w-full rounded-lg border border-amber-400 px-5 font-semibold text-amber-300" :disabled="saving" type="button" @click="discoverPrinters">
                     {{ qzConnected ? 'Refresh printer list' : 'Connect and detect printers' }}
                 </button>

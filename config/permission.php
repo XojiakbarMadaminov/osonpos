@@ -206,7 +206,7 @@ return [
          * The cache key used to store all permissions.
          */
 
-        'key' => 'spatie.permission.cache',
+        'key' => 'spatie.permission.cache.'.env('APP_ENV', 'production'),
 
         /*
          * You may optionally indicate a specific cache driver to use for permission and

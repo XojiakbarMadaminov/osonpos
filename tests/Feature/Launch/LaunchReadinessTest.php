@@ -32,3 +32,11 @@ it('uses the canonical plan feature pivot table', function () {
     expect(Schema::hasTable('plan_features'))->toBeTrue()
         ->and(Schema::hasTable('plan_feature'))->toBeFalse();
 });
+
+it('does not install the removed audit storage', function () {
+    expect(Schema::hasTable('audit_logs'))->toBeFalse();
+});
+
+it('isolates permission caches between application environments', function () {
+    expect(config('permission.cache.key'))->toEndWith('.testing');
+});

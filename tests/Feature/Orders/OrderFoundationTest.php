@@ -57,7 +57,9 @@ it('creates an unpaid open dine-in order and snapshots added products', function
     $orderResponse = $this->actingAs($user)->withSession($session)->postJson('/api/pos/orders', [
         'type' => OrderType::DineIn->value,
         'table_id' => $table->id,
-    ])->assertCreated();
+    ])->assertCreated()
+        ->assertJsonPath('data.table.id', $table->id)
+        ->assertJsonPath('data.table.number', $table->number);
     $order = Order::query()->findOrFail($orderResponse->json('data.id'));
 
     expect($order->status)->toBe(OrderStatus::Open)
@@ -77,6 +79,12 @@ it('creates an unpaid open dine-in order and snapshots added products', function
         ->and($item->total)->toBe(130000)
         ->and($order->refresh()->subtotal)->toBe(130000)
         ->and($order->total)->toBe(130000);
+
+    $this->actingAs($user)->withSession($session)
+        ->getJson('/api/pos/orders')
+        ->assertOk()
+        ->assertJsonPath('data.0.table.id', $table->id)
+        ->assertJsonPath('data.0.table.number', $table->number);
 });
 
 it('creates takeaway orders with sequential store display numbers', function () {

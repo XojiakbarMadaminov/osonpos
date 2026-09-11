@@ -6,6 +6,7 @@ import DeviceSetupPage from './pages/DeviceSetupPage.vue';
 import OrdersPage from './pages/OrdersPage.vue';
 import PaymentPage from './pages/PaymentPage.vue';
 import PosPage from './pages/PosPage.vue';
+import ShiftPage from './pages/ShiftPage.vue';
 import TablesPage from './pages/TablesPage.vue';
 import { apiService } from './services/api';
 import { useAuthStore } from './stores/auth';
@@ -17,7 +18,9 @@ const context = useContextStore();
 const page = ref('pos');
 const loading = ref(!isDeviceSetup);
 const error = ref('');
+const navigationError = ref('');
 const online = ref(navigator.onLine);
+const refreshingContext = ref(false);
 const navigation = computed(() => [
     { id: 'pos', label: 'POS', visible: auth.can('pos.access') },
     { id: 'tables', label: 'Tables', visible: auth.can('tables.view') },
@@ -29,6 +32,24 @@ function setOnline(): void {
     online.value = navigator.onLine;
 }
 
+async function navigate(destination: string): Promise<void> {
+    navigationError.value = '';
+    if (destination === 'tables') {
+        refreshingContext.value = true;
+        try {
+            const payload = await apiService.bootstrap();
+            context.hydrate(payload);
+            auth.hydrate(payload.user, payload.permissions);
+        } catch (exception) {
+            navigationError.value = exception instanceof Error ? exception.message : 'Table status could not be refreshed.';
+        } finally {
+            refreshingContext.value = false;
+        }
+    }
+
+    page.value = destination;
+}
+
 onMounted(async () => {
     window.addEventListener('online', setOnline);
     window.addEventListener('offline', setOnline);
@@ -37,8 +58,8 @@ onMounted(async () => {
         const payload = await apiService.bootstrap();
         context.hydrate(payload);
         auth.hydrate(payload.user, payload.permissions);
-    } catch {
-        error.value = 'POS could not start. Confirm your device, store access, and subscription.';
+    } catch (exception) {
+        error.value = exception instanceof Error ? exception.message : 'POS could not start.';
     } finally {
         loading.value = false;
     }
@@ -73,20 +94,18 @@ onBeforeUnmount(() => {
                 </header>
 
                 <nav class="my-5 flex flex-wrap gap-3" aria-label="POS navigation">
-                    <button v-for="item in navigation" :key="item.id" class="min-h-12 rounded-lg border px-5 font-medium" :class="page === item.id ? 'border-amber-400 text-amber-300' : 'border-slate-700'" type="button" @click="page = item.id">
+                    <button v-for="item in navigation" :key="item.id" class="min-h-12 rounded-lg border px-5 font-medium disabled:opacity-60" :class="page === item.id ? 'border-amber-400 text-amber-300' : 'border-slate-700'" :disabled="refreshingContext" type="button" @click="navigate(item.id)">
                         {{ item.label }}
                     </button>
                 </nav>
+                <p v-if="navigationError" class="mb-5 rounded-lg border border-red-800 bg-red-500/10 p-3 text-sm text-red-200">{{ navigationError }}</p>
 
-                <PosPage v-if="page === 'pos'" :bootstrap="context.bootstrap" @navigate="page = $event" />
-                <TablesPage v-else-if="page === 'tables'" :tables="context.bootstrap.tables" @navigate="page = $event" />
-                <OrdersPage v-else-if="page === 'orders'" />
-                <DeliveryOrderPage v-else-if="page === 'delivery'" @navigate="page = $event" />
-                <PaymentPage v-else-if="page === 'payment'" @navigate="page = $event" />
-                <section v-else-if="page === 'shift'" class="rounded-xl border border-slate-800 bg-slate-900 p-6">
-                    <h2 class="text-xl font-semibold">Shift</h2>
-                    <p class="mt-2 text-slate-400">Use the shift controls in the header to open or close your current register.</p>
-                </section>
+                <PosPage v-if="page === 'pos'" :bootstrap="context.bootstrap" @navigate="navigate" />
+                <TablesPage v-else-if="page === 'tables'" :tables="context.bootstrap.tables" @navigate="navigate" />
+                <OrdersPage v-else-if="page === 'orders'" @navigate="navigate" />
+                <DeliveryOrderPage v-else-if="page === 'delivery'" @navigate="navigate" />
+                <PaymentPage v-else-if="page === 'payment'" @navigate="navigate" />
+                <ShiftPage v-else-if="page === 'shift'" />
             </template>
         </div>
     </main>

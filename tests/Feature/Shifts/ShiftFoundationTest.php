@@ -8,6 +8,7 @@ use App\Enums\ShiftStatus;
 use App\Models\Device;
 use App\Models\Order;
 use App\Models\Organization;
+use App\Models\Payment;
 use App\Models\Shift;
 use App\Models\Store;
 use App\Models\Subscription;
@@ -46,7 +47,11 @@ it('opens and exposes the current cashier shift', function () {
         ->assertJsonPath('data.opening_cash', 120000);
 
     $this->actingAs($cashier)->withSession($session)->getJson('/api/pos/shifts/current')
-        ->assertOk()->assertJsonPath('data.id', $response->json('data.id'));
+        ->assertOk()
+        ->assertJsonPath('data.id', $response->json('data.id'))
+        ->assertJsonPath('data.cash_payments_total', 0)
+        ->assertJsonPath('data.expected_cash', 120000)
+        ->assertJsonPath('data.cash_difference', null);
     $shift = Shift::query()->sole();
 
     expect($shift->organization_id)->toBe($organization->id)
@@ -110,8 +115,118 @@ it('requires an active current shift for cash but not card payments', function (
         'method' => PaymentMethod::Cash->value,
         'amount' => 10000,
     ])->assertUnprocessable()->assertJsonValidationErrors('shift');
-    $this->actingAs($cashier)->withSession($session)->postJson("/api/pos/orders/{$order->id}/payments", [
+    $cardPayment = $this->actingAs($cashier)->withSession($session)->postJson("/api/pos/orders/{$order->id}/payments", [
         'method' => PaymentMethod::Card->value,
         'amount' => 10000,
     ])->assertCreated();
+
+    expect(Payment::query()->findOrFail($cardPayment->json('data.id'))->shift_id)->toBeNull();
+
+    $shiftResponse = $this->actingAs($cashier)->withSession($session)
+        ->postJson('/api/pos/shifts', ['opening_cash' => 50000])
+        ->assertCreated();
+    $cashPayment = $this->actingAs($cashier)->withSession($session)->postJson("/api/pos/orders/{$order->id}/payments", [
+        'method' => PaymentMethod::Cash->value,
+        'amount' => 15000,
+    ])->assertCreated();
+
+    expect(Payment::query()->findOrFail($cashPayment->json('data.id'))->shift_id)
+        ->toBe($shiftResponse->json('data.id'));
+
+    $this->actingAs($cashier)->withSession($session)->getJson('/api/pos/shifts/current')
+        ->assertOk()
+        ->assertJsonPath('data.payment_totals.CARD', 0)
+        ->assertJsonPath('data.payment_totals.CASH', 15000)
+        ->assertJsonPath('data.cash_payments_total', 15000)
+        ->assertJsonPath('data.expected_cash', 65000);
+});
+
+it('blocks closing a shift while its device still has open orders', function () {
+    [$organization, $store, $cashier, $device, $session] = shiftContext();
+    $shift = Shift::factory()->for($organization)->for($store)->for($device)->for($cashier)->create([
+        'opened_at' => now()->subHour(),
+    ]);
+    Order::factory()->for($organization)->for($store)->for($device)->for($cashier, 'creator')->create([
+        'opened_at' => now()->subMinutes(30),
+    ]);
+
+    $this->actingAs($cashier)->withSession($session)
+        ->postJson("/api/pos/shifts/{$shift->id}/close", ['closing_cash' => 0])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('shift');
+
+    expect($shift->refresh()->status)->toBe(ShiftStatus::Open);
+});
+
+it('calculates expected cash and the closing difference', function () {
+    [$organization, $store, $cashier, $device] = shiftContext();
+    $shift = Shift::factory()->for($organization)->for($store)->for($device)->for($cashier)->create([
+        'opening_cash' => 100000,
+        'closing_cash' => 145000,
+        'status' => ShiftStatus::Closed,
+        'closed_at' => now(),
+    ]);
+    $order = Order::factory()->for($organization)->for($store)->for($device)->for($cashier, 'creator')->create();
+    Payment::factory()->for($organization)->for($store)->for($device)->for($shift)->for($order)->for($cashier, 'creator')->create([
+        'method' => PaymentMethod::Cash,
+        'amount' => 50000,
+    ]);
+
+    expect($shift->expectedCash())->toBe(150000)
+        ->and($shift->cashDifference())->toBe(-5000);
+});
+
+it('shows tenant-safe read-only shift history in the admin panel', function () {
+    [$organization, $store, $manager, $device, $session] = shiftContext(OrganizationRole::Manager);
+    $shift = Shift::factory()->for($organization)->for($store)->for($device)->for($manager)->create();
+    $foreignShift = Shift::factory()->create();
+    $inaccessibleStore = Store::factory()->for($organization)->create();
+    $inaccessibleDevice = Device::factory()->for($organization)->for($inaccessibleStore)->create();
+    $inaccessibleCashier = User::factory()->create();
+    $organization->users()->attach($inaccessibleCashier);
+    $inaccessibleShift = Shift::factory()
+        ->for($organization)
+        ->for($inaccessibleStore)
+        ->for($inaccessibleDevice)
+        ->for($inaccessibleCashier)
+        ->create();
+
+    $this->actingAs($manager)->withSession($session)
+        ->get('/admin/shifts')
+        ->assertOk()
+        ->assertSee($manager->name);
+    $this->actingAs($manager)->withSession($session)
+        ->get("/admin/shifts/{$shift->id}")
+        ->assertOk();
+    $this->actingAs($manager)->withSession($session)
+        ->get("/admin/shifts/{$foreignShift->id}")
+        ->assertNotFound();
+    $this->actingAs($manager)->withSession($session)
+        ->get("/admin/shifts/{$inaccessibleShift->id}")
+        ->assertNotFound();
+});
+
+it('limits cashier shift history to the current cashier', function () {
+    [$organization, $store, $cashier, $device, $session] = shiftContext();
+    $ownShift = Shift::factory()->for($organization)->for($store)->for($device)->for($cashier)->create([
+        'status' => ShiftStatus::Closed,
+        'closed_at' => now(),
+    ]);
+    $otherCashier = User::factory()->create();
+    $organization->users()->attach($otherCashier);
+    $store->users()->attach($otherCashier);
+    app(OrganizationAuthorization::class)->runForUserInTenant(
+        $otherCashier,
+        $organization,
+        fn (User $tenantUser) => $tenantUser->assignRole(OrganizationRole::Cashier->value),
+    );
+    $otherDevice = Device::factory()->for($organization)->for($store)->create();
+    $otherShift = Shift::factory()->for($organization)->for($store)->for($otherDevice)->for($otherCashier)->create();
+
+    $this->actingAs($cashier)->withSession($session)
+        ->get("/admin/shifts/{$ownShift->id}")
+        ->assertOk();
+    $this->actingAs($cashier)->withSession($session)
+        ->get("/admin/shifts/{$otherShift->id}")
+        ->assertNotFound();
 });

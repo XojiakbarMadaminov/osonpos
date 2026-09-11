@@ -20,8 +20,6 @@ class CreateOrganization
     public function execute(CreateOrganizationData $data): Organization
     {
         $plan = Plan::query()->whereKey($data->planId)->where('is_active', true)->firstOrFail();
-        $owner = User::query()->findOrFail($data->ownerId);
-
         if ($plan->max_stores < 1 || $plan->max_users < 1) {
             throw ValidationException::withMessages([
                 'plan_id' => 'The selected plan must allow at least one store and one user.',
@@ -32,7 +30,15 @@ class CreateOrganization
             throw ValidationException::withMessages(['ends_at' => 'The subscription end must follow its start.']);
         }
 
-        return DB::transaction(function () use ($data, $plan, $owner): Organization {
+        return DB::transaction(function () use ($data, $plan): Organization {
+            $owner = $data->ownerId
+                ? User::query()->findOrFail($data->ownerId)
+                : User::query()->create([
+                    'name' => $data->ownerName,
+                    'email' => strtolower((string) $data->ownerEmail),
+                    'password' => $data->ownerPassword,
+                ]);
+
             $organization = Organization::query()->create([
                 'name' => $data->name,
                 'slug' => $data->slug,

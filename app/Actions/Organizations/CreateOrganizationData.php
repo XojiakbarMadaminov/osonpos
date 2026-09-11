@@ -15,8 +15,11 @@ readonly class CreateOrganizationData
         public ?string $storePhone,
         public string $timezone,
         public int $planId,
-        public int $ownerId,
+        public ?int $ownerId,
         public CarbonImmutable $startsAt,
         public CarbonImmutable $endsAt,
+        public ?string $ownerName = null,
+        public ?string $ownerEmail = null,
+        public ?string $ownerPassword = null,
     ) {}
 }

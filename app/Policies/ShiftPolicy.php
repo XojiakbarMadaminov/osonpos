@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Domain\Authorization\StoreAccess;
 use App\Enums\OrganizationPermission;
+use App\Enums\OrganizationRole;
 use App\Models\Shift;
 use App\Models\User;
 use App\Policies\Concerns\AuthorizesTenantResources;
@@ -19,8 +20,13 @@ class ShiftPolicy
 
     public function view(User $user, Shift $shift): bool
     {
-        return $this->allows($user, OrganizationPermission::ShiftsView, $shift)
-            && app(StoreAccess::class)->allows($user, $shift->store);
+        if (! $this->allows($user, OrganizationPermission::ShiftsView, $shift)
+            || ! app(StoreAccess::class)->allows($user, $shift->store)) {
+            return false;
+        }
+
+        return $shift->user_id === $user->getKey()
+            || $user->hasAnyRole([OrganizationRole::Owner->value, OrganizationRole::Manager->value]);
     }
 
     public function create(User $user): bool

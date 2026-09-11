@@ -2,11 +2,9 @@
 
 namespace App\Actions\Organizations;
 
-use App\Domain\Audit\AuditLogger;
 use App\Domain\Authorization\OrganizationAuthorization;
 use App\Domain\Authorization\StoreAccess;
 use App\Domain\Subscription\PlanLimits;
-use App\Enums\AuditEvent;
 use App\Enums\OrganizationRole;
 use App\Models\User;
 use App\Support\TenantContext;
@@ -21,7 +19,6 @@ class SaveOrganizationUser
         private readonly OrganizationAuthorization $authorization,
         private readonly StoreAccess $storeAccess,
         private readonly PlanLimits $planLimits,
-        private readonly AuditLogger $audit,
     ) {}
 
     public function execute(User $actor, ?User $member, array $attributes, int $roleId, array $storeIds): User
@@ -54,15 +51,7 @@ class SaveOrganizationUser
             throw ValidationException::withMessages(['role_id' => 'Only an owner may assign privileged roles.']);
         }
 
-        return DB::transaction(function () use ($organization, $member, $attributes, $requestedStoreIds, $role, $actor): User {
-            $oldRoles = $member
-                ? $this->authorization->runForUserInTenant(
-                    $member,
-                    $organization,
-                    fn (User $tenantUser): array => $tenantUser->roles()->pluck('name')->all(),
-                )
-                : [];
-
+        return DB::transaction(function () use ($organization, $member, $attributes, $requestedStoreIds, $role): User {
             if (! $member) {
                 $this->planLimits->ensureCanAddUser($organization);
                 $member = User::query()->create($attributes);
@@ -80,17 +69,6 @@ class SaveOrganizationUser
                 $organization,
                 fn (User $tenantUser) => $tenantUser->syncRoles([$role]),
             );
-
-            if ($oldRoles !== [$role->name]) {
-                $this->audit->record(
-                    AuditEvent::UserRoleChanged,
-                    $member,
-                    ['roles' => $oldRoles],
-                    ['roles' => [$role->name]],
-                    $actor,
-                    (int) $organization->getKey(),
-                );
-            }
 
             return $member->refresh();
         });

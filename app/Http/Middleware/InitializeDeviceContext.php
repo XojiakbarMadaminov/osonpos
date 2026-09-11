@@ -20,10 +20,13 @@ class InitializeDeviceContext
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->user()) {
+            $deviceId = $request->header('X-POS-Device-ID')
+                ?? ($request->hasSession() ? $request->session()->get('current_device_id') : null);
+
             $this->deviceContext->resolve(
                 $this->tenantContext,
                 $this->storeContext,
-                $request->hasSession() ? $request->session()->get('current_device_id') : null,
+                is_string($deviceId) ? $deviceId : null,
             );
         } else {
             $this->deviceContext->clear();

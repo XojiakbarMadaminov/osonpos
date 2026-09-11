@@ -6,6 +6,7 @@ use App\Actions\Organizations\SaveOrganizationUser;
 use App\Domain\Authorization\OrganizationAuthorization;
 use App\Enums\OrganizationRole;
 use App\Filament\Admin\Resources\Tables\TableResource;
+use App\Http\Middleware\InitializeTenantContext;
 use App\Models\Feature;
 use App\Models\Order;
 use App\Models\Organization;
@@ -16,6 +17,7 @@ use App\Models\User;
 use App\Support\StoreContext;
 use App\Support\TenantContext;
 use Illuminate\Validation\ValidationException;
+use Livewire\Mechanisms\PersistentMiddleware\PersistentMiddleware;
 
 function adminOwner(Organization $organization, Store $store): User
 {
@@ -25,6 +27,11 @@ function adminOwner(Organization $organization, Store $store): User
 
     return $owner;
 }
+
+it('persists tenant authorization context across filament livewire actions', function () {
+    expect(app(PersistentMiddleware::class)->getPersistentMiddleware())
+        ->toContain(InitializeTenantContext::class);
+});
 
 it('keeps store order and user listings inside the current organization', function () {
     $organization = Organization::factory()->create();

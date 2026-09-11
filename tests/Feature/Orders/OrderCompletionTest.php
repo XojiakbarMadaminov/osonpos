@@ -85,6 +85,19 @@ it('completes a paid dine-in order and frees its table', function () {
         ->and($order->refresh()->closed_by)->toBe($manager->id);
 });
 
+it('returns the outstanding balance needed to close an open order', function () {
+    [$organization, $store, $manager, , , $order, $session] = completionContext();
+    Payment::factory()->for($organization)->for($store)->for($order)->for($manager, 'creator')->create([
+        'amount' => 15000,
+    ]);
+
+    $this->actingAs($manager)->withSession($session)
+        ->getJson('/api/pos/orders')
+        ->assertOk()
+        ->assertJsonPath('data.0.paid_amount', 15000)
+        ->assertJsonPath('data.0.balance_due', 50000);
+});
+
 it('requires full payment before completing takeaway or delivery', function (OrderType $type) {
     [$organization, $store, $manager, , , $order, $session] = completionContext($type);
 

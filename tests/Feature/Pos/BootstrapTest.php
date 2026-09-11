@@ -8,6 +8,7 @@ use App\Enums\PrintType;
 use App\Models\Category;
 use App\Models\Device;
 use App\Models\Feature;
+use App\Models\Order;
 use App\Models\Organization;
 use App\Models\Plan;
 use App\Models\Printer;
@@ -52,6 +53,7 @@ it('loads all required POS base state in one bootstrap response', function () {
     $category = Category::factory()->for($organization)->create();
     $product = Product::factory()->for($organization)->for($category)->create();
     $table = Table::factory()->for($organization)->for($store)->create();
+    $openOrder = Order::factory()->for($organization)->for($store)->for($table)->for($user, 'creator')->create();
     $printer = Printer::factory()->for($organization)->for($store)->for($device)->create();
     $route = PrintRoute::factory()->for($organization)->for($store)->for($printer)->create([
         'print_type' => PrintType::CustomerReceipt,
@@ -69,6 +71,8 @@ it('loads all required POS base state in one bootstrap response', function () {
         ->and($response->json('data.device.id'))->toBe($device->id)
         ->and(collect($response->json('data.products'))->pluck('id'))->toContain($product->id)
         ->and(collect($response->json('data.tables'))->pluck('id'))->toContain($table->id)
+        ->and(collect($response->json('data.tables'))->firstWhere('id', $table->id)['is_occupied'])->toBeTrue()
+        ->and(collect($response->json('data.tables'))->firstWhere('id', $table->id)['open_order_id'])->toBe($openOrder->id)
         ->and(collect($response->json('data.printers'))->pluck('id'))->toContain($printer->id)
         ->and(collect($response->json('data.print_routes'))->pluck('id'))->toContain($route->id)
         ->and($response->json('data.active_shift.id'))->toBe($shift->id);

@@ -36,8 +36,15 @@ class Payment extends Model
                 ->where('organization_id', $payment->organization_id)
                 ->where('store_id', $payment->store_id)
                 ->exists();
+            $shiftIsValid = $payment->shift_id === null || Shift::query()
+                ->whereKey($payment->shift_id)
+                ->where('organization_id', $payment->organization_id)
+                ->where('store_id', $payment->store_id)
+                ->where('device_id', $payment->device_id)
+                ->where('user_id', $payment->created_by)
+                ->exists();
 
-            if (! $orderIsValid || ! $deviceIsValid) {
+            if (! $orderIsValid || ! $deviceIsValid || ! $shiftIsValid) {
                 throw ValidationException::withMessages([
                     'payment' => 'Payment resources must belong to the same organization and store.',
                 ]);
@@ -53,6 +60,11 @@ class Payment extends Model
     public function device(): BelongsTo
     {
         return $this->belongsTo(Device::class);
+    }
+
+    public function shift(): BelongsTo
+    {
+        return $this->belongsTo(Shift::class);
     }
 
     public function creator(): BelongsTo

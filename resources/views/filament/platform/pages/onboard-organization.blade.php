@@ -11,16 +11,27 @@
                 <x-filament-forms::field-wrapper label="Phone" state-path="phone">
                     <x-filament::input.wrapper><x-filament::input id="phone" wire:model="phone" placeholder="+998..." /></x-filament::input.wrapper>
                 </x-filament-forms::field-wrapper>
-                <x-filament-forms::field-wrapper label="Owner" state-path="ownerId" required>
+                <x-filament-forms::field-wrapper label="Owner setup" state-path="ownerMode" required>
                     <x-filament::input.wrapper>
-                        <x-filament::input.select id="ownerId" wire:model="ownerId">
-                            <option value="">Select owner</option>
-                            @foreach ($this->owners() as $owner)
-                                <option value="{{ $owner->id }}">{{ $owner->name }} — {{ $owner->email }}</option>
-                            @endforeach
+                        <x-filament::input.select id="ownerMode" wire:model.live="ownerMode">
+                            <option value="new">Create a new owner</option>
+                            <option value="existing">Select an existing user</option>
                         </x-filament::input.select>
                     </x-filament::input.wrapper>
                 </x-filament-forms::field-wrapper>
+
+                @if ($ownerMode === 'existing')
+                    <x-filament-forms::field-wrapper label="Existing user" state-path="ownerId" required>
+                        <x-filament::input.wrapper>
+                            <x-filament::input.select id="ownerId" wire:model="ownerId">
+                                <option value="">Select owner</option>
+                                @foreach ($this->owners() as $owner)
+                                    <option value="{{ $owner->id }}">{{ $owner->name }} — {{ $owner->email }}</option>
+                                @endforeach
+                            </x-filament::input.select>
+                        </x-filament::input.wrapper>
+                    </x-filament-forms::field-wrapper>
+                @endif
             </div>
         </x-filament::section>
 
@@ -40,6 +51,25 @@
                 </x-filament-forms::field-wrapper>
             </div>
         </x-filament::section>
+
+        @if ($ownerMode === 'new')
+            <x-filament::section heading="Organization owner" description="This user receives the Owner role and can sign in to /admin immediately." class="lg:col-span-2">
+                <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                    <x-filament-forms::field-wrapper label="Full name" state-path="ownerName" required>
+                        <x-filament::input.wrapper><x-filament::input id="ownerName" wire:model="ownerName" autocomplete="name" /></x-filament::input.wrapper>
+                    </x-filament-forms::field-wrapper>
+                    <x-filament-forms::field-wrapper label="Email" state-path="ownerEmail" required>
+                        <x-filament::input.wrapper><x-filament::input id="ownerEmail" type="email" wire:model="ownerEmail" autocomplete="email" /></x-filament::input.wrapper>
+                    </x-filament-forms::field-wrapper>
+                    <x-filament-forms::field-wrapper label="Password" state-path="ownerPassword" required>
+                        <x-filament::input.wrapper><x-filament::input id="ownerPassword" type="password" wire:model="ownerPassword" autocomplete="new-password" /></x-filament::input.wrapper>
+                    </x-filament-forms::field-wrapper>
+                    <x-filament-forms::field-wrapper label="Confirm password" state-path="ownerPassword_confirmation" required>
+                        <x-filament::input.wrapper><x-filament::input id="ownerPassword_confirmation" type="password" wire:model="ownerPassword_confirmation" autocomplete="new-password" /></x-filament::input.wrapper>
+                    </x-filament-forms::field-wrapper>
+                </div>
+            </x-filament::section>
+        @endif
 
         <x-filament::section heading="Subscription" class="lg:col-span-2">
             <div class="grid gap-5 md:grid-cols-3">

@@ -139,7 +139,6 @@ Vue componentlar database yoki Laravel implementation details haqida bilmasligi 
 
 - Cashier shifts
 - Devices / POS terminals
-- Basic audit log
 
 ---
 
@@ -147,6 +146,7 @@ Vue componentlar database yoki Laravel implementation details haqida bilmasligi 
 
 Quyidagi modullar v1'ga kiritilmaydi:
 
+- Audit log — MVP v1.0 scope'idan olib tashlangan; audit storage, UI va event recording implement qilinmaydi
 - Ingredients
 - Recipes
 - Inventory
@@ -1154,7 +1154,7 @@ Status payment transaction bilan bir DB transaction ichida yangilanishi kerak.
 
 # 33. Cashier Shift
 
-POS ishlatish uchun minimal shift bo‘ladi.
+Shift kassirning bitta qurilmada ishlagan kassa davrini ifodalaydi. Moliyaviy tarix bo‘lgani uchun shift tahrirlanmaydi va fizik o‘chirilmaydi.
 
 ## shifts
 
@@ -1178,7 +1178,52 @@ Status:
 - OPEN
 - CLOSED
 
-Cash payment active shift mavjud bo‘lgan paytda qabul qilinadi.
+Bir vaqtda:
+
+- bitta device uchun faqat bitta OPEN shift;
+- bitta user uchun organization doirasida faqat bitta OPEN shift bo‘lishi mumkin.
+
+Shift faqat joriy organization, store, device va user kontekstida ochiladi/yopiladi. Ochish va yopish transaction hamda database constraint bilan himoyalanadi.
+
+## Shift payment bog‘lanishi
+
+`payments` jadvalida nullable `shift_id` bo‘ladi.
+
+- CASH payment uchun joriy OPEN shift majburiy.
+- Shift ochiq paytda qabul qilingan CARD, CLICK, PAYME va OTHER paymentlar ham shu shiftga bog‘lanadi.
+- Shift ochilmagan paytdagi non-cash payment backward-compatible tarzda `shift_id = null` bo‘lishi mumkin.
+- Payment va shift organization, store, device va creator bo‘yicha bir xil kontekstga tegishli bo‘lishi shart.
+
+## Shift hisoblari
+
+Qiymatlar integer UZS ko‘rinishida hisoblanadi:
+
+```text
+cash_payments_total = shiftga bog‘langan CASH paymentlar yig‘indisi
+payments_total = shiftga bog‘langan barcha paymentlar yig‘indisi
+expected_cash = opening_cash + cash_payments_total
+cash_difference = closing_cash - expected_cash
+```
+
+`expected_cash` va `cash_difference` bazada alohida saqlanmaydi, payment tarixidan hisoblanadi. MVPda cash in/out, expense va refund modullari yo‘q; shu sababli ular shift hisobiga kiritilmaydi.
+
+## Shift yopish qoidalari
+
+- `closing_cash` kassadagi real sanalgan pul bo‘lib, manfiy bo‘lishi mumkin emas.
+- Joriy device'da OPEN order mavjud bo‘lsa shift yopilmaydi; order avval payment bilan yakunlanishi yoki bekor qilinishi kerak.
+- Printer xatosi shift yoki paymentni rollback qilmaydi.
+- Yopilgan shift qayta ochilmaydi va uning moliyaviy qiymatlari o‘zgartirilmaydi.
+
+## UI va ko‘rish huquqi
+
+POS `/pos` dagi Shift sahifasi OPEN holati, kassir, device, ochilgan vaqt, opening cash, payment method kesimidagi summalar, expected cash va closing difference'ni ko‘rsatadi.
+
+Organization admin `/admin/shifts` sahifasi read-only tarixdir:
+
+- Owner va Manager o‘ziga ruxsat berilgan store'lardagi shiftlarni ko‘radi.
+- Cashier faqat o‘z shiftlarini ko‘radi.
+- Boshqa organization yoki ruxsat berilmagan store shiftlari ko‘rinmaydi.
+- Status, store va ochilgan sana bo‘yicha filter mavjud.
 
 ---
 
@@ -1499,42 +1544,7 @@ Product/category/table kabi master data uchun `is_active = false` afzal.
 
 ---
 
-# 47. Audit Log
-
-Critical operations log qilinadi.
-
-## audit_logs
-
-```text
-id
-organization_id nullable
-store_id nullable
-user_id nullable
-action
-subject_type
-subject_id
-old_values nullable
-new_values nullable
-created_at
-```
-
-Log qilinadigan muhim eventlar:
-
-- order.cancel
-- payment.refund
-- product.price_changed
-- user.role_changed
-- role.permissions_changed
-- printer.changed
-- print_route.changed
-- store.changed
-- subscription.changed
-
-Normal product click yoki order view audit log qilinishi shart emas.
-
----
-
-# 48. Reporting
+# 47. Reporting
 
 MVP reports:
 
@@ -1576,7 +1586,7 @@ filter ishlashi kerak.
 
 ---
 
-# 49. Performance Requirements
+# 48. Performance Requirements
 
 POS responsiveness birinchi darajali requirement.
 
@@ -1610,7 +1620,7 @@ Large tables pagination ishlatishi shart.
 
 ---
 
-# 50. Redis Usage
+# 49. Redis Usage
 
 Redis:
 
@@ -1635,7 +1645,7 @@ uchun.
 
 ---
 
-# 51. Database Transactions
+# 50. Database Transactions
 
 Quyidagi operations `DB::transaction()` ichida bajarilishi kerak:
 
@@ -1648,7 +1658,7 @@ Quyidagi operations `DB::transaction()` ichida bajarilishi kerak:
 
 ---
 
-# 52. Concurrency
+# 51. Concurrency
 
 Minimum protection:
 
@@ -1662,7 +1672,7 @@ Keyinchalik optimistic versioning qo‘shish mumkin.
 
 ---
 
-# 53. Security
+# 52. Security
 
 Har bir API request quyidagilarni tekshiradi:
 
@@ -1682,7 +1692,7 @@ Cross-tenant resource access testlari majburiy.
 
 ---
 
-# 54. Multi-tenancy Strategy
+# 53. Multi-tenancy Strategy
 
 MVP:
 
@@ -1700,7 +1710,7 @@ Store-specific records `organization_id` va `store_id` orqali ajratiladi.
 
 ---
 
-# 55. User Experience Rules
+# 54. User Experience Rules
 
 POS uchun:
 
@@ -1719,7 +1729,7 @@ POS'ning maqsadi speed.
 
 ---
 
-# 56. Error Handling
+# 55. Error Handling
 
 Print ishlamasa order yo‘qolmasligi kerak.
 
@@ -1743,7 +1753,7 @@ Payment saqlangan bo‘lsa printer ishlamagani uchun payment rollback qilinmaydi
 
 ---
 
-# 57. Reprint
+# 56. Reprint
 
 Permission:
 
@@ -1757,7 +1767,7 @@ Reprint ticketda `REPRINT` belgisi chiqishi kerak.
 
 ---
 
-# 58. Default Organization Setup
+# 57. Default Organization Setup
 
 Yangi organization yaratilganda onboarding action:
 
@@ -1793,7 +1803,7 @@ Printer hali ulanmagan bo‘lishi mumkin.
 
 ---
 
-# 59. Default Permissions Concept
+# 58. Default Permissions Concept
 
 Owner:
 
@@ -1828,7 +1838,7 @@ Organization owner keyinchalik UI orqali o‘zgartira oladi.
 
 ---
 
-# 60. Feature vs Permission Rule
+# 59. Feature vs Permission Rule
 
 Feature va Permission hech qachon aralashtirilmaydi.
 
@@ -1842,7 +1852,7 @@ Permission:
 
 ---
 
-# 61. Code Standards
+# 60. Code Standards
 
 Business statuslar magic string sifatida tarqoq ishlatilmasin.
 
@@ -1867,7 +1877,7 @@ Response POS API uchun izchil structure'da bo‘lsin.
 
 ---
 
-# 62. Testing Requirements
+# 61. Testing Requirements
 
 Majburiy backend tests:
 
@@ -1916,7 +1926,7 @@ Oldin print qilingan item qayta kitchen ticketga tushmasligi tekshiriladi.
 
 ---
 
-# 63. Logging and Monitoring
+# 62. Logging and Monitoring
 
 Production'da minimum:
 
@@ -1930,7 +1940,7 @@ Sensitive payment/customer data unnecessary log qilinmasligi kerak.
 
 ---
 
-# 64. Deployment
+# 63. Deployment
 
 Initial production:
 
@@ -1961,7 +1971,7 @@ https://example.uz/api/pos/*
 
 ---
 
-# 65. MVP Acceptance Criteria
+# 64. MVP Acceptance Criteria
 
 MVP production-ready hisoblanadi agar quyidagi scenario'lar ishlasa.
 
@@ -2046,7 +2056,7 @@ Har product click uchun backend request yuborilmaydi.
 
 ---
 
-# 66. Architecture Rules for AI Coding Agents
+# 65. Architecture Rules for AI Coding Agents
 
 Any AI agent implementing this project MUST follow these rules:
 
@@ -2075,7 +2085,7 @@ Any AI agent implementing this project MUST follow these rules:
 
 ---
 
-# 67. Future Modules
+# 66. Future Modules
 
 MVP barqaror ishlagandan va real customer feedback olingandan keyingina quyidagilar ko‘rib chiqiladi:
 
@@ -2102,7 +2112,7 @@ Ularning hech biri MVP launch uchun blocker emas.
 
 ---
 
-# 68. Final Architecture
+# 67. Final Architecture
 
 ```text
                          POS SaaS

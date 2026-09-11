@@ -1,12 +1,9 @@
 <?php
 
 use App\Actions\Organizations\CreateDefaultOrganizationRoles;
-use App\Domain\Audit\AuditLogger;
 use App\Domain\Authorization\OrganizationAuthorization;
-use App\Enums\AuditEvent;
 use App\Enums\OrderType;
 use App\Enums\OrganizationRole;
-use App\Models\AuditLog;
 use App\Models\Device;
 use App\Models\Order;
 use App\Models\Organization;
@@ -121,18 +118,4 @@ it('rate limits signing requests independently from normal POS requests', functi
     }
 
     $this->actingAs($user)->withSession($session)->postJson('/api/pos/qz/sign', ['data' => 'payload'])->assertTooManyRequests();
-});
-
-it('removes sensitive values before writing audit payloads', function () {
-    $organization = Organization::factory()->create();
-    $store = Store::factory()->for($organization)->create();
-
-    app(AuditLogger::class)->record(
-        AuditEvent::StoreChanged,
-        $store,
-        newValues: ['name' => 'Safe', 'password' => 'hidden', 'token' => 'hidden'],
-    );
-
-    $audit = AuditLog::query()->where('auditable_id', (string) $store->id)->latest('id')->firstOrFail();
-    expect($audit->new_values)->toBe(['name' => 'Safe']);
 });

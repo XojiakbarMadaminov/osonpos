@@ -19,6 +19,7 @@ export interface PosTable {
     number: string;
     capacity: number | null;
     is_occupied: boolean;
+    open_order_id: string | null;
 }
 
 export interface PosBootstrap {

@@ -51,6 +51,17 @@ describe('ReceiptPrintService', () => {
         expect(api.completeOrder).toHaveBeenCalledOnce();
     });
 
+    it('can print an already completed order without completing it again', async () => {
+        const api = gateway();
+        const output = printer();
+        const service = new ReceiptPrintService(api, output);
+
+        await service.printCompleted(receipt.order_id);
+
+        expect(api.completeOrder).not.toHaveBeenCalled();
+        expect(output.print).toHaveBeenCalledOnce();
+    });
+
     it('passes the reprint marker to PrinterService', async () => {
         const api = gateway();
         api.prepareCustomerReceipt = vi.fn(async () => ({ ...receipt, is_reprint: true }));

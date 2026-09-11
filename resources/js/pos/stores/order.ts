@@ -21,6 +21,12 @@ export const useOrderStore = defineStore('order', {
         selectTable(tableId: number): void {
             this.type = 'DINE_IN';
             this.tableId = tableId;
+            this.current = null;
+        },
+        openExisting(existingOrder: CreatedOrder): void {
+            this.type = existingOrder.type;
+            this.tableId = existingOrder.table_id;
+            this.current = existingOrder;
         },
         reset(): void {
             this.$reset();

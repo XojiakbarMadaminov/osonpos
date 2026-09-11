@@ -121,6 +121,41 @@ it('denies disabled devices from device-bound POS requests', function () {
         ->assertForbidden();
 });
 
+it('restores a registered device from its persistent browser header', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $user = deviceUser($organization, $store);
+    $device = Device::factory()->for($organization)->for($store)->create();
+
+    $this->actingAs($user)
+        ->withSession([
+            'current_organization_id' => $organization->id,
+            'current_store_id' => $store->id,
+        ])
+        ->withHeader('X-POS-Device-ID', $device->id)
+        ->getJson('/api/pos/device')
+        ->assertOk()
+        ->assertJsonPath('data.id', $device->id);
+});
+
+it('rejects a persistent device header from another organization', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $user = deviceUser($organization, $store);
+    $foreignOrganization = Organization::factory()->create();
+    $foreignStore = Store::factory()->for($foreignOrganization)->create();
+    $foreignDevice = Device::factory()->for($foreignOrganization)->for($foreignStore)->create();
+
+    $this->actingAs($user)
+        ->withSession([
+            'current_organization_id' => $organization->id,
+            'current_store_id' => $store->id,
+        ])
+        ->withHeader('X-POS-Device-ID', $foreignDevice->id)
+        ->getJson('/api/pos/device')
+        ->assertForbidden();
+});
+
 it('enforces device store access in policy checks', function () {
     $organization = Organization::factory()->create();
     $allowedStore = Store::factory()->for($organization)->create();

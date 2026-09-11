@@ -32,13 +32,13 @@ class BuildPosBootstrap
         $device = $this->deviceContext->requireCurrent();
         $catalog = $this->catalog->forOrganization($organization);
         $configuration = $this->configuration->forStore($organization->getKey(), $store->getKey());
-        $occupiedTableIds = Order::query()
+        $openOrdersByTableId = Order::query()
             ->where('organization_id', $organization->getKey())
             ->where('store_id', $store->getKey())
             ->where('status', OrderStatus::Open)
             ->whereNotNull('table_id')
-            ->pluck('table_id')
-            ->flip();
+            ->get(['id', 'table_id'])
+            ->keyBy('table_id');
         $subscription = $this->subscriptions->activeSubscription($organization);
         $shift = $this->currentShift->for($user);
 
@@ -51,10 +51,15 @@ class BuildPosBootstrap
             'features' => $subscription?->plan->features->pluck('code')->sort()->values()->all() ?? [],
             'categories' => collect($catalog)->map(fn (array $category): array => collect($category)->except('products')->all())->values()->all(),
             'products' => collect($catalog)->flatMap(fn (array $category): array => $category['products'])->values()->all(),
-            'tables' => collect($configuration['tables'])->map(fn (array $table): array => [
-                ...$table,
-                'is_occupied' => $occupiedTableIds->has($table['id']),
-            ])->all(),
+            'tables' => collect($configuration['tables'])->map(function (array $table) use ($openOrdersByTableId): array {
+                $openOrder = $openOrdersByTableId->get($table['id']);
+
+                return [
+                    ...$table,
+                    'is_occupied' => $openOrder !== null,
+                    'open_order_id' => $openOrder?->getKey(),
+                ];
+            })->all(),
             'printers' => collect($configuration['printers'])
                 ->filter(fn (array $printer): bool => $printer['device_id'] === null || $printer['device_id'] === $device->getKey())
                 ->values()

@@ -2,7 +2,9 @@
 
 namespace App\Actions\Shifts;
 
+use App\Enums\OrderStatus;
 use App\Enums\ShiftStatus;
+use App\Models\Order;
 use App\Models\Shift;
 use App\Models\User;
 use App\Support\DeviceContext;
@@ -31,6 +33,19 @@ class CloseShift
 
             if (! $isCurrent) {
                 throw ValidationException::withMessages(['shift' => 'Only the current device shift can be closed.']);
+            }
+
+            $hasOpenOrders = Order::query()
+                ->where('organization_id', $shift->organization_id)
+                ->where('store_id', $shift->store_id)
+                ->where('device_id', $shift->device_id)
+                ->where('status', OrderStatus::Open)
+                ->exists();
+
+            if ($hasOpenOrders) {
+                throw ValidationException::withMessages([
+                    'shift' => 'Close or cancel this device\'s open orders before closing the shift.',
+                ]);
             }
 
             $shift->forceFill([

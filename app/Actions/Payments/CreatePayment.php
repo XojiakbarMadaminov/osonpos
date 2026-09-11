@@ -35,7 +35,8 @@ class CreatePayment
         return DB::transaction(function () use ($order, $user, $method, $amount, $id): Payment {
             $order = Order::query()->lockForUpdate()->findOrFail($order->getKey());
             $this->ensureCurrentOpenOrder($order);
-            if ($method === PaymentMethod::Cash && ! $this->currentShift->for($user)) {
+            $shift = $this->currentShift->for($user);
+            if ($method === PaymentMethod::Cash && ! $shift) {
                 throw ValidationException::withMessages(['shift' => 'An active shift is required for cash payments.']);
             }
             $id ??= (string) Str::ulid();
@@ -55,6 +56,7 @@ class CreatePayment
             $payment->store()->associate($order->store_id);
             $payment->order()->associate($order);
             $payment->device()->associate($this->deviceContext->current());
+            $payment->shift()->associate($shift);
             $payment->creator()->associate($user);
             $payment->save();
 

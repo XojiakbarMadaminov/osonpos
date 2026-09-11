@@ -14,20 +14,24 @@ export class ReceiptPrintService {
 
     async completeAndPrint(orderId: string): Promise<CustomerReceipt> {
         await this.gateway.completeOrder(orderId);
+        return this.printCompleted(orderId);
+    }
+
+    async printCompleted(orderId: string): Promise<CustomerReceipt> {
         const receipt = await this.gateway.prepareCustomerReceipt(orderId);
-        await this.print(receipt);
+        await this.printDocument(receipt);
 
         return receipt;
     }
 
     async reprint(orderId: string): Promise<CustomerReceipt> {
         const receipt = await this.gateway.prepareCustomerReceipt(orderId, true);
-        await this.print(receipt);
+        await this.printDocument(receipt);
 
         return receipt;
     }
 
-    private async print(receipt: CustomerReceipt): Promise<void> {
+    private async printDocument(receipt: CustomerReceipt): Promise<void> {
         await this.printer.print(receipt.printer.system_name, {
             lines: receipt.lines,
             isReprint: receipt.is_reprint,

@@ -25,6 +25,8 @@ class OrderController extends Controller
         $orders = Order::query()
             ->forTenant($tenantContext->requireCurrent())
             ->forStore($storeContext->requireCurrent())
+            ->with('table:id,name,number')
+            ->withSum('payments', 'amount')
             ->latest('opened_at')
             ->paginate(50);
 
@@ -35,7 +37,7 @@ class OrderController extends Controller
     {
         Gate::authorize('view', $order);
 
-        return new OrderResource($order->load(['items', 'deliveryDetail']));
+        return new OrderResource($order->load(['items', 'deliveryDetail', 'table'])->loadSum('payments', 'amount'));
     }
 
     public function store(CreateOrderRequest $request, CreateOrder $createOrder): JsonResponse
@@ -55,7 +57,7 @@ class OrderController extends Controller
             deliveryNote: data_get($validated, 'delivery.note'),
         ));
 
-        return (new OrderResource($order))
+        return (new OrderResource($order->load('table')))
             ->additional(['created' => $order->wasRecentlyCreated])
             ->response()
             ->setStatusCode($order->wasRecentlyCreated ? 201 : 200);
@@ -68,6 +70,6 @@ class OrderController extends Controller
     ): OrderResource {
         Gate::authorize('update', $order);
 
-        return new OrderResource($updateOrder->execute($order, $request->validated('note')));
+        return new OrderResource($updateOrder->execute($order, $request->validated('note'))->load('table'));
     }
 }

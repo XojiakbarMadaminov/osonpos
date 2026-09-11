@@ -15,6 +15,8 @@ const error = ref('');
 const products = computed(() => props.bootstrap.products.filter(
     (product) => selectedCategory.value === null || product.category_id === selectedCategory.value,
 ));
+const isAddingToOrder = computed(() => order.current?.status === 'OPEN');
+const displayedTotal = computed(() => (isAddingToOrder.value ? order.current?.total ?? 0 : 0) + cart.subtotal);
 
 function add(product: PosProduct): void {
     cart.add(product);
@@ -39,6 +41,15 @@ async function saveOrder(): Promise<void> {
     busy.value = true;
     error.value = '';
     try {
+        if (isAddingToOrder.value && order.current) {
+            const orderId = order.current.id;
+            await apiService.addOrderItems(orderId, cart.items);
+            order.openExisting(await apiService.order(orderId));
+            cart.clear();
+            emit('navigate', 'orders');
+            return;
+        }
+
         const created = await apiService.createOrder({
             type: order.type,
             tableId: order.tableId,
@@ -75,10 +86,13 @@ async function saveOrder(): Promise<void> {
             </button>
         </div>
         <aside class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+            <div v-if="isAddingToOrder" class="mb-4 rounded-lg border border-amber-400/40 bg-amber-400/10 p-3 text-sm text-amber-200">
+                Adding products to <strong>{{ order.current?.display_number }}</strong>
+            </div>
             <div class="grid grid-cols-3 gap-2">
-                <button class="min-h-12 rounded-lg border border-slate-700 text-xs" :class="order.type === 'DINE_IN' && 'border-amber-400'" type="button" @click="chooseType('DINE_IN')">Dine in</button>
-                <button class="min-h-12 rounded-lg border border-slate-700 text-xs" :class="order.type === 'TAKEAWAY' && 'border-amber-400'" type="button" @click="chooseType('TAKEAWAY')">Takeaway</button>
-                <button class="min-h-12 rounded-lg border border-slate-700 text-xs" :class="order.type === 'DELIVERY' && 'border-amber-400'" type="button" @click="chooseType('DELIVERY')">Delivery</button>
+                <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'DINE_IN' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'DINE_IN'" :disabled="isAddingToOrder" type="button" @click="chooseType('DINE_IN')">Dine in</button>
+                <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'TAKEAWAY' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'TAKEAWAY'" :disabled="isAddingToOrder" type="button" @click="chooseType('TAKEAWAY')">Takeaway</button>
+                <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'DELIVERY' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'DELIVERY'" :disabled="isAddingToOrder" type="button" @click="chooseType('DELIVERY')">Delivery</button>
             </div>
             <div class="mt-4 space-y-3">
                 <div v-for="(item, index) in cart.items" :key="`${item.productId}-${index}`" class="rounded-lg bg-slate-800 p-3">
@@ -90,10 +104,10 @@ async function saveOrder(): Promise<void> {
                     <input :value="item.note" class="mt-2 min-h-10 w-full rounded border border-slate-700 bg-slate-950 px-3 text-sm" placeholder="Item note" @input="cart.setNote(index, ($event.target as HTMLInputElement).value)">
                 </div>
             </div>
-            <div class="mt-5 flex items-center justify-between border-t border-slate-700 pt-4 text-lg font-bold"><span>Total</span><span>{{ cart.subtotal.toLocaleString() }} UZS</span></div>
+            <div class="mt-5 flex items-center justify-between border-t border-slate-700 pt-4 text-lg font-bold"><span>Total</span><span>{{ displayedTotal.toLocaleString() }} UZS</span></div>
             <p v-if="error" class="mt-3 text-sm text-red-300">{{ error }}</p>
             <button class="mt-4 min-h-14 w-full rounded-xl bg-amber-400 px-5 font-bold text-slate-950 disabled:opacity-50" :disabled="busy || cart.items.length === 0" type="button" @click="saveOrder">
-                {{ busy ? 'Saving…' : 'Save order' }}
+                {{ busy ? 'Saving…' : isAddingToOrder ? 'Add to order' : 'Save order' }}
             </button>
         </aside>
     </section>

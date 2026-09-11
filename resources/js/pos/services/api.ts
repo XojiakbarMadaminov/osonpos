@@ -1,5 +1,6 @@
 import type { CartItem } from '../stores/cart';
 import type { OrderType, PosBootstrap } from '../types/bootstrap';
+import { deviceIdentityService, type DeviceIdentityService } from './device-identity';
 
 export interface RegisteredDevice {
     id: string;
@@ -45,27 +46,43 @@ export interface ShiftSummary {
     closing_cash: number | null;
     opened_at: string;
     closed_at: string | null;
+    payment_totals: Record<'CASH' | 'CARD' | 'CLICK' | 'PAYME' | 'OTHER', number>;
+    payments_total: number;
+    cash_payments_total: number;
+    expected_cash: number;
+    cash_difference: number | null;
 }
 
 export interface CreatedOrder {
     id: string;
     display_number: string;
     type: OrderType;
-    status: string;
+    status: 'OPEN' | 'COMPLETED' | 'CANCELLED';
     payment_status: string;
+    table_id: number | null;
+    table: { id: number; name: string; number: string } | null;
     subtotal: number;
     delivery_fee: number;
     total: number;
+    paid_amount: number;
+    balance_due: number;
 }
 
 export class ApiService {
+    constructor(private readonly deviceIdentity: DeviceIdentityService = deviceIdentityService) {}
+
     async bootstrap(): Promise<PosBootstrap> {
         const response = await fetch('/api/pos/bootstrap', {
             credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
+            headers: { Accept: 'application/json', ...this.deviceIdentity.headers() },
         });
-        if (!response.ok) throw new Error('POS setup could not be loaded.');
+        if (!response.ok) {
+            throw new Error(response.status === 401
+                ? 'Your login session expired. Sign in again through the admin panel.'
+                : 'This browser is not ready for POS yet. Complete device setup once.');
+        }
         const payload = (await response.json()) as { data: PosBootstrap };
+        this.deviceIdentity.remember(payload.data.device.id);
 
         return payload.data;
     }
@@ -88,6 +105,7 @@ export class ApiService {
         }
 
         const payload = (await response.json()) as { data: RegisteredDevice };
+        this.deviceIdentity.remember(payload.data.id);
 
         return payload.data;
     }
@@ -95,7 +113,7 @@ export class ApiService {
     async printers(): Promise<ConfiguredPrinter[]> {
         const response = await fetch('/api/pos/printers', {
             credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
+            headers: { Accept: 'application/json', ...this.deviceIdentity.headers() },
         });
 
         if (!response.ok) {
@@ -110,7 +128,7 @@ export class ApiService {
     async findCustomerByPhone(phone: string): Promise<CustomerSummary | null> {
         const response = await fetch(`/api/pos/customers/lookup?phone=${encodeURIComponent(phone)}`, {
             credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
+            headers: { Accept: 'application/json', ...this.deviceIdentity.headers() },
         });
 
         if (!response.ok) {
@@ -131,6 +149,7 @@ export class ApiService {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken,
+                ...this.deviceIdentity.headers(),
             },
             body: JSON.stringify({ system_name: systemName }),
         });
@@ -225,10 +244,21 @@ export class ApiService {
     async orders(): Promise<CreatedOrder[]> {
         const response = await fetch('/api/pos/orders', {
             credentials: 'same-origin',
-            headers: { Accept: 'application/json' },
+            headers: { Accept: 'application/json', ...this.deviceIdentity.headers() },
         });
         if (!response.ok) throw new Error('Orders could not be loaded.');
         const payload = (await response.json()) as { data: CreatedOrder[] };
+
+        return payload.data;
+    }
+
+    async order(orderId: string): Promise<CreatedOrder> {
+        const response = await fetch(`/api/pos/orders/${orderId}`, {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json', ...this.deviceIdentity.headers() },
+        });
+        if (!response.ok) throw new Error('Order could not be loaded.');
+        const payload = (await response.json()) as { data: CreatedOrder };
 
         return payload.data;
     }
@@ -246,12 +276,21 @@ export class ApiService {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken,
+                ...this.deviceIdentity.headers(),
             },
             body: body ? JSON.stringify(body) : undefined,
         });
 
         if (!response.ok) {
-            throw new Error('Kitchen print request failed.');
+            const payload = await response.json().catch(() => null) as {
+                message?: string;
+                errors?: Record<string, string[]>;
+            } | null;
+            const validationMessage = payload?.errors
+                ? Object.values(payload.errors).flat()[0]
+                : undefined;
+
+            throw new Error(validationMessage ?? payload?.message ?? 'The request could not be completed.');
         }
 
         return response;

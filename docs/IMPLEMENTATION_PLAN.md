@@ -750,7 +750,7 @@ Tests:
 
 # Phase 14 — Shifts
 
-Status: DONE
+Status: IN_PROGRESS
 
 Depends on:
 
@@ -759,11 +759,12 @@ Depends on:
 
 Goal:
 
-Provide minimal cashier shift control.
+Provide complete MVP cashier shift control and reconciliation.
 
 Database:
 
 - shifts
+- payments.shift_id
 
 Enum:
 
@@ -785,6 +786,11 @@ Tasks:
 - [x] Associate cash payments with current operational context.
 - [x] Add shift open/close POS UI.
 - [x] Add permissions.
+- [x] Associate every payment made during a shift with that shift.
+- [x] Calculate payment-method totals, expected cash, and closing difference.
+- [x] Block closing while the current device has open orders.
+- [x] Add detailed shift summary and reconciliation to POS.
+- [x] Add tenant-safe, read-only admin shift history with status/store/date filters.
 
 Acceptance criteria:
 
@@ -792,6 +798,10 @@ Acceptance criteria:
 - Cashier can close shift.
 - POS shows current shift.
 - Invalid shift state blocks required operations.
+- Closing cash difference is calculated from opening cash and cash payments.
+- A device with open orders cannot close its shift.
+- Owner/Manager can review accessible-store shifts; Cashier can review only own shifts.
+- Shift history cannot be edited or deleted.
 
 Tests:
 
@@ -800,6 +810,10 @@ Tests:
 - Close.
 - Wrong store/device.
 - Permission denial.
+- Payment association and totals.
+- Expected cash and difference.
+- Open-order close blocking.
+- Admin tenant/store/user isolation.
 
 ---
 
@@ -1195,51 +1209,12 @@ Tests:
 
 ---
 
-# Phase 20 — Audit Log
+# Phase 20 — Removed from MVP
 
 Status: DONE
 
-Depends on:
-
-- core transaction phases
-
-Goal:
-
-Record critical administrative and financial changes.
-
-Database:
-
-- audit_logs
-
-Track:
-
-- order.cancel
-- payment.refund when added
-- product.price_changed
-- user.role_changed
-- role.permissions_changed
-- printer.changed
-- print_route.changed
-- store.changed
-- subscription.changed
-
-Tasks:
-
-- [x] Create audit storage.
-- [x] Add service/action integration.
-- [x] Avoid noisy read logging.
-- [x] Avoid sensitive unnecessary data.
-
-Acceptance criteria:
-
-- Owner/platform admin can determine who changed critical configuration.
-- Audit data is tenant-safe.
-
-Tests:
-
-- Critical change creates audit.
-- Correct actor/tenant.
-- No cross-tenant reads.
+Audit logging was explicitly removed from the MVP. No audit models, tables,
+resources, observers, navigation, or application integrations remain.
 
 ---
 

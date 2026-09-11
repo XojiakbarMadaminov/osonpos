@@ -50,6 +50,37 @@ it('provisions a usable organization in one transaction', function () {
         ))->toBeTrue();
 });
 
+it('creates a new owner as part of the onboarding transaction', function () {
+    $plan = Plan::factory()->create(['max_stores' => 1, 'max_users' => 1]);
+
+    $organization = app(CreateOrganization::class)->execute(new CreateOrganizationData(
+        name: 'Coffee Point',
+        slug: 'coffee-point',
+        phone: null,
+        storeName: 'Main store',
+        storeAddress: null,
+        storePhone: null,
+        timezone: 'Asia/Tashkent',
+        planId: $plan->id,
+        ownerId: null,
+        startsAt: CarbonImmutable::now()->subMinute(),
+        endsAt: CarbonImmutable::now()->addMonth(),
+        ownerName: 'Coffee Owner',
+        ownerEmail: 'owner@example.test',
+        ownerPassword: 'password123',
+    ));
+
+    $owner = User::query()->where('email', 'owner@example.test')->firstOrFail();
+
+    expect($organization->users()->whereKey($owner->id)->exists())->toBeTrue()
+        ->and($organization->stores()->firstOrFail()->users()->whereKey($owner->id)->exists())->toBeTrue()
+        ->and(app(OrganizationAuthorization::class)->runForUserInTenant(
+            $owner,
+            $organization,
+            fn (User $user): bool => $user->hasRole(OrganizationRole::Owner->value),
+        ))->toBeTrue();
+});
+
 it('rolls back every onboarding write when provisioning fails', function () {
     $plan = Plan::factory()->create();
     $owner = User::factory()->create();

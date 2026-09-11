@@ -9,6 +9,8 @@ class OrderResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $paidAmount = (int) ($this->payments_sum_amount ?? 0);
+
         return [
             'id' => $this->getKey(),
             'display_number' => $this->display_number,
@@ -16,10 +18,17 @@ class OrderResource extends JsonResource
             'status' => $this->status->value,
             'payment_status' => $this->payment_status->value,
             'table_id' => $this->table_id,
+            'table' => $this->when(
+                $this->relationLoaded('table'),
+                fn (): ?array => $this->table?->only(['id', 'name', 'number']),
+                null,
+            ),
             'customer_id' => $this->customer_id,
             'subtotal' => $this->subtotal,
             'delivery_fee' => $this->delivery_fee,
             'total' => $this->total,
+            'paid_amount' => $paidAmount,
+            'balance_due' => max(0, $this->total - $paidAmount),
             'note' => $this->note,
             'delivery' => $this->whenLoaded('deliveryDetail', fn (): array => [
                 'address' => $this->deliveryDetail->address,

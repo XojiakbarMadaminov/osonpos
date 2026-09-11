@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\Roles\Pages;
 
-use App\Domain\Audit\AuditLogger;
-use App\Enums\AuditEvent;
 use App\Filament\Admin\Resources\Roles\RoleResource;
 use App\Support\TenantContext;
 use BezhanSalleh\FilamentShield\Support\Utils;
@@ -45,14 +43,5 @@ class CreateRole extends CreateRecord
         });
 
         $this->record->syncPermissions($permissionModels);
-
-        app(AuditLogger::class)->record(
-            AuditEvent::RolePermissionsChanged,
-            $this->record,
-            ['permissions' => []],
-            ['permissions' => $this->record->permissions()->pluck('name')->sort()->values()->all()],
-            request()->user(),
-            (int) app(TenantContext::class)->requireCurrent()->getKey(),
-        );
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Pos;
 use App\Actions\Shifts\CloseShift;
 use App\Actions\Shifts\OpenShift;
 use App\Domain\Shift\CurrentShift;
+use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Pos\CloseShiftRequest;
 use App\Http\Requests\Api\Pos\OpenShiftRequest;
@@ -40,13 +41,33 @@ class ShiftController extends Controller
 
     private function serialize(?Shift $shift): ?array
     {
-        return $shift ? [
+        if (! $shift) {
+            return null;
+        }
+
+        $paymentTotals = $shift->payments()
+            ->selectRaw('method, SUM(amount) AS total')
+            ->groupBy('method')
+            ->pluck('total', 'method')
+            ->map(fn (mixed $total): int => (int) $total);
+        $cashPayments = $paymentTotals->get(PaymentMethod::Cash->value, 0);
+        $expectedCash = $shift->opening_cash + $cashPayments;
+
+        return [
             'id' => $shift->getKey(),
             'status' => $shift->status->value,
             'opening_cash' => $shift->opening_cash,
             'closing_cash' => $shift->closing_cash,
             'opened_at' => $shift->opened_at,
             'closed_at' => $shift->closed_at,
-        ] : null;
+            'payment_totals' => collect(PaymentMethod::cases())
+                ->mapWithKeys(fn (PaymentMethod $method): array => [
+                    $method->value => $paymentTotals->get($method->value, 0),
+                ])->all(),
+            'payments_total' => $paymentTotals->sum(),
+            'cash_payments_total' => $cashPayments,
+            'expected_cash' => $expectedCash,
+            'cash_difference' => $shift->closing_cash === null ? null : $shift->closing_cash - $expectedCash,
+        ];
     }
 }

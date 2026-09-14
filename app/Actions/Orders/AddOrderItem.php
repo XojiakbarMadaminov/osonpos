@@ -30,7 +30,7 @@ class AddOrderItem
 
             if ($existing) {
                 if (! $existing->order()->whereKey($order->getKey())->exists()) {
-                    throw ValidationException::withMessages(['id' => 'The item identifier belongs to another order.']);
+                    throw ValidationException::withMessages(['id' => 'Mahsulot identifikatori boshqa buyurtmaga tegishli.']);
                 }
 
                 return $existing;
@@ -41,7 +41,7 @@ class AddOrderItem
                 ->where('organization_id', $order->organization_id)
                 ->where('is_active', true)
                 ->first() ?? throw ValidationException::withMessages([
-                    'product_id' => 'Select an active product from the current organization.',
+                    'product_id' => 'Joriy tashkilotdan faol mahsulotni tanlang.',
                 ]);
 
             $item = new OrderItem(['note' => $data->note]);
@@ -75,7 +75,7 @@ class AddOrderItem
             && $order->status === OrderStatus::Open;
 
         if (! $valid) {
-            throw ValidationException::withMessages(['order' => 'Only a current-store open order can be changed.']);
+            throw ValidationException::withMessages(['order' => 'Faqat joriy filialdagi ochiq buyurtmani o‘zgartirish mumkin.']);
         }
     }
 }

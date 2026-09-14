@@ -21,6 +21,10 @@ class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
+    protected static ?string $modelLabel = 'buyurtma';
+
+    protected static ?string $pluralModelLabel = 'buyurtmalar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;
 
     public static function table(Table $table): Table

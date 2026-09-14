@@ -51,7 +51,7 @@ class Order extends Model
 
             if (! $storeIsValid || ! $tableIsValid || ! $customerIsValid || ! $deviceIsValid) {
                 throw ValidationException::withMessages([
-                    'order' => 'Order resources must belong to the same organization and store.',
+                    'order' => 'Buyurtma ma’lumotlari bir xil tashkilot va filialga tegishli bo‘lishi kerak.',
                 ]);
             }
         });

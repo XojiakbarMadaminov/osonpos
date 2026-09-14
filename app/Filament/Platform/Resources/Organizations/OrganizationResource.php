@@ -22,6 +22,10 @@ class OrganizationResource extends Resource
 {
     protected static ?string $model = Organization::class;
 
+    protected static ?string $modelLabel = 'tashkilot';
+
+    protected static ?string $pluralModelLabel = 'tashkilotlar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
     public static function form(Schema $schema): Schema
@@ -42,11 +46,11 @@ class OrganizationResource extends Resource
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('slug')->searchable(),
                 TextColumn::make('status')->badge(),
-                TextColumn::make('latestSubscription.plan.name')->label('Plan'),
-                TextColumn::make('latestSubscription.status')->label('Subscription')->badge(),
-                TextColumn::make('latestSubscription.ends_at')->label('Expires')->dateTime()->sortable(),
-                TextColumn::make('stores_count')->label('Stores')->numeric(),
-                TextColumn::make('users_count')->label('Users')->numeric(),
+                TextColumn::make('latestSubscription.plan.name')->label('Tarif'),
+                TextColumn::make('latestSubscription.status')->label('Obuna')->badge(),
+                TextColumn::make('latestSubscription.ends_at')->label('Tugash vaqti')->dateTime()->sortable(),
+                TextColumn::make('stores_count')->label('Filiallar')->numeric(),
+                TextColumn::make('users_count')->label('Foydalanuvchilar')->numeric(),
             ])
             ->recordActions([EditAction::make()]);
     }

@@ -25,7 +25,7 @@ class CancelOrder
             if ((int) $order->organization_id !== (int) $this->tenantContext->requireCurrent()->getKey()
                 || (int) $order->store_id !== (int) $this->storeContext->requireCurrent()->getKey()
                 || $order->status !== OrderStatus::Open) {
-                throw ValidationException::withMessages(['order' => 'Only a current-store open order can be cancelled.']);
+                throw ValidationException::withMessages(['order' => 'Faqat joriy filialdagi ochiq buyurtmani bekor qilish mumkin.']);
             }
 
             $order->closer()->associate($user);

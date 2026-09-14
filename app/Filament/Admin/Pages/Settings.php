@@ -19,6 +19,10 @@ class Settings extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
+    protected static ?string $navigationLabel = 'Sozlamalar';
+
+    protected static ?string $title = 'Sozlamalar';
+
     public ?int $organizationId = null;
 
     public ?int $storeId = null;
@@ -77,7 +81,7 @@ class Settings extends Page
             'current_store_id' => $store->getKey(),
         ]);
 
-        Notification::make()->success()->title('Organization and store updated')->send();
+        Notification::make()->success()->title('Tashkilot va filial yangilandi')->send();
         $this->redirect(static::getUrl());
     }
 }

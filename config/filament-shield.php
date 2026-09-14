@@ -253,7 +253,7 @@ return [
     |
     */
 
-    'custom_permissions' => OrganizationPermission::values(),
+    'custom_permissions' => OrganizationPermission::labels(),
 
     /*
     |--------------------------------------------------------------------------

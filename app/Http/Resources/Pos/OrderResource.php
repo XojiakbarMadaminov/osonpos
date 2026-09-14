@@ -29,6 +29,7 @@ class OrderResource extends JsonResource
             'total' => $this->total,
             'paid_amount' => $paidAmount,
             'balance_due' => max(0, $this->total - $paidAmount),
+            'unprinted_items_count' => (int) ($this->unprinted_items_count ?? 0),
             'note' => $this->note,
             'delivery' => $this->whenLoaded('deliveryDetail', fn (): array => [
                 'address' => $this->deliveryDetail->address,

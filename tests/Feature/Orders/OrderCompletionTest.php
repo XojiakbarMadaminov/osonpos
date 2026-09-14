@@ -118,10 +118,15 @@ it('resolves customer receipts through the configurable receipt route', function
     payCompletionOrder($order, $organization, $store, $manager);
     $firstPrinter = receiptPrinter($organization, $store, $device, 'Shared POS Printer');
 
-    $this->actingAs($manager)->withSession($session)
+    $response = $this->actingAs($manager)->withSession($session)
         ->postJson("/api/pos/orders/{$order->id}/receipt")
         ->assertOk()
         ->assertJsonPath('data.printer.id', $firstPrinter->id);
+
+    expect($response->json('data.lines'))->toContain(str_repeat('=', 48))
+        ->and(collect($response->json('data.lines'))->contains(
+            fn (string $line): bool => str_contains($line, 'JAMI UZS') && str_ends_with($line, '65 000'),
+        ))->toBeTrue();
 
     $secondPrinter = Printer::factory()->for($organization)->for($store)->for($device)->create([
         'name' => 'Receipt Only',

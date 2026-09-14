@@ -21,6 +21,10 @@ class PrinterResource extends Resource
 {
     protected static ?string $model = Printer::class;
 
+    protected static ?string $modelLabel = 'printer';
+
+    protected static ?string $pluralModelLabel = 'printerlar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPrinter;
 
     public static function form(Schema $schema): Schema

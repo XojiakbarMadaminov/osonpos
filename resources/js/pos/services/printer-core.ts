@@ -37,13 +37,13 @@ export class BridgePrinterService implements PrinterService {
 
     async print(systemName: string, document: PrintDocument): Promise<void> {
         await this.connect();
-        const lines = document.isReprint ? ['*** REPRINT ***', ...document.lines] : document.lines;
+        const lines = document.isReprint ? ['*** QAYTA CHOP ***', ...document.lines] : document.lines;
         await this.bridge.print(systemName, lines);
     }
 
     async printTest(systemName: string): Promise<void> {
         await this.print(systemName, {
-            lines: ['OSONPOS TEST PRINT', new Date().toISOString(), 'Printer connection is ready.'],
+            lines: ['OSONPOS SINOV CHEKI', new Date().toISOString(), 'Printer ulanishi tayyor.'],
         });
     }
 }

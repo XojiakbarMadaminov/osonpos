@@ -17,6 +17,10 @@ class DeviceResource extends Resource
 {
     protected static ?string $model = Device::class;
 
+    protected static ?string $modelLabel = 'qurilma';
+
+    protected static ?string $pluralModelLabel = 'qurilmalar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedComputerDesktop;
 
     public static function table(Table $table): Table

@@ -64,11 +64,17 @@ it('prepares the initial kitchen ticket and marks only confirmed items', functio
     [$organization, $store, $user, , $order, $session] = kitchenContext();
     $lavash = kitchenItem($organization, $store, $order, $user, 'Lavash');
 
+    $this->actingAs($user)->withSession($session)
+        ->getJson('/api/pos/orders')
+        ->assertOk()
+        ->assertJsonPath('data.0.unprinted_items_count', 1);
+
     $ticket = $this->actingAs($user)->withSession($session)
         ->postJson("/api/pos/orders/{$order->id}/send-kitchen")
         ->assertOk()
-        ->assertJsonPath('data.is_reprint', false)
-        ->assertJsonPath('data.lines.1', '1x Lavash');
+        ->assertJsonPath('data.is_reprint', false);
+
+    expect($ticket->json('data.lines'))->toContain('1 x LAVASH');
 
     expect($lavash->refresh()->kitchen_printed_at)->toBeNull();
 
@@ -80,6 +86,11 @@ it('prepares the initial kitchen ticket and marks only confirmed items', functio
         ->assertJsonPath('data.marked_printed', 1);
 
     expect($lavash->refresh()->kitchen_printed_at)->not->toBeNull();
+
+    $this->actingAs($user)->withSession($session)
+        ->getJson('/api/pos/orders')
+        ->assertOk()
+        ->assertJsonPath('data.0.unprinted_items_count', 0);
 });
 
 it('includes only newly added items on the next kitchen ticket', function () {
@@ -94,8 +105,8 @@ it('includes only newly added items on the next kitchen ticket', function () {
         ->assertOk();
 
     expect($response->json('data.item_ids'))->toBe([$cola->id])
-        ->and($response->json('data.lines'))->toContain('1x Cola')
-        ->and($response->json('data.lines'))->not->toContain('1x Lavash');
+        ->and($response->json('data.lines'))->toContain('1 x COLA')
+        ->and($response->json('data.lines'))->not->toContain('1 x LAVASH');
 });
 
 it('preserves unprinted state when the client does not confirm a failed print', function () {

@@ -22,7 +22,11 @@ class PlanForm
                     ->required()
                     ->numeric()
                     ->prefix('UZS'),
-                TextInput::make('billing_period')
+                Select::make('billing_period')
+                    ->options([
+                        'MONTHLY' => 'Oylik',
+                        'YEARLY' => 'Yillik',
+                    ])
                     ->required(),
                 TextInput::make('max_stores')
                     ->required()

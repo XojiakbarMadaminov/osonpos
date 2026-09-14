@@ -27,6 +27,9 @@ class OrderController extends Controller
             ->forStore($storeContext->requireCurrent())
             ->with('table:id,name,number')
             ->withSum('payments', 'amount')
+            ->withCount([
+                'items as unprinted_items_count' => fn ($query) => $query->whereNull('kitchen_printed_at'),
+            ])
             ->latest('opened_at')
             ->paginate(50);
 
@@ -37,7 +40,13 @@ class OrderController extends Controller
     {
         Gate::authorize('view', $order);
 
-        return new OrderResource($order->load(['items', 'deliveryDetail', 'table'])->loadSum('payments', 'amount'));
+        return new OrderResource(
+            $order->load(['items', 'deliveryDetail', 'table'])
+                ->loadSum('payments', 'amount')
+                ->loadCount([
+                    'items as unprinted_items_count' => fn ($query) => $query->whereNull('kitchen_printed_at'),
+                ]),
+        );
     }
 
     public function store(CreateOrderRequest $request, CreateOrder $createOrder): JsonResponse

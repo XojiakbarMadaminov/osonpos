@@ -20,7 +20,7 @@ class EnsureActiveSubscription
         abort_unless(
             $this->subscriptions->isActive($this->tenantContext->requireCurrent()),
             403,
-            'An active subscription is required for new POS transactions.',
+            'Yangi POS amallari uchun faol obuna talab qilinadi.',
         );
 
         return $next($request);

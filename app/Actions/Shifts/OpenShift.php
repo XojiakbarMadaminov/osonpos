@@ -33,7 +33,7 @@ class OpenShift
                     ->where('status', ShiftStatus::Open)
                     ->exists()
                 || Shift::query()->where('device_id', $device->getKey())->where('status', ShiftStatus::Open)->exists()) {
-                throw ValidationException::withMessages(['shift' => 'This user or device already has an open shift.']);
+                throw ValidationException::withMessages(['shift' => 'Bu foydalanuvchi yoki qurilmada allaqachon ochiq smena bor.']);
             }
 
             $shift = new Shift(['opening_cash' => $openingCash]);

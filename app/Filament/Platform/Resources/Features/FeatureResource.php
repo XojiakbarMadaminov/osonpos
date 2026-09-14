@@ -18,6 +18,10 @@ class FeatureResource extends Resource
 {
     protected static ?string $model = Feature::class;
 
+    protected static ?string $modelLabel = 'imkoniyat';
+
+    protected static ?string $pluralModelLabel = 'imkoniyatlar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     public static function form(Schema $schema): Schema

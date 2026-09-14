@@ -29,7 +29,7 @@ class CompleteOrder
 
             if (! $isCurrentOpenPaid) {
                 throw ValidationException::withMessages([
-                    'order' => 'Only a fully paid open order from the current store can be completed.',
+                    'order' => 'Faqat joriy filialdagi to‘liq to‘langan ochiq buyurtmani yakunlash mumkin.',
                 ]);
             }
 

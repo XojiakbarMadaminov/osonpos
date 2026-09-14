@@ -12,16 +12,20 @@ class SystemSettings extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedWrenchScrewdriver;
 
+    protected static ?string $navigationLabel = 'Tizim ma’lumotlari';
+
+    protected static ?string $title = 'Tizim ma’lumotlari';
+
     public function supportDetails(): array
     {
         return [
-            'Application URL' => config('app.url'),
-            'Environment' => app()->environment(),
+            'Ilova manzili' => config('app.url'),
+            'Muhit' => app()->environment(),
             'PHP' => PHP_VERSION,
             'Laravel' => app()->version(),
-            'Cache' => config('cache.default'),
-            'Queue' => config('queue.default'),
-            'Database' => config('database.default'),
+            'Kesh' => config('cache.default'),
+            'Navbat' => config('queue.default'),
+            'Ma’lumotlar bazasi' => config('database.default'),
         ];
     }
 }

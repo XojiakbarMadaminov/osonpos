@@ -36,7 +36,7 @@ class Shift extends Model
 
             if (! $deviceIsValid) {
                 throw ValidationException::withMessages([
-                    'shift' => 'The shift device must belong to its organization and store.',
+                    'shift' => 'Smena qurilmasi uning tashkiloti va filialiga tegishli bo‘lishi kerak.',
                 ]);
             }
         });

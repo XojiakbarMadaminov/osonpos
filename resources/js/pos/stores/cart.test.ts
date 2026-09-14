@@ -18,12 +18,27 @@ describe('cart store', () => {
         expect(cart.subtotal).toBe(56000);
     });
 
-    it('supports local item notes and removal without an API dependency', () => {
+    it('supports local item notes and explicit removal without an API dependency', () => {
         const cart = useCartStore();
         cart.add(product);
         cart.setNote(0, 'No onions');
-        cart.decrement(0);
+        cart.remove(0);
 
         expect(cart.items).toEqual([]);
+    });
+
+    it('increments and decrements quantity without deleting at one', () => {
+        const cart = useCartStore();
+        cart.add(product);
+
+        cart.decrement(0);
+        expect(cart.items[0]?.quantity).toBe(1);
+
+        cart.increment(0);
+        expect(cart.items[0]?.quantity).toBe(2);
+
+        cart.decrement(0);
+        expect(cart.items[0]?.quantity).toBe(1);
+        expect(cart.items).toHaveLength(1);
     });
 });

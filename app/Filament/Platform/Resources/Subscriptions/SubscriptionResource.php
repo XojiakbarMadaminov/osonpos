@@ -19,6 +19,10 @@ class SubscriptionResource extends Resource
 {
     protected static ?string $model = Subscription::class;
 
+    protected static ?string $modelLabel = 'obuna';
+
+    protected static ?string $pluralModelLabel = 'obunalar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     public static function form(Schema $schema): Schema

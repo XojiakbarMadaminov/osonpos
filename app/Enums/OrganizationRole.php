@@ -9,6 +9,16 @@ enum OrganizationRole: string
     case Cashier = 'Cashier';
     case Waiter = 'Waiter';
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::Owner => 'Ega',
+            self::Manager => 'Boshqaruvchi',
+            self::Cashier => 'Kassir',
+            self::Waiter => 'Ofitsiant',
+        };
+    }
+
     public function permissions(): array
     {
         return match ($this) {

@@ -33,4 +33,41 @@ enum OrganizationPermission: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::PosAccess => 'POS tizimidan foydalanish',
+            self::ProductsView => 'Mahsulotlarni ko‘rish',
+            self::ProductsManage => 'Mahsulotlarni boshqarish',
+            self::OrdersView => 'Buyurtmalarni ko‘rish',
+            self::OrdersCreate => 'Buyurtma yaratish',
+            self::OrdersUpdate => 'Buyurtmani o‘zgartirish',
+            self::OrdersCancel => 'Buyurtmani bekor qilish',
+            self::OrdersReprint => 'Cheklarni qayta chiqarish',
+            self::PaymentsView => 'To‘lovlarni ko‘rish',
+            self::PaymentsCreate => 'To‘lov yaratish',
+            self::PaymentsRefund => 'To‘lovni qaytarish',
+            self::TablesView => 'Stollarni ko‘rish',
+            self::TablesManage => 'Stollarni boshqarish',
+            self::ReportsView => 'Hisobotlarni ko‘rish',
+            self::PrintersView => 'Printerlarni ko‘rish',
+            self::PrintersManage => 'Printerlarni boshqarish',
+            self::UsersView => 'Foydalanuvchilarni ko‘rish',
+            self::UsersManage => 'Foydalanuvchilarni boshqarish',
+            self::RolesView => 'Rollarni ko‘rish',
+            self::RolesManage => 'Rollarni boshqarish',
+            self::StoresView => 'Filiallarni ko‘rish',
+            self::StoresManage => 'Filiallarni boshqarish',
+            self::ShiftsView => 'Smenalarni ko‘rish',
+            self::ShiftsManage => 'Smenalarni boshqarish',
+        };
+    }
+
+    public static function labels(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $permission): array => [$permission->value => $permission->label()])
+            ->all();
+    }
 }

@@ -27,7 +27,7 @@ class Table extends Model
 
             if (! $storeBelongsToTenant) {
                 throw ValidationException::withMessages([
-                    'store_id' => 'The store must belong to the table organization.',
+                    'store_id' => 'Filial stol tashkilotiga tegishli bo‘lishi kerak.',
                 ]);
             }
         });

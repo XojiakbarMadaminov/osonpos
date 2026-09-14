@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Admin\Resources\Roles;
 
+use App\Enums\OrganizationRole;
 use App\Filament\Admin\Resources\Roles\Pages\CreateRole;
 use App\Filament\Admin\Resources\Roles\Pages\EditRole;
 use App\Filament\Admin\Resources\Roles\Pages\ListRoles;
@@ -90,7 +91,7 @@ class RoleResource extends Resource
                 TextColumn::make('name')
                     ->weight(FontWeight::Medium)
                     ->label(__('filament-shield::filament-shield.column.name'))
-                    ->formatStateUsing(fn (string $state): string => Str::headline($state))
+                    ->formatStateUsing(fn (string $state): string => OrganizationRole::tryFrom($state)?->label() ?? Str::headline($state))
                     ->searchable(),
                 TextColumn::make('guard_name')
                     ->badge()

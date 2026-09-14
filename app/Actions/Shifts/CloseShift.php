@@ -32,7 +32,7 @@ class CloseShift
                 && $shift->status === ShiftStatus::Open;
 
             if (! $isCurrent) {
-                throw ValidationException::withMessages(['shift' => 'Only the current device shift can be closed.']);
+                throw ValidationException::withMessages(['shift' => 'Faqat joriy qurilmaning smenasini yopish mumkin.']);
             }
 
             $hasOpenOrders = Order::query()
@@ -44,7 +44,7 @@ class CloseShift
 
             if ($hasOpenOrders) {
                 throw ValidationException::withMessages([
-                    'shift' => 'Close or cancel this device\'s open orders before closing the shift.',
+                    'shift' => 'Smenani yopishdan oldin bu qurilmadagi ochiq buyurtmalarni yoping yoki bekor qiling.',
                 ]);
             }
 

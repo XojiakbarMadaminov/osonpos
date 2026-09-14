@@ -31,7 +31,7 @@ class Device extends Model
 
             if (! $storeBelongsToTenant) {
                 throw ValidationException::withMessages([
-                    'store_id' => 'The store must belong to the device organization.',
+                    'store_id' => 'Filial qurilma tashkilotiga tegishli bo‘lishi kerak.',
                 ]);
             }
         });

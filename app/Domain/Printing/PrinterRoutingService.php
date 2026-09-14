@@ -27,7 +27,7 @@ class PrinterRoutingService
 
         if (! $printer || ! $deviceCanUsePrinter) {
             throw ValidationException::withMessages([
-                'print_type' => "No active {$printType->value} printer is available for this device.",
+                'print_type' => "Bu qurilma uchun faol {$printType->getLabel()} printeri mavjud emas.",
             ]);
         }
 

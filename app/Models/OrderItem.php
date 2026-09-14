@@ -37,7 +37,7 @@ class OrderItem extends Model
 
             if (! $orderIsValid || ! $productIsValid) {
                 throw ValidationException::withMessages([
-                    'item' => 'Order item resources must belong to the same organization and store.',
+                    'item' => 'Buyurtma mahsuloti bir xil tashkilot va filialga tegishli bo‘lishi kerak.',
                 ]);
             }
         });

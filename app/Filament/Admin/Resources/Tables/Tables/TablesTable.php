@@ -27,7 +27,7 @@ class TablesTable
                 IconColumn::make('is_active')
                     ->boolean(),
                 TextColumn::make('occupancy')
-                    ->state(fn (TableModel $record): string => app(TableOccupancy::class)->isOccupied($record) ? 'OCCUPIED' : 'FREE')
+                    ->state(fn (TableModel $record): string => app(TableOccupancy::class)->isOccupied($record) ? 'Band' : 'Bo‘sh')
                     ->badge(),
                 TextColumn::make('created_at')
                     ->dateTime()

@@ -25,7 +25,7 @@ class StoreContext
             : $query->whereKey($preferredStoreId)->first();
 
         if (! $store) {
-            throw new AuthorizationException('No accessible store could be resolved.');
+            throw new AuthorizationException('Ruxsat berilgan filial aniqlanmadi.');
         }
 
         return $this->store = $store;
@@ -39,7 +39,7 @@ class StoreContext
     public function requireCurrent(): Store
     {
         return $this->store
-            ?? throw new LogicException('Store context has not been initialized.');
+            ?? throw new LogicException('Filial muhiti ishga tushirilmagan.');
     }
 
     public function id(): ?int

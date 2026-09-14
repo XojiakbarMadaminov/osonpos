@@ -29,7 +29,7 @@ class PrepareCustomerReceipt
             && $order->payment_status === PaymentStatus::Paid;
 
         if (! $isValid) {
-            throw ValidationException::withMessages(['order' => 'A paid current-store order is required for a receipt.']);
+            throw ValidationException::withMessages(['order' => 'Chek uchun joriy filialdagi to‘langan buyurtma kerak.']);
         }
 
         $printer = $this->routing->resolve(
@@ -39,11 +39,19 @@ class PrepareCustomerReceipt
         );
 
         if (! $printer->system_name) {
-            throw ValidationException::withMessages(['printer' => 'The receipt printer is not bound on this device.']);
+            throw ValidationException::withMessages(['printer' => 'Bu qurilmaga mijoz cheki printeri biriktirilmagan.']);
         }
 
         return new CustomerReceiptData(
-            order: $order->loadMissing('items'),
+            order: $order->loadMissing([
+                'store',
+                'table',
+                'customer',
+                'creator',
+                'items',
+                'payments',
+                'deliveryDetail',
+            ]),
             printer: $printer,
             isReprint: $reprint,
         );

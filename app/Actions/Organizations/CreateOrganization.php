@@ -22,12 +22,12 @@ class CreateOrganization
         $plan = Plan::query()->whereKey($data->planId)->where('is_active', true)->firstOrFail();
         if ($plan->max_stores < 1 || $plan->max_users < 1) {
             throw ValidationException::withMessages([
-                'plan_id' => 'The selected plan must allow at least one store and one user.',
+                'plan_id' => 'Tanlangan tarif kamida bitta filial va bitta foydalanuvchiga ruxsat berishi kerak.',
             ]);
         }
 
         if ($data->endsAt->lessThanOrEqualTo($data->startsAt)) {
-            throw ValidationException::withMessages(['ends_at' => 'The subscription end must follow its start.']);
+            throw ValidationException::withMessages(['ends_at' => 'Obunaning tugash vaqti boshlanish vaqtidan keyin bo‘lishi kerak.']);
         }
 
         return DB::transaction(function () use ($data, $plan): Organization {

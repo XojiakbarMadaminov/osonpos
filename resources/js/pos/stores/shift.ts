@@ -17,7 +17,7 @@ export const useShiftStore = defineStore('shift', {
                 this.current = await apiService.currentShift();
                 this.loaded = true;
             } catch (exception) {
-                this.error = exception instanceof Error ? exception.message : 'Shift status unavailable.';
+                this.error = exception instanceof Error ? exception.message : 'Smena holatini aniqlab bo‘lmadi.';
             }
         },
         async open(openingCash: number): Promise<void> {
@@ -27,7 +27,7 @@ export const useShiftStore = defineStore('shift', {
                 this.current = await apiService.openShift(openingCash);
                 this.loaded = true;
             } catch (exception) {
-                this.error = exception instanceof Error ? exception.message : 'Shift could not be opened.';
+                this.error = exception instanceof Error ? exception.message : 'Smenani ochib bo‘lmadi.';
             } finally {
                 this.busy = false;
             }
@@ -42,7 +42,7 @@ export const useShiftStore = defineStore('shift', {
                 this.current = null;
                 this.loaded = true;
             } catch (exception) {
-                this.error = exception instanceof Error ? exception.message : 'Shift could not be closed.';
+                this.error = exception instanceof Error ? exception.message : 'Smenani yopib bo‘lmadi.';
             } finally {
                 this.busy = false;
             }

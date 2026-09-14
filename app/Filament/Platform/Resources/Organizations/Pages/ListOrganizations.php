@@ -15,7 +15,7 @@ class ListOrganizations extends ListRecords
     {
         return [
             Action::make('onboard')
-                ->label('Onboard organization')
+                ->label('Tashkilot qo‘shish')
                 ->url(OnboardOrganization::getUrl()),
         ];
     }

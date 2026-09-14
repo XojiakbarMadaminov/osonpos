@@ -1,5 +1,5 @@
 <x-filament-panels::page>
-    <x-filament::section heading="Support details" description="Non-sensitive runtime information for basic support diagnostics.">
+    <x-filament::section heading="Texnik ma’lumotlar" description="Texnik yordam uchun maxfiy bo‘lmagan tizim ma’lumotlari.">
         <dl class="grid gap-4 sm:grid-cols-2">
             @foreach ($this->supportDetails() as $label => $value)
                 <div>

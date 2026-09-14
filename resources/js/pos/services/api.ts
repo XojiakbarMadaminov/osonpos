@@ -66,6 +66,7 @@ export interface CreatedOrder {
     total: number;
     paid_amount: number;
     balance_due: number;
+    unprinted_items_count: number;
 }
 
 export class ApiService {
@@ -78,8 +79,8 @@ export class ApiService {
         });
         if (!response.ok) {
             throw new Error(response.status === 401
-                ? 'Your login session expired. Sign in again through the admin panel.'
-                : 'This browser is not ready for POS yet. Complete device setup once.');
+                ? 'Login sessiyasi tugagan. Admin panel orqali qayta kiring.'
+                : 'Bu brauzer POS uchun sozlanmagan. Qurilmani bir marta ro‘yxatdan o‘tkazing.');
         }
         const payload = (await response.json()) as { data: PosBootstrap };
         this.deviceIdentity.remember(payload.data.device.id);
@@ -101,7 +102,7 @@ export class ApiService {
         });
 
         if (!response.ok) {
-            throw new Error(response.status === 422 ? 'Check the device name and code.' : 'Device registration failed.');
+            throw new Error(response.status === 422 ? 'Qurilma nomi va kodini tekshiring.' : 'Qurilmani ro‘yxatdan o‘tkazib bo‘lmadi.');
         }
 
         const payload = (await response.json()) as { data: RegisteredDevice };
@@ -117,7 +118,7 @@ export class ApiService {
         });
 
         if (!response.ok) {
-            throw new Error('Configured printers could not be loaded.');
+            throw new Error('Sozlangan printerlarni yuklab bo‘lmadi.');
         }
 
         const payload = (await response.json()) as { data: ConfiguredPrinter[] };
@@ -132,7 +133,7 @@ export class ApiService {
         });
 
         if (!response.ok) {
-            throw new Error('Customer lookup failed.');
+            throw new Error('Mijozni topib bo‘lmadi.');
         }
 
         const payload = (await response.json()) as { data: CustomerSummary | null };
@@ -155,7 +156,7 @@ export class ApiService {
         });
 
         if (!response.ok) {
-            throw new Error('Printer binding could not be saved.');
+            throw new Error('Printer biriktirilishini saqlab bo‘lmadi.');
         }
     }
 
@@ -246,7 +247,7 @@ export class ApiService {
             credentials: 'same-origin',
             headers: { Accept: 'application/json', ...this.deviceIdentity.headers() },
         });
-        if (!response.ok) throw new Error('Orders could not be loaded.');
+        if (!response.ok) throw new Error('Buyurtmalarni yuklab bo‘lmadi.');
         const payload = (await response.json()) as { data: CreatedOrder[] };
 
         return payload.data;
@@ -257,7 +258,7 @@ export class ApiService {
             credentials: 'same-origin',
             headers: { Accept: 'application/json', ...this.deviceIdentity.headers() },
         });
-        if (!response.ok) throw new Error('Order could not be loaded.');
+        if (!response.ok) throw new Error('Buyurtmani yuklab bo‘lmadi.');
         const payload = (await response.json()) as { data: CreatedOrder };
 
         return payload.data;
@@ -290,7 +291,7 @@ export class ApiService {
                 ? Object.values(payload.errors).flat()[0]
                 : undefined;
 
-            throw new Error(validationMessage ?? payload?.message ?? 'The request could not be completed.');
+            throw new Error(validationMessage ?? payload?.message ?? 'So‘rovni bajarib bo‘lmadi.');
         }
 
         return response;

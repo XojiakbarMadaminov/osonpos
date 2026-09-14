@@ -32,7 +32,7 @@ class DeliveryDetail extends Model
 
             if (! $storeIsValid) {
                 throw ValidationException::withMessages([
-                    'store_id' => 'The store must belong to the delivery organization.',
+                    'store_id' => 'Filial yetkazib berish tashkilotiga tegishli bo‘lishi kerak.',
                 ]);
             }
         });

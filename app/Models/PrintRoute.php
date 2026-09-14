@@ -30,7 +30,7 @@ class PrintRoute extends Model
 
             if (! $printerIsValid) {
                 throw ValidationException::withMessages([
-                    'printer_id' => 'The printer must belong to the print route store.',
+                    'printer_id' => 'Printer chop etish yo‘nalishidagi filialga tegishli bo‘lishi kerak.',
                 ]);
             }
         });

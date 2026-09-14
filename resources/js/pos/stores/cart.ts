@@ -31,11 +31,16 @@ export const useCartStore = defineStore('cart', {
                 note: '',
             });
         },
+        increment(index: number): void {
+            const item = this.items[index];
+            if (item) item.quantity += 1;
+        },
         decrement(index: number): void {
             const item = this.items[index];
-            if (!item) return;
-            item.quantity -= 1;
-            if (item.quantity === 0) this.items.splice(index, 1);
+            if (item && item.quantity > 1) item.quantity -= 1;
+        },
+        remove(index: number): void {
+            if (this.items[index]) this.items.splice(index, 1);
         },
         setNote(index: number, note: string): void {
             const item = this.items[index];

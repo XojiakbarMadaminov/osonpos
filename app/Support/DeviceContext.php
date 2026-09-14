@@ -20,7 +20,7 @@ class DeviceContext
             ->first();
 
         if (! $device) {
-            throw new AuthorizationException('No active device could be resolved for this store.');
+            throw new AuthorizationException('Bu filial uchun faol qurilma aniqlanmadi.');
         }
 
         $device->forceFill(['last_seen_at' => now()])->saveQuietly();
@@ -36,7 +36,7 @@ class DeviceContext
     public function requireCurrent(): Device
     {
         return $this->device
-            ?? throw new LogicException('Device context has not been initialized.');
+            ?? throw new LogicException('Qurilma muhiti ishga tushirilmagan.');
     }
 
     public function clear(): void

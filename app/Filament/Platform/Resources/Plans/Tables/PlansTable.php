@@ -23,6 +23,11 @@ class PlansTable
                     ->money()
                     ->sortable(),
                 TextColumn::make('billing_period')
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'MONTHLY' => 'Oylik',
+                        'YEARLY' => 'Yillik',
+                        default => $state,
+                    })
                     ->searchable(),
                 TextColumn::make('max_stores')
                     ->numeric()

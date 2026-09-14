@@ -34,7 +34,7 @@ class Printer extends Model
 
             if (! $storeIsValid || ! $deviceIsValid) {
                 throw ValidationException::withMessages([
-                    'store_id' => 'The printer store and device must belong to its organization.',
+                    'store_id' => 'Printer filiali va qurilmasi uning tashkilotiga tegishli bo‘lishi kerak.',
                 ]);
             }
         });

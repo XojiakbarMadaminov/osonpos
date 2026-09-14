@@ -20,7 +20,11 @@ class OnboardOrganization extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Customers';
+    protected static string|UnitEnum|null $navigationGroup = 'Mijozlar';
+
+    protected static ?string $navigationLabel = 'Tashkilot qo‘shish';
+
+    protected static ?string $title = 'Tashkilot qo‘shish';
 
     public string $name = '';
 
@@ -107,7 +111,7 @@ class OnboardOrganization extends Page
             ownerPassword: $validated['ownerMode'] === 'new' ? $validated['ownerPassword'] : null,
         ));
 
-        Notification::make()->success()->title("{$organization->name} is ready")->send();
+        Notification::make()->success()->title("{$organization->name} tayyor")->send();
         $this->redirect(static::getUrl());
     }
 }

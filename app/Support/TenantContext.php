@@ -20,7 +20,7 @@ class TenantContext
             : $query->whereKey($preferredOrganizationId)->first();
 
         if (! $organization) {
-            throw new AuthorizationException('No accessible organization could be resolved.');
+            throw new AuthorizationException('Ruxsat berilgan tashkilot aniqlanmadi.');
         }
 
         return $this->organization = $organization;
@@ -34,7 +34,7 @@ class TenantContext
     public function requireCurrent(): Organization
     {
         return $this->organization
-            ?? throw new LogicException('Tenant context has not been initialized.');
+            ?? throw new LogicException('Tashkilot muhiti ishga tushirilmagan.');
     }
 
     public function id(): ?int

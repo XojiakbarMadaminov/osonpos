@@ -31,7 +31,7 @@ async function openTableOrder(table: PosTable, destination: 'pos' | 'payment'): 
         order.openExisting(existingOrder);
         emit('navigate', destination);
     } catch {
-        error.value = 'The open table order could not be loaded.';
+        error.value = 'Stoldagi ochiq buyurtmani yuklab bo‘lmadi.';
     } finally {
         busyTableId.value = null;
     }
@@ -40,21 +40,21 @@ async function openTableOrder(table: PosTable, destination: 'pos' | 'payment'): 
 
 <template>
     <section>
-        <h2 class="text-xl font-semibold">Tables</h2>
+        <h2 class="text-xl font-semibold">Stollar</h2>
         <p v-if="error" class="mt-4 text-red-300">{{ error }}</p>
         <div class="mt-5 grid grid-cols-2 gap-4 md:grid-cols-4 xl:grid-cols-6">
             <template v-for="table in tables" :key="table.id">
                 <article v-if="table.is_occupied" class="rounded-xl border border-red-700 bg-red-500/10 p-4">
                     <span class="block text-lg font-semibold">{{ table.name }}</span>
-                    <span class="mt-2 block text-sm text-red-200">{{ busyTableId === table.id ? 'Opening…' : 'Occupied · open order' }}</span>
+                    <span class="mt-2 block text-sm text-red-200">{{ busyTableId === table.id ? 'Ochilmoqda…' : 'Band · ochiq buyurtma' }}</span>
                     <div class="mt-4 grid gap-2">
-                        <button v-if="auth.can('orders.update')" class="min-h-10 rounded-lg bg-amber-400 px-3 text-sm font-semibold text-slate-950 disabled:opacity-60" :disabled="busyTableId === table.id" type="button" @click="openTableOrder(table, 'pos')">Add products</button>
-                        <button v-if="auth.can('payments.create')" class="min-h-10 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-slate-950 disabled:opacity-60" :disabled="busyTableId === table.id" type="button" @click="openTableOrder(table, 'payment')">Payment / Close</button>
+                        <button v-if="auth.can('orders.update')" class="min-h-10 rounded-lg bg-amber-400 px-3 text-sm font-semibold text-slate-950 disabled:opacity-60" :disabled="busyTableId === table.id" type="button" @click="openTableOrder(table, 'pos')">Mahsulot qo‘shish</button>
+                        <button v-if="auth.can('payments.create')" class="min-h-10 rounded-lg bg-emerald-500 px-3 text-sm font-semibold text-slate-950 disabled:opacity-60" :disabled="busyTableId === table.id" type="button" @click="openTableOrder(table, 'payment')">To‘lov / yopish</button>
                     </div>
                 </article>
                 <button v-else class="min-h-28 rounded-xl border border-emerald-700 bg-emerald-500/10 p-4 text-left" type="button" @click="selectFreeTable(table)">
                     <span class="block text-lg font-semibold">{{ table.name }}</span>
-                    <span class="mt-2 block text-sm">Free</span>
+                    <span class="mt-2 block text-sm">Bo‘sh</span>
                 </button>
             </template>
         </div>

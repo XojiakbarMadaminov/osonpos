@@ -22,6 +22,10 @@ class Reports extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
 
+    protected static ?string $navigationLabel = 'Hisobotlar';
+
+    protected static ?string $title = 'Hisobotlar';
+
     public string $fromDate = '';
 
     public string $toDate = '';
@@ -67,7 +71,7 @@ class Reports extends Page
         ])->validate();
 
         if (CarbonImmutable::parse($validated['to_date'])->diffInDays(CarbonImmutable::parse($validated['from_date'])) > 366) {
-            throw ValidationException::withMessages(['to_date' => 'The report period may not exceed 366 days.']);
+            throw ValidationException::withMessages(['to_date' => 'Hisobot davri 366 kundan oshmasligi kerak.']);
         }
 
         $storeIds = $validated['store_id'] === 'all'

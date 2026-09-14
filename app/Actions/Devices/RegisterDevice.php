@@ -30,13 +30,13 @@ class RegisterDevice
 
             if ($device && (int) $device->store_id !== (int) $store->getKey()) {
                 throw ValidationException::withMessages([
-                    'code' => 'This device code is already registered to another store.',
+                    'code' => 'Bu qurilma kodi boshqa filialda ro‘yxatdan o‘tgan.',
                 ]);
             }
 
             if ($device && ! $device->is_active) {
                 throw ValidationException::withMessages([
-                    'code' => 'This device has been disabled by an administrator.',
+                    'code' => 'Bu qurilma administrator tomonidan o‘chirilgan.',
                 ]);
             }
 

@@ -26,14 +26,14 @@ class SaveOrganizationUser
         $organization = $this->tenantContext->requireCurrent();
 
         if ($member && ! $member->organizations()->whereKey($organization)->exists()) {
-            throw ValidationException::withMessages(['user' => 'The user does not belong to this organization.']);
+            throw ValidationException::withMessages(['user' => 'Foydalanuvchi bu tashkilotga tegishli emas.']);
         }
 
         $allowedStoreIds = $this->storeAccess->accessibleStoreIds($actor)->map(fn ($id): int => (int) $id);
         $requestedStoreIds = collect($storeIds)->map(fn ($id): int => (int) $id)->unique()->values();
 
         if ($requestedStoreIds->diff($allowedStoreIds)->isNotEmpty()) {
-            throw ValidationException::withMessages(['store_ids' => 'A selected store is not accessible.']);
+            throw ValidationException::withMessages(['store_ids' => 'Tanlangan filialdan foydalanishga ruxsat yo‘q.']);
         }
 
         $role = Role::query()
@@ -48,7 +48,7 @@ class SaveOrganizationUser
         );
 
         if (! $actorIsOwner && ! in_array($role->name, [OrganizationRole::Cashier->value, OrganizationRole::Waiter->value], true)) {
-            throw ValidationException::withMessages(['role_id' => 'Only an owner may assign privileged roles.']);
+            throw ValidationException::withMessages(['role_id' => 'Yuqori vakolatli rollarni faqat tashkilot egasi bera oladi.']);
         }
 
         return DB::transaction(function () use ($organization, $member, $attributes, $requestedStoreIds, $role): User {

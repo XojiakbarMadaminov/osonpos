@@ -96,6 +96,32 @@ POS Vue frontend Laravel API bilan ishlaydi.
 
 Vue componentlar database yoki Laravel implementation details haqida bilmasligi kerak.
 
+## 2.5 Tizim tili va lokalizatsiya
+
+Tizimning foydalanuvchiga ko‘rinadigan asosiy va yagona tili — o‘zbek tili (`uz`).
+
+Quyidagi barcha joylardagi matnlar o‘zbek tilida bo‘lishi shart:
+
+- `/platform` Filament paneli
+- `/admin` Filament paneli
+- `/pos` Vue ilovasi
+- login va boshqa autentifikatsiya sahifalari
+- menyular, sahifa sarlavhalari, tugmalar va yordamchi matnlar
+- form label, placeholder va validatsiya xabarlari
+- notification, confirmation va foydalanuvchiga ko‘rsatiladigan xatolar
+- order turi, order holati, payment holati, payment turi, role va permission nomlari
+- customer receipt va kitchen ticket
+
+Foydalanuvchiga `DINE_IN`, `TAKEAWAY`, `OPEN`, `PAID` kabi raw enum qiymatlari, translation key yoki technical exception matni chiqarilmasligi kerak. Ular o‘zbekcha tushunarli label bilan ko‘rsatiladi.
+
+Ichki enum qiymatlari, permission keylar, API field nomlari va database qiymatlari architecture barqarorligi uchun o‘zgartirilmaydi. Tarjima faqat presentation layer'da Laravel language fayllari, Filament label'lari, enum label methodlari yoki frontend label maplari orqali bajariladi.
+
+Laravel uchun `APP_LOCALE=uz` va `APP_FALLBACK_LOCALE=uz` ishlatiladi.
+
+Yangi user-facing funksiya o‘zbekcha matnlari va tegishli localization testlarisiz complete hisoblanmaydi.
+
+Organization, store, product, customer kabi foydalanuvchi kiritgan business data qanday kiritilgan bo‘lsa, shunday ko‘rsatiladi va avtomatik tarjima qilinmaydi.
+
 ---
 
 # 3. MVP Scope
@@ -1744,7 +1770,7 @@ Natija:
 ```text
 Order remains saved
 Print error displayed
-[REPRINT]
+[QAYTA CHOP]
 ```
 
 Print failure order transactionni rollback qilmasligi kerak.
@@ -1763,7 +1789,7 @@ orders.reprint
 
 orqali boshqarilishi mumkin.
 
-Reprint ticketda `REPRINT` belgisi chiqishi kerak.
+Qayta chiqarilgan ticketda `QAYTA CHOP` belgisi chiqishi kerak.
 
 ---
 

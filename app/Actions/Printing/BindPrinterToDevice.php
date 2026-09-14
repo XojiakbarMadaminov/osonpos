@@ -23,7 +23,7 @@ class BindPrinterToDevice
         if ((int) $printer->organization_id !== (int) $this->tenantContext->requireCurrent()->getKey()
             || (int) $printer->store_id !== (int) $this->storeContext->requireCurrent()->getKey()) {
             throw ValidationException::withMessages([
-                'printer' => 'The printer does not belong to the current store.',
+                'printer' => 'Printer joriy filialga tegishli emas.',
             ]);
         }
 

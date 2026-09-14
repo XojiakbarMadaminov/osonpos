@@ -25,7 +25,7 @@ class MarkKitchenItemsPrinted
             if ((int) $order->organization_id !== (int) $this->tenantContext->requireCurrent()->getKey()
                 || (int) $order->store_id !== (int) $this->storeContext->requireCurrent()->getKey()
                 || $order->status !== OrderStatus::Open) {
-                throw ValidationException::withMessages(['order' => 'This order cannot be confirmed in the current context.']);
+                throw ValidationException::withMessages(['order' => 'Bu buyurtmani joriy muhitda tasdiqlab bo‘lmaydi.']);
             }
 
             $items = OrderItem::query()
@@ -35,7 +35,7 @@ class MarkKitchenItemsPrinted
                 ->get();
 
             if ($items->count() !== count(array_unique($itemIds))) {
-                throw ValidationException::withMessages(['item_ids' => 'Every confirmed item must belong to this order.']);
+                throw ValidationException::withMessages(['item_ids' => 'Tasdiqlanayotgan barcha mahsulotlar shu buyurtmaga tegishli bo‘lishi kerak.']);
             }
 
             return OrderItem::query()

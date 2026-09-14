@@ -26,6 +26,10 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
+    protected static ?string $modelLabel = 'foydalanuvchi';
+
+    protected static ?string $pluralModelLabel = 'foydalanuvchilar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
     public static function form(Schema $schema): Schema
@@ -44,7 +48,7 @@ class UserResource extends Resource
                 ->required()
                 ->searchable(),
             Select::make('store_ids')
-                ->label('Stores')
+                ->label('Filiallar')
                 ->multiple()
                 ->options(fn (): array => app(TenantContext::class)->requireCurrent()->stores()
                     ->whereIn('id', app(StoreAccess::class)->accessibleStoreIds(request()->user()))
@@ -61,7 +65,9 @@ class UserResource extends Resource
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('email')->searchable(),
-                TextColumn::make('roles.name')->badge(),
+                TextColumn::make('roles.name')
+                    ->formatStateUsing(fn (string $state): string => OrganizationRole::tryFrom($state)?->label() ?? $state)
+                    ->badge(),
                 TextColumn::make('stores.name')->badge(),
             ])
             ->recordActions([EditAction::make()]);
@@ -98,6 +104,7 @@ class UserResource extends Resource
             ->when(! $isOwner, fn (Builder $query) => $query->whereIn('name', [OrganizationRole::Cashier->value, OrganizationRole::Waiter->value]))
             ->orderBy('name')
             ->pluck('name', 'id')
+            ->map(fn (string $name): string => OrganizationRole::tryFrom($name)?->label() ?? $name)
             ->all();
     }
 }

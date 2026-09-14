@@ -43,19 +43,20 @@ class SubscriptionsTable
             ])
             ->recordActions([
                 Action::make('activate')
+                    ->label('Faollashtirish')
                     ->icon('heroicon-o-play')
                     ->requiresConfirmation()
                     ->action(function (Subscription $record): void {
                         app(ManageSubscription::class)->activate($record);
-                        Notification::make()->success()->title('Subscription activated')->send();
+                        Notification::make()->success()->title('Obuna faollashtirildi')->send();
                     }),
                 Action::make('extend')
-                    ->label('Extend 30 days')
+                    ->label('30 kunga uzaytirish')
                     ->icon('heroicon-o-calendar-days')
                     ->requiresConfirmation()
                     ->action(function (Subscription $record): void {
                         app(ManageSubscription::class)->extend($record);
-                        Notification::make()->success()->title('Subscription extended')->send();
+                        Notification::make()->success()->title('Obuna uzaytirildi')->send();
                     }),
                 EditAction::make(),
             ])

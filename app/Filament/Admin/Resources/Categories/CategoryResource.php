@@ -20,6 +20,10 @@ class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
+    protected static ?string $modelLabel = 'kategoriya';
+
+    protected static ?string $pluralModelLabel = 'kategoriyalar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     public static function form(Schema $schema): Schema

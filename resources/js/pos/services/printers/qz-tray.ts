@@ -1,4 +1,5 @@
 import qz from 'qz-tray';
+import { deviceIdentityService } from '../device-identity';
 import type { PrinterBridge } from '../printer-core';
 
 type QzApi = {
@@ -41,8 +42,11 @@ export class QzTrayAdapter implements PrinterBridge {
     private configureSigning(): void {
         if (this.securityConfigured || import.meta.env.VITE_QZ_SIGNED_PRINTING !== 'true') return;
         this.qz.security.setCertificatePromise(async () => {
-            const response = await fetch('/api/pos/qz/certificate', { credentials: 'same-origin' });
-            if (!response.ok) throw new Error('QZ certificate could not be loaded.');
+            const response = await fetch('/api/pos/qz/certificate', {
+                credentials: 'same-origin',
+                headers: deviceIdentityService.headers(),
+            });
+            if (!response.ok) throw new Error('QZ sertifikatini yuklab bo‘lmadi.');
 
             return response.text();
         });
@@ -52,10 +56,14 @@ export class QzTrayAdapter implements PrinterBridge {
             fetch('/api/pos/qz/sign', {
                 method: 'POST',
                 credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    ...deviceIdentityService.headers(),
+                },
                 body: JSON.stringify({ data }),
             }).then((response) => {
-                if (!response.ok) throw new Error('QZ signature failed.');
+                if (!response.ok) throw new Error('QZ imzosini yaratib bo‘lmadi.');
                 return response.text();
             }).then(resolve).catch(reject);
         });
@@ -64,5 +72,11 @@ export class QzTrayAdapter implements PrinterBridge {
 }
 
 export function encodeEscPos(lines: string[]): string {
-    return `\x1B\x40${lines.join('\n')}\n\n\n\x1D\x56\x00`;
+    const initialize = '\x1B\x40';
+    const alignLeft = '\x1B\x61\x00';
+    const normalText = '\x1B\x21\x00';
+    const feedSixLines = '\x1B\x64\x06';
+    const fullCut = '\x1D\x56\x00';
+
+    return `${initialize}${alignLeft}${normalText}${lines.join('\n')}\n${feedSixLines}${fullCut}`;
 }

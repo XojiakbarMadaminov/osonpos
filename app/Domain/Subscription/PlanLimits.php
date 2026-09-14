@@ -12,20 +12,20 @@ class PlanLimits
     public function ensureCanAddStore(Organization $organization): void
     {
         $subscription = $this->subscriptions->activeSubscription($organization)
-            ?? throw ValidationException::withMessages(['subscription' => 'An active subscription is required.']);
+            ?? throw ValidationException::withMessages(['subscription' => 'Faol obuna talab qilinadi.']);
 
         if ($organization->stores()->count() >= $subscription->plan->max_stores) {
-            throw ValidationException::withMessages(['store' => 'The plan store limit has been reached.']);
+            throw ValidationException::withMessages(['store' => 'Tarifdagi filiallar limiti tugagan.']);
         }
     }
 
     public function ensureCanAddUser(Organization $organization): void
     {
         $subscription = $this->subscriptions->activeSubscription($organization)
-            ?? throw ValidationException::withMessages(['subscription' => 'An active subscription is required.']);
+            ?? throw ValidationException::withMessages(['subscription' => 'Faol obuna talab qilinadi.']);
 
         if ($organization->users()->count() >= $subscription->plan->max_users) {
-            throw ValidationException::withMessages(['user' => 'The plan user limit has been reached.']);
+            throw ValidationException::withMessages(['user' => 'Tarifdagi foydalanuvchilar limiti tugagan.']);
         }
     }
 }

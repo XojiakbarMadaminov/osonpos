@@ -29,6 +29,10 @@ class ShiftResource extends Resource
 {
     protected static ?string $model = Shift::class;
 
+    protected static ?string $modelLabel = 'smena';
+
+    protected static ?string $pluralModelLabel = 'smenalar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
     public static function table(Table $table): Table
@@ -37,23 +41,23 @@ class ShiftResource extends Resource
             ->columns([
                 TextColumn::make('status')->badge()->sortable(),
                 TextColumn::make('store.name')->sortable(),
-                TextColumn::make('user.name')->label('Cashier')->searchable()->sortable(),
-                TextColumn::make('device.name')->label('Device')->sortable(),
+                TextColumn::make('user.name')->label('Kassir')->searchable()->sortable(),
+                TextColumn::make('device.name')->label('Qurilma')->sortable(),
                 TextColumn::make('opening_cash')->money('UZS', divideBy: 1)->sortable(),
-                TextColumn::make('cash_payments_total')->label('Cash sales')->money('UZS', divideBy: 1),
+                TextColumn::make('cash_payments_total')->label('Naqd savdo')->money('UZS', divideBy: 1),
                 TextColumn::make('expected_cash')->state(fn (Shift $record): int => $record->expectedCash())->money('UZS', divideBy: 1),
-                TextColumn::make('closing_cash')->money('UZS', divideBy: 1)->placeholder('Open'),
-                TextColumn::make('cash_difference')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1)->placeholder('Open'),
+                TextColumn::make('closing_cash')->money('UZS', divideBy: 1)->placeholder('Ochiq'),
+                TextColumn::make('cash_difference')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1)->placeholder('Ochiq'),
                 TextColumn::make('opened_at')->dateTime()->sortable(),
-                TextColumn::make('closed_at')->dateTime()->placeholder('Open')->sortable(),
+                TextColumn::make('closed_at')->dateTime()->placeholder('Ochiq')->sortable(),
             ])
             ->filters([
                 SelectFilter::make('status')->options([
-                    ShiftStatus::Open->value => 'Open',
-                    ShiftStatus::Closed->value => 'Closed',
+                    ShiftStatus::Open->value => ShiftStatus::Open->getLabel(),
+                    ShiftStatus::Closed->value => ShiftStatus::Closed->getLabel(),
                 ]),
                 SelectFilter::make('store_id')
-                    ->label('Store')
+                    ->label('Filial')
                     ->options(fn (): array => Store::query()
                         ->forTenant(app(TenantContext::class)->requireCurrent())
                         ->whereIn('id', app(StoreAccess::class)->accessibleStoreIds(request()->user()))
@@ -77,21 +81,21 @@ class ShiftResource extends Resource
     {
         return $schema->components([
             TextEntry::make('status')->badge(),
-            TextEntry::make('store.name')->label('Store'),
-            TextEntry::make('user.name')->label('Cashier'),
-            TextEntry::make('device.name')->label('Device'),
+            TextEntry::make('store.name')->label('Filial'),
+            TextEntry::make('user.name')->label('Kassir'),
+            TextEntry::make('device.name')->label('Qurilma'),
             TextEntry::make('opening_cash')->money('UZS', divideBy: 1),
-            TextEntry::make('cash_payments_total')->label('Cash sales')->money('UZS', divideBy: 1),
-            TextEntry::make('card_payments_total')->label('Card sales')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Card))->money('UZS', divideBy: 1),
-            TextEntry::make('click_payments_total')->label('Click sales')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Click))->money('UZS', divideBy: 1),
-            TextEntry::make('payme_payments_total')->label('Payme sales')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Payme))->money('UZS', divideBy: 1),
-            TextEntry::make('other_payments_total')->label('Other sales')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Other))->money('UZS', divideBy: 1),
-            TextEntry::make('payments_total')->label('All payments')->money('UZS', divideBy: 1),
+            TextEntry::make('cash_payments_total')->label('Naqd savdo')->money('UZS', divideBy: 1),
+            TextEntry::make('card_payments_total')->label('Karta orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Card))->money('UZS', divideBy: 1),
+            TextEntry::make('click_payments_total')->label('Click orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Click))->money('UZS', divideBy: 1),
+            TextEntry::make('payme_payments_total')->label('Payme orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Payme))->money('UZS', divideBy: 1),
+            TextEntry::make('other_payments_total')->label('Boshqa to‘lovlar orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Other))->money('UZS', divideBy: 1),
+            TextEntry::make('payments_total')->label('Barcha to‘lovlar')->money('UZS', divideBy: 1),
             TextEntry::make('expected_cash')->state(fn (Shift $record): int => $record->expectedCash())->money('UZS', divideBy: 1),
-            TextEntry::make('closing_cash')->money('UZS', divideBy: 1)->placeholder('Open'),
-            TextEntry::make('cash_difference')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1)->placeholder('Open'),
+            TextEntry::make('closing_cash')->money('UZS', divideBy: 1)->placeholder('Ochiq'),
+            TextEntry::make('cash_difference')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1)->placeholder('Ochiq'),
             TextEntry::make('opened_at')->dateTime(),
-            TextEntry::make('closed_at')->dateTime()->placeholder('Open'),
+            TextEntry::make('closed_at')->dateTime()->placeholder('Ochiq'),
         ]);
     }
 

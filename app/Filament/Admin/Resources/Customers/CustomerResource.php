@@ -16,6 +16,10 @@ class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
 
+    protected static ?string $modelLabel = 'mijoz';
+
+    protected static ?string $pluralModelLabel = 'mijozlar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
 
     public static function table(Table $table): Table

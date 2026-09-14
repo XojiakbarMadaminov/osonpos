@@ -30,7 +30,7 @@ class PrepareKitchenTicket
 
         if ($items->isEmpty()) {
             throw ValidationException::withMessages([
-                'items' => $reprint ? 'This order has no items to reprint.' : 'There are no new kitchen items to print.',
+                'items' => $reprint ? 'Bu buyurtmada qayta chop etiladigan mahsulotlar yo‘q.' : 'Oshxonaga chop etiladigan yangi mahsulotlar yo‘q.',
             ]);
         }
 
@@ -41,12 +41,11 @@ class PrepareKitchenTicket
         );
 
         if (! $printer->system_name) {
-            throw ValidationException::withMessages(['printer' => 'The kitchen printer is not bound on this device.']);
+            throw ValidationException::withMessages(['printer' => 'Bu qurilmaga oshxona printeri biriktirilmagan.']);
         }
 
         return new KitchenTicketData(
-            orderId: $order->getKey(),
-            displayNumber: $order->display_number,
+            order: $order->loadMissing(['store', 'table', 'creator']),
             printer: $printer,
             items: $items,
             isReprint: $reprint,
@@ -62,7 +61,7 @@ class PrepareKitchenTicket
         if ((int) $order->organization_id !== (int) $this->tenantContext->requireCurrent()->getKey()
             || (int) $order->store_id !== (int) $this->storeContext->requireCurrent()->getKey()
             || ! $validStatus) {
-            throw ValidationException::withMessages(['order' => 'This order cannot be printed in the current context.']);
+            throw ValidationException::withMessages(['order' => 'Bu buyurtmani joriy muhitda chop etib bo‘lmaydi.']);
         }
     }
 }

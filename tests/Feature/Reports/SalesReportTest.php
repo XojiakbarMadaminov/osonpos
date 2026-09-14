@@ -65,9 +65,9 @@ it('calculates revenue average check and grouped breakdowns', function () {
     expect($report['revenue'])->toBe(100000)
         ->and($report['order_count'])->toBe(2)
         ->and($report['average_check'])->toBe(50000)
-        ->and($report['payment_breakdown'])->toContain(['label' => PaymentMethod::Cash->value, 'total' => 60000])
-        ->and($report['payment_breakdown'])->toContain(['label' => PaymentMethod::Card->value, 'total' => 40000])
-        ->and($report['order_type_breakdown'])->toContain(['label' => OrderType::DineIn->value, 'total' => 1]);
+        ->and($report['payment_breakdown'])->toContain(['label' => PaymentMethod::Cash->getLabel(), 'total' => 60000])
+        ->and($report['payment_breakdown'])->toContain(['label' => PaymentMethod::Card->getLabel(), 'total' => 40000])
+        ->and($report['order_type_breakdown'])->toContain(['label' => OrderType::DineIn->getLabel(), 'total' => 1]);
 });
 
 it('ranks top products by sold quantity', function () {

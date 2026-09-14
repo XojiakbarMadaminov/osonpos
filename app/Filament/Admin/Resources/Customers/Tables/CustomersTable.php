@@ -10,7 +10,7 @@ class CustomersTable
     public static function configure(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('name')->placeholder('Unnamed')->searchable(),
+            TextColumn::make('name')->placeholder('Nomsiz')->searchable(),
             TextColumn::make('phone')->searchable(),
             TextColumn::make('created_at')->dateTime()->sortable(),
         ])->recordActions([])->toolbarActions([]);

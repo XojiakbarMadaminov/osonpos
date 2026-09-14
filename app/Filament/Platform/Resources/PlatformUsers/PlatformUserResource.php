@@ -23,9 +23,13 @@ class PlatformUserResource extends Resource
 {
     protected static ?string $model = User::class;
 
+    protected static ?string $modelLabel = 'platforma foydalanuvchisi';
+
+    protected static ?string $pluralModelLabel = 'platforma foydalanuvchilari';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
-    protected static ?string $navigationLabel = 'Platform Users';
+    protected static ?string $navigationLabel = 'Platforma foydalanuvchilari';
 
     public static function form(Schema $schema): Schema
     {
@@ -38,7 +42,7 @@ class PlatformUserResource extends Resource
                 ->required(fn (string $operation): bool => $operation === 'create')
                 ->dehydrated(fn (?string $state): bool => filled($state))
                 ->minLength(8),
-            Toggle::make('is_platform_admin')->label('Platform access')->default(true)->required(),
+            Toggle::make('is_platform_admin')->label('Platformaga kirish')->default(true)->required(),
         ]);
     }
 
@@ -48,7 +52,7 @@ class PlatformUserResource extends Resource
             ->columns([
                 TextColumn::make('name')->searchable()->sortable(),
                 TextColumn::make('email')->searchable(),
-                IconColumn::make('is_platform_admin')->label('Platform access')->boolean(),
+                IconColumn::make('is_platform_admin')->label('Platformaga kirish')->boolean(),
                 TextColumn::make('updated_at')->dateTime()->sortable(),
             ])
             ->recordActions([EditAction::make()]);

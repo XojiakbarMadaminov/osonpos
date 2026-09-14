@@ -22,6 +22,10 @@ class TableResource extends Resource
 {
     protected static ?string $model = TableModel::class;
 
+    protected static ?string $modelLabel = 'stol';
+
+    protected static ?string $pluralModelLabel = 'stollar';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     public static function form(Schema $schema): Schema

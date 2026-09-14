@@ -20,7 +20,7 @@ class PrintRouteForm
                 ->required(),
             Select::make('print_type')
                 ->options(collect(PrintType::cases())->mapWithKeys(fn (PrintType $type): array => [
-                    $type->value => str($type->value)->headline()->toString(),
+                    $type->value => $type->getLabel(),
                 ])->all())
                 ->required(),
             Select::make('printer_id')

@@ -27,7 +27,7 @@ describe('BridgePrinterService', () => {
 
         await service.print('Receipt Printer', { lines: ['Receipt #01'], isReprint: true });
 
-        expect(mockGateway.print).toHaveBeenCalledWith('Receipt Printer', ['*** REPRINT ***', 'Receipt #01']);
+        expect(mockGateway.print).toHaveBeenCalledWith('Receipt Printer', ['*** QAYTA CHOP ***', 'Receipt #01']);
     });
 
     it('propagates print failure without invoking application mutations', async () => {

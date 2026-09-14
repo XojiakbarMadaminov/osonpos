@@ -37,14 +37,14 @@ class CreatePayment
             $this->ensureCurrentOpenOrder($order);
             $shift = $this->currentShift->for($user);
             if ($method === PaymentMethod::Cash && ! $shift) {
-                throw ValidationException::withMessages(['shift' => 'An active shift is required for cash payments.']);
+                throw ValidationException::withMessages(['shift' => 'Naqd to‘lov uchun faol smena bo‘lishi kerak.']);
             }
             $id ??= (string) Str::ulid();
             $existing = Payment::query()->whereKey($id)->first();
 
             if ($existing) {
                 if (! $existing->order()->whereKey($order->getKey())->exists()) {
-                    throw ValidationException::withMessages(['id' => 'The payment identifier belongs to another order.']);
+                    throw ValidationException::withMessages(['id' => 'To‘lov identifikatori boshqa buyurtmaga tegishli.']);
                 }
 
                 return $existing;
@@ -71,7 +71,7 @@ class CreatePayment
         if ((int) $order->organization_id !== (int) $this->tenantContext->requireCurrent()->getKey()
             || (int) $order->store_id !== (int) $this->storeContext->requireCurrent()->getKey()
             || $order->status !== OrderStatus::Open) {
-            throw ValidationException::withMessages(['order' => 'Payments require a current-store open order.']);
+            throw ValidationException::withMessages(['order' => 'To‘lov uchun joriy filialda ochiq buyurtma bo‘lishi kerak.']);
         }
     }
 }

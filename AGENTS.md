@@ -91,6 +91,31 @@ Future compatibility is required where documented.
 
 ---
 
+## Language and Localization Rules
+
+The system's user-facing language is Uzbek (`uz`).
+
+All text visible to a user must be in Uzbek across:
+
+- `/platform` Filament panel
+- `/admin` Filament panel
+- `/pos` Vue application
+- customer receipts and kitchen tickets
+- authentication screens
+- form labels, placeholders and validation messages
+- notifications, confirmations and user-facing errors
+- status, order type, payment type, role and permission labels
+
+Do not expose English interface text, raw enum values such as `DINE_IN`, `OPEN` or `PAID`, technical exception messages, or translation keys to users.
+
+Keep internal identifiers, enum values, permission keys, API field names and database values stable. Translate them only in the presentation layer through Laravel language files, Filament labels, enum label methods, or frontend label maps.
+
+Use `uz` as both the application locale and fallback locale. New user-facing functionality must include its Uzbek copy and relevant localization tests before it is considered complete.
+
+User-entered business data, such as organization, product and customer names, must be displayed as entered and must not be automatically translated.
+
+---
+
 ## Laravel Rules
 
 Keep controllers thin.
@@ -257,7 +282,7 @@ Print failures must not rollback a saved order or saved payment.
 
 Kitchen ticket and customer receipt are separate logical documents even when they use the same physical printer.
 
-Reprints must be clearly marked `REPRINT`.
+Reprints must be clearly marked `QAYTA CHOP` on user-facing documents.
 
 ---
 

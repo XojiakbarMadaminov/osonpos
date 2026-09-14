@@ -46,7 +46,7 @@ class Payment extends Model
 
             if (! $orderIsValid || ! $deviceIsValid || ! $shiftIsValid) {
                 throw ValidationException::withMessages([
-                    'payment' => 'Payment resources must belong to the same organization and store.',
+                    'payment' => 'To‘lov ma’lumotlari bir xil tashkilot va filialga tegishli bo‘lishi kerak.',
                 ]);
             }
         });

@@ -16,6 +16,7 @@ const openOrder: CreatedOrder = {
     total: 45000,
     paid_amount: 0,
     balance_due: 45000,
+    unprinted_items_count: 0,
 };
 
 describe('order store', () => {

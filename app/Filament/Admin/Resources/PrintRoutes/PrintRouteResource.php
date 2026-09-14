@@ -21,6 +21,10 @@ class PrintRouteResource extends Resource
 {
     protected static ?string $model = PrintRoute::class;
 
+    protected static ?string $modelLabel = 'chop etish yo‘nalishi';
+
+    protected static ?string $pluralModelLabel = 'chop etish yo‘nalishlari';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
 
     public static function form(Schema $schema): Schema

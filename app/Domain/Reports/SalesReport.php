@@ -3,6 +3,8 @@
 namespace App\Domain\Reports;
 
 use App\Enums\OrderStatus;
+use App\Enums\OrderType;
+use App\Enums\PaymentMethod;
 use App\Models\Organization;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -37,7 +39,10 @@ class SalesReport
             ->groupBy('payments.method')
             ->orderBy('payments.method')
             ->get()
-            ->map(fn (object $row): array => ['label' => $row->method, 'total' => (int) $row->total])
+            ->map(fn (object $row): array => [
+                'label' => PaymentMethod::tryFrom($row->method)?->getLabel() ?? $row->method,
+                'total' => (int) $row->total,
+            ])
             ->all();
 
         $orderTypes = (clone $orders)
@@ -45,7 +50,10 @@ class SalesReport
             ->groupBy('type')
             ->orderBy('type')
             ->get()
-            ->map(fn (object $row): array => ['label' => $row->type, 'total' => (int) $row->total])
+            ->map(fn (object $row): array => [
+                'label' => OrderType::tryFrom($row->type)?->getLabel() ?? $row->type,
+                'total' => (int) $row->total,
+            ])
             ->all();
 
         $topProducts = DB::table('order_items')

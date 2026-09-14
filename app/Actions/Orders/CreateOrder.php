@@ -98,7 +98,7 @@ class CreateOrder
             ->first();
 
         return $table ?? throw ValidationException::withMessages([
-            'table_id' => 'Select an active table from the current store.',
+            'table_id' => 'Joriy filialdan faol stolni tanlang.',
         ]);
     }
 
@@ -107,7 +107,7 @@ class CreateOrder
         if ($data->customerId === null) {
             if ($data->type === OrderType::Delivery) {
                 if ($data->customerPhone === null) {
-                    throw ValidationException::withMessages(['customer.phone' => 'A customer phone is required for delivery.']);
+                    throw ValidationException::withMessages(['customer.phone' => 'Yetkazib berish uchun mijoz telefoni kiritilishi shart.']);
                 }
 
                 return $this->customers->execute($data->customerPhone, $data->customerName);
@@ -120,7 +120,7 @@ class CreateOrder
             ->whereKey($data->customerId)
             ->where('organization_id', $organizationId)
             ->first() ?? throw ValidationException::withMessages([
-                'customer_id' => 'The customer does not belong to the current organization.',
+                'customer_id' => 'Mijoz joriy tashkilotga tegishli emas.',
             ]);
     }
 
@@ -138,7 +138,7 @@ class CreateOrder
     {
         if ((int) $order->organization_id !== (int) $this->tenantContext->requireCurrent()->getKey()
             || (int) $order->store_id !== (int) $this->storeContext->requireCurrent()->getKey()) {
-            throw ValidationException::withMessages(['id' => 'The order identifier belongs to another context.']);
+            throw ValidationException::withMessages(['id' => 'Buyurtma identifikatori boshqa muhitga tegishli.']);
         }
     }
 }

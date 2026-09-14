@@ -27,7 +27,7 @@ class Product extends Model
 
             if (! $categoryBelongsToTenant) {
                 throw ValidationException::withMessages([
-                    'category_id' => 'The category must belong to the product organization.',
+                    'category_id' => 'Kategoriya mahsulot tashkilotiga tegishli bo‘lishi kerak.',
                 ]);
             }
         });

@@ -3,8 +3,10 @@
 namespace App\Filament\Admin\Resources\Orders;
 
 use App\Domain\Authorization\StoreAccess;
+use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\Orders\Pages\ListOrders;
 use App\Filament\Admin\Resources\Orders\Pages\ViewOrder;
+use App\Filament\Admin\Support\DatePeriodFilter;
 use App\Models\Order;
 use App\Support\TenantContext;
 use BackedEnum;
@@ -14,8 +16,10 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class OrderResource extends Resource
 {
@@ -26,6 +30,10 @@ class OrderResource extends Resource
     protected static ?string $pluralModelLabel = 'buyurtmalar';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingBag;
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Sales;
+
+    protected static ?int $navigationSort = 2;
 
     public static function table(Table $table): Table
     {
@@ -39,6 +47,10 @@ class OrderResource extends Resource
                 TextColumn::make('total')->money('UZS', divideBy: 1)->sortable(),
                 TextColumn::make('opened_at')->dateTime()->sortable(),
             ])
+            ->filters([
+                DatePeriodFilter::make('business_date'),
+            ], layout: FiltersLayout::AboveContent)
+            ->deferFilters(false)
             ->defaultSort('opened_at', 'desc')
             ->recordActions([ViewAction::make()]);
     }

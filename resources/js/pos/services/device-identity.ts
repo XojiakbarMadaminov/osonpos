@@ -14,9 +14,7 @@ export class DeviceIdentityService {
     }
 
     headers(): Record<string, string> {
-        const deviceId = this.current();
-
-        return deviceId ? { 'X-POS-Device-ID': deviceId } : {};
+        return {};
     }
 }
 

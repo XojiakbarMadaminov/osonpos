@@ -39,9 +39,11 @@ restore test succeeds.
    default roles, permissions, and logical print routes.
 3. The owner signs in at `/admin`, creates the cashier under **Users**, assigns
    allowed stores and the Cashier role, and verifies Products, Tables, Printers,
-   Print Routes, and Settings.
-4. The cashier opens `/pos/device-setup`, registers the terminal, discovers OS
-   printers through QZ Tray, binds logical printers, and runs the test print.
+   Print Routes, and the active store in the profile menu.
+4. Under **Devices**, the owner creates the terminal and generates its one-time
+   activation code. The cashier signs in, opens `/pos/device-setup`, and enters
+   that code. The owner or manager then discovers OS printers through QZ Tray,
+   binds logical printers, and runs the test print when hardware is available.
 
 ## QZ Tray and printers
 

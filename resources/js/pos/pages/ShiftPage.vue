@@ -101,8 +101,8 @@ onMounted(() => shift.load());
             <h3 class="font-semibold text-slate-100">Ishlash tartibi</h3>
             <ol class="mt-3 list-decimal space-y-2 pl-5">
                 <li>Boshlang‘ich naqd pulni kiriting va smenani oching.</li>
-                <li>Naqd to‘lovlar faqat smena ochiq paytda qabul qilinadi.</li>
-                <li>Karta va boshqa to‘lovlar shu smenada hisoblanadi, ammo kutilayotgan naqd pulni oshirmaydi.</li>
+                <li>Barcha to‘lovlar faqat smena ochiq paytda qabul qilinadi.</li>
+                <li>Karta va boshqa naqdsiz to‘lovlar shu smenada hisoblanadi, ammo kutilayotgan naqd pulni oshirmaydi.</li>
                 <li>Smenani yopishdan oldin ushbu qurilmadagi ochiq buyurtmalarni yoping yoki bekor qiling.</li>
                 <li>Oxirida kassadagi pulni sanang, yopilish summasini kiriting, farqni tekshiring va smenani yoping.</li>
             </ol>

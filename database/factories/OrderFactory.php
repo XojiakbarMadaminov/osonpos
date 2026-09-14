@@ -21,6 +21,7 @@ class OrderFactory extends Factory
             ]),
             'device_id' => null,
             'display_number' => '#'.fake()->unique()->numerify('####'),
+            'business_date' => today(),
             'type' => OrderType::Takeaway,
             'table_id' => null,
             'customer_id' => null,

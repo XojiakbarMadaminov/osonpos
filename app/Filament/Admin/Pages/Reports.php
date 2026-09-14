@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Pages;
 use App\Domain\Authorization\OrganizationAuthorization;
 use App\Domain\Authorization\StoreAccess;
 use App\Domain\Reports\SalesReport;
+use App\Enums\AdminNavigationGroup;
 use App\Enums\OrganizationPermission;
 use App\Models\Store;
 use App\Support\TenantContext;
@@ -15,6 +16,7 @@ use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use UnitEnum;
 
 class Reports extends Page
 {
@@ -25,6 +27,10 @@ class Reports extends Page
     protected static ?string $navigationLabel = 'Hisobotlar';
 
     protected static ?string $title = 'Hisobotlar';
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Sales;
+
+    protected static ?int $navigationSort = 1;
 
     public string $fromDate = '';
 
@@ -86,6 +92,8 @@ class Reports extends Page
             $from,
             $to,
             $storeIds,
+            CarbonImmutable::parse($validated['from_date']),
+            CarbonImmutable::parse($validated['to_date']),
         );
     }
 }

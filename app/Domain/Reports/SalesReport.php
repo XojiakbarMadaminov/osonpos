@@ -2,6 +2,8 @@
 
 namespace App\Domain\Reports;
 
+use App\Enums\ExpenseStatus;
+use App\Enums\ExpenseType;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
@@ -16,6 +18,8 @@ class SalesReport
         CarbonImmutable $from,
         CarbonImmutable $to,
         array $storeIds,
+        ?CarbonImmutable $businessFrom = null,
+        ?CarbonImmutable $businessTo = null,
     ): array {
         $orders = DB::table('orders')
             ->where('organization_id', $organization->getKey())
@@ -26,6 +30,26 @@ class SalesReport
         $summary = (clone $orders)->selectRaw('COUNT(*) AS order_count, COALESCE(SUM(total), 0) AS revenue')->first();
         $orderCount = (int) $summary->order_count;
         $revenue = (int) $summary->revenue;
+
+        $expenses = DB::table('expenses')
+            ->where('organization_id', $organization->getKey())
+            ->whereIn('store_id', $storeIds)
+            ->where('status', ExpenseStatus::Active->value)
+            ->whereBetween('incurred_on', [
+                ($businessFrom ?? $from)->toDateString(),
+                ($businessTo ?? $to)->toDateString(),
+            ]);
+        $expenseTotal = (int) (clone $expenses)->sum('amount');
+        $expenseBreakdown = (clone $expenses)
+            ->selectRaw('type, SUM(amount) AS total')
+            ->groupBy('type')
+            ->orderBy('type')
+            ->get()
+            ->map(fn (object $row): array => [
+                'label' => ExpenseType::tryFrom($row->type)?->getLabel() ?? $row->type,
+                'total' => (int) $row->total,
+            ])
+            ->all();
 
         $payments = DB::table('payments')
             ->join('orders', 'orders.id', '=', 'payments.order_id')
@@ -76,10 +100,12 @@ class SalesReport
 
         return [
             'revenue' => $revenue,
+            'expense_total' => $expenseTotal,
             'order_count' => $orderCount,
             'average_check' => $orderCount > 0 ? intdiv($revenue, $orderCount) : 0,
             'payment_breakdown' => $paymentBreakdown,
             'order_type_breakdown' => $orderTypes,
+            'expense_breakdown' => $expenseBreakdown,
             'top_products' => $topProducts,
         ];
     }

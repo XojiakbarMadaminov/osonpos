@@ -40,7 +40,7 @@ function paymentContext(int $total = 100000): array
     return [$organization, $store, $user, $order, [
         'current_organization_id' => $organization->id,
         'current_store_id' => $store->id,
-        'current_device_id' => $device->id,
+        ...posDeviceSession($device),
     ]];
 }
 
@@ -76,6 +76,7 @@ it('calculates partial and full payment status transactionally', function () {
 
 it('supports mixed payment records using integer UZS amounts', function () {
     [, , $user, $order, $session] = paymentContext(90000);
+    $shift = Shift::query()->sole();
 
     foreach ([
         [PaymentMethod::Cash, 30000],
@@ -90,6 +91,7 @@ it('supports mixed payment records using integer UZS amounts', function () {
 
     expect(Payment::query()->count())->toBe(3)
         ->and(Payment::query()->get()->every(fn (Payment $payment) => is_int($payment->amount)))->toBeTrue()
+        ->and(Payment::query()->get()->every(fn (Payment $payment) => $payment->shift_id === $shift->id))->toBeTrue()
         ->and($order->refresh()->payment_status)->toBe(PaymentStatus::Paid);
 });
 

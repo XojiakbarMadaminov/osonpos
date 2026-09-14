@@ -73,4 +73,9 @@ class Store extends Model
     {
         return $this->hasMany(Shift::class);
     }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
 }

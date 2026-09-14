@@ -6,12 +6,14 @@ use App\Domain\Organization\Concerns\BelongsToTenant;
 use App\Domain\Store\Concerns\BelongsToStore;
 use Database\Factories\DeviceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;
 
 #[Fillable(['name', 'code', 'is_active', 'last_seen_at'])]
+#[Hidden(['activation_code_hash', 'credential_hash'])]
 class Device extends Model
 {
     /** @use HasFactory<DeviceFactory> */
@@ -42,6 +44,8 @@ class Device extends Model
         return [
             'is_active' => 'boolean',
             'last_seen_at' => 'immutable_datetime',
+            'activation_expires_at' => 'immutable_datetime',
+            'activated_at' => 'immutable_datetime',
         ];
     }
 }

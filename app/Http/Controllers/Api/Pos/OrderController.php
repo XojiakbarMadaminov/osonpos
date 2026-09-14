@@ -11,6 +11,7 @@ use App\Http\Requests\Api\Pos\CreateOrderRequest;
 use App\Http\Requests\Api\Pos\UpdateOrderRequest;
 use App\Http\Resources\Pos\OrderResource;
 use App\Models\Order;
+use App\Support\StoreBusinessDate;
 use App\Support\StoreContext;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
@@ -19,12 +20,17 @@ use Illuminate\Support\Facades\Gate;
 
 class OrderController extends Controller
 {
-    public function index(TenantContext $tenantContext, StoreContext $storeContext): AnonymousResourceCollection
-    {
+    public function index(
+        TenantContext $tenantContext,
+        StoreContext $storeContext,
+        StoreBusinessDate $businessDate,
+    ): AnonymousResourceCollection {
         Gate::authorize('viewAny', Order::class);
+        $store = $storeContext->requireCurrent();
         $orders = Order::query()
             ->forTenant($tenantContext->requireCurrent())
-            ->forStore($storeContext->requireCurrent())
+            ->forStore($store)
+            ->where('business_date', $businessDate->current($store))
             ->with('table:id,name,number')
             ->withSum('payments', 'amount')
             ->withCount([

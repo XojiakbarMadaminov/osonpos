@@ -28,6 +28,8 @@ enum OrganizationRole: string
                 fn (OrganizationPermission $permission): bool => ! in_array($permission, [
                     OrganizationPermission::RolesManage,
                     OrganizationPermission::PaymentsRefund,
+                    OrganizationPermission::ExpensesView,
+                    OrganizationPermission::ExpensesManage,
                 ], true),
             )),
             self::Cashier => [

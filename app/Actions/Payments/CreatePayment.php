@@ -36,8 +36,10 @@ class CreatePayment
             $order = Order::query()->lockForUpdate()->findOrFail($order->getKey());
             $this->ensureCurrentOpenOrder($order);
             $shift = $this->currentShift->for($user);
-            if ($method === PaymentMethod::Cash && ! $shift) {
-                throw ValidationException::withMessages(['shift' => 'Naqd to‘lov uchun faol smena bo‘lishi kerak.']);
+            if (! $shift) {
+                throw ValidationException::withMessages([
+                    'shift' => 'To‘lovni qabul qilish uchun avval smenani oching.',
+                ]);
             }
             $id ??= (string) Str::ulid();
             $existing = Payment::query()->whereKey($id)->first();

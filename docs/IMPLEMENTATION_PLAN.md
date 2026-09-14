@@ -16,7 +16,7 @@ Rules:
 
 # Phase 0 — Project Bootstrap
 
-Status: DONE
+Status: IN_PROGRESS
 
 Goal:
 
@@ -750,7 +750,7 @@ Tests:
 
 # Phase 14 — Shifts
 
-Status: IN_PROGRESS
+Status: DONE
 
 Depends on:
 
@@ -1127,7 +1127,6 @@ Provide clean Filament organization management.
 
 Resources/pages:
 
-- Dashboard
 - Stores
 - Products
 - Categories
@@ -1138,7 +1137,7 @@ Resources/pages:
 - Roles
 - Printers
 - Reports
-- Settings
+- Profile menu organization/store context switcher
 
 Tasks:
 
@@ -1422,6 +1421,363 @@ A real cafe/fast food can:
 11. Manage users/roles.
 12. Configure printers from UI.
 13. Operate without exposing another organization's data.
+
+---
+
+# Phase 26 — Expenses
+
+Status: DONE
+
+Depends on:
+
+- Phase 1
+- Phase 2
+- Phase 18
+
+Goal:
+
+Allow an organization owner to record and track simple store expenses without introducing inventory or accounting modules.
+
+Database:
+
+- expenses
+
+Enums:
+
+- ExpenseType
+- ExpenseStatus
+
+Tasks:
+
+- [x] Create ULID expenses with organization/store ownership.
+- [x] Add PRODUCT_COST, RENT, SALARY, and OTHER expense types.
+- [x] Store integer UZS amount, expense date, and optional description.
+- [x] Add immutable expense history with explicit cancellation instead of delete/edit.
+- [x] Add Owner-only default view/manage permissions.
+- [x] Add tenant-safe, store-scoped Filament expense list/create/view UI.
+- [x] Default the create form to the active store selected in the admin profile menu.
+- [x] Add date, store, type, and status filters plus filtered total summary.
+- [x] Localize every new user-facing label, status, validation message, and notification in Uzbek.
+
+Acceptance criteria:
+
+- Owner can create and review expenses for accessible stores.
+- Default expense types are presented in Uzbek.
+- Expenses can be filtered and their total can be tracked.
+- Incorrect records can be cancelled without deleting financial history.
+- Manager, Cashier, and Waiter have no expense access by default.
+- Cross-tenant and unauthorized store access is blocked.
+
+Tests:
+
+- Expense creation and integer money validation.
+- Default type labels.
+- Cancellation and immutable history.
+- Owner permission and non-owner denial.
+- Tenant and store isolation.
+- Filtered total calculation.
+- Uzbek localization.
+
+---
+
+# Phase 27 — Admin Context Switcher UX
+
+Status: DONE
+
+Depends on:
+
+- Phase 18
+
+Goal:
+
+Move organization/store context selection into the admin profile menu so the active store is always easy to see and change.
+
+Tasks:
+
+- [x] Show the active organization and store below the signed-in user's name.
+- [x] Allow switching to any active, accessible store from one select.
+- [x] Derive the organization from the selected store on the backend.
+- [x] Remove the separate Settings page and sidebar item.
+- [x] Keep tenant membership and store access enforcement server-side.
+- [x] Localize the switcher and its validation feedback in Uzbek.
+
+Acceptance criteria:
+
+- The profile menu clearly shows the active store as `Organization — Store`.
+- Selecting another accessible store changes both organization and store session context.
+- Inactive, unassigned, and cross-tenant stores cannot be selected.
+- The former `/admin/settings` page is unavailable.
+
+Tests:
+
+- Profile switcher rendering.
+- Owner and assigned-user switching.
+- Inactive, unassigned, and cross-tenant denial.
+- Settings route removal.
+
+---
+
+# Phase 28 — Daily POS Orders
+
+Status: DONE
+
+Depends on:
+
+- Phase 10
+- Phase 16
+
+Goal:
+
+Keep the POS order workspace focused on the current store business date and restart customer-facing order numbers each day.
+
+Tasks:
+
+- [x] Persist the store-local business date on every order.
+- [x] Generate store-level display numbers from `#0001` for each business date.
+- [x] Return only the current store-local day's orders from the POS order list API.
+- [x] Preserve idempotent creation and concurrent number uniqueness.
+- [x] Backfill existing orders using each store's timezone.
+
+Acceptance criteria:
+
+- Yesterday's orders are not shown on the POS Orders page.
+- The first order of each new store-local day receives `#0001`.
+- Two orders in the same store and business date cannot share a display number.
+- Other stores and organizations remain isolated.
+
+Tests:
+
+- Current-day list filtering.
+- Daily display-number reset.
+- Same-day sequential numbering.
+- Store timezone boundary behavior.
+- Tenant/store isolation.
+
+---
+
+# Phase 29 — Expense Reporting
+
+Status: DONE
+
+Depends on:
+
+- Phase 21
+- Phase 26
+
+Goal:
+
+Include active store expenses in the existing bounded organization reports.
+
+Reports:
+
+- Expense total
+- Expense type breakdown
+
+Tasks:
+
+- [x] Apply the existing date and accessible-store filters to expenses.
+- [x] Exclude cancelled expenses.
+- [x] Add an expense total summary card.
+- [x] Add an Uzbek expense type breakdown.
+- [x] Preserve tenant and store isolation.
+
+Acceptance criteria:
+
+- Owners can review active expenses for the selected period alongside revenue.
+- Cancelled, inaccessible-store, and cross-tenant expenses are excluded.
+
+Tests:
+
+- Expense total.
+- Expense type breakdown.
+- Cancelled expense exclusion.
+- Date, store, and tenant filtering.
+
+---
+
+# Phase 30 — Grouped Admin Navigation
+
+Status: DONE
+
+Depends on:
+
+- Phase 18
+
+Goal:
+
+Organize the organization admin sidebar into clear Uzbek functional groups.
+
+Tasks:
+
+- [x] Remove the empty organization dashboard and its Main navigation group.
+- [x] Add ordered Sales, Catalog, Branch Management, and Staff/Permissions groups.
+- [x] Assign every admin page and resource to the appropriate group.
+- [x] Move the Shield role resource out of the English plugin group.
+- [x] Keep permission and feature-based navigation visibility unchanged.
+
+Acceptance criteria:
+
+- The sidebar is grouped and ordered consistently.
+- No `Filament Shield` group label is visible.
+- Users only see the grouped items they are authorized to access.
+
+Tests:
+
+- Group labels and ordering.
+- Resource group assignments.
+- Existing navigation authorization tests.
+
+---
+
+# Phase 31 — POS Login and Terminal Activation
+
+Status: DONE
+
+Depends on:
+
+- Phase 7
+- Phase 16
+- Phase 23
+
+Goal:
+
+Require authentication before POS access and securely pair each browser profile to one POS device with a short-lived, one-time activation code.
+
+Tasks:
+
+- [x] Redirect POS guests to the organization login with an Uzbek explanation and intended URL preservation.
+- [x] Create and manage store-owned devices from the admin panel.
+- [x] Generate hashed, expiring, single-use activation codes.
+- [x] Exchange a valid activation code for a long-lived hashed device credential.
+- [x] Resolve device context only from the secure browser credential.
+- [x] Keep printer configuration restricted to `printers.manage`.
+- [x] Add tenant, store, permission, subscription, expiry, replay, revocation, and localization tests.
+
+Acceptance criteria:
+
+- Guests never receive a missing `login` route exception from POS pages.
+- A browser profile is paired once and restores its device after a later login.
+- Activation codes expire, are single-use, and cannot cross tenant or store access boundaries.
+- Re-pairing or revocation invalidates the old browser credential.
+- Cashiers can activate with a valid code but cannot configure printers.
+
+---
+
+# Phase 32 — Require an Active Shift for Every Payment
+
+Status: DONE
+
+Depends on:
+
+- Phase 14
+- Phase 15
+
+Goal:
+
+Require the current cashier to have an active shift before accepting any POS payment method.
+
+Tasks:
+
+- [x] Enforce the active current shift for CASH, CARD, CLICK, PAYME, and OTHER payments.
+- [x] Link every newly accepted payment to its active shift.
+- [x] Show an Uzbek POS prompt when payment is blocked because no shift is open.
+- [x] Update shift documentation and automated coverage.
+
+Acceptance criteria:
+
+- No payment method can be accepted without the current user, store, and device shift being open.
+- Every newly accepted payment is linked to that active shift.
+- The POS clearly directs the cashier to open a shift before taking payment.
+- Tenant, store, device, and cashier shift isolation remains enforced.
+
+---
+
+# Phase 33 — Supervisor Shift Closure
+
+Status: DONE
+
+Depends on:
+
+- Phase 14
+- Phase 18
+
+Goal:
+
+Allow an authorized organization supervisor to safely close an abandoned open cashier shift from the admin panel.
+
+Tasks:
+
+- [x] Add an admin close action for OPEN shifts.
+- [x] Require the supervisor to enter the real closing cash amount.
+- [x] Preserve the open-order closure guard.
+- [x] Restrict the action to Owner and Manager users with `shifts.manage` and store access.
+- [x] Keep closed shifts immutable and tenant-safe.
+
+Acceptance criteria:
+
+- An authorized Owner or Manager can close an accessible OPEN shift from admin.
+- Cashier, cross-tenant, and inaccessible-store closure attempts are denied.
+- A shift with open orders cannot be closed.
+- Closing cash, closed time, status, expected cash, and difference remain consistent.
+
+---
+
+# Phase 34 — Require an Active Shift for Order Taking
+
+Status: DONE
+
+Depends on:
+
+- Phase 10
+- Phase 14
+- Phase 16
+
+Goal:
+
+Prevent POS users from creating orders or adding products to orders without their current store and device shift being open.
+
+Tasks:
+
+- [x] Require the current active shift when creating DINE_IN, TAKEAWAY, and DELIVERY orders.
+- [x] Require the current active shift when adding products to an open order.
+- [x] Block order-taking controls in POS and direct the user to the Shift page.
+- [x] Preserve idempotent replay, tenant isolation, store access, and device isolation.
+
+Acceptance criteria:
+
+- No new order can be created without the current cashier shift.
+- No product can be appended to an order without the current cashier shift.
+- A shift belonging to another user or device does not authorize order taking.
+- POS displays a clear Uzbek prompt to open a shift.
+
+---
+
+# Phase 35 — Admin Operational Date Filters
+
+Status: DONE
+
+Depends on:
+
+- Phase 18
+- Phase 26
+
+Goal:
+
+Provide consistent, visible date-period controls above the Orders, Expenses, and Shifts admin tables.
+
+Tasks:
+
+- [x] Add Bugun, Hafta, Oy, and Oraliq period choices above all three tables.
+- [x] Select Bugun by default.
+- [x] Show start and end date inputs for Oraliq.
+- [x] Preserve existing store, status, type, tenant, and authorization filters.
+
+Acceptance criteria:
+
+- Each operational table initially shows today's records only.
+- Week and month choices apply their current calendar bounds.
+- Custom range applies inclusive start and end dates.
+- Cross-tenant and inaccessible-store records remain excluded.
 
 ---
 

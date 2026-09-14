@@ -92,7 +92,7 @@ it('keeps admin read access available after subscription expiry', function () {
     $this->actingAs($user)
         ->withSession(['current_organization_id' => $organization->id])
         ->get('/admin')
-        ->assertOk();
+        ->assertRedirect('/pos');
 });
 
 it('prevents multiple current subscription records for one organization', function () {

@@ -27,6 +27,6 @@ describe('device identity', () => {
         identity.remember('01DEVICE');
 
         expect(identity.current()).toBe('01DEVICE');
-        expect(identity.headers()).toEqual({ 'X-POS-Device-ID': '01DEVICE' });
+        expect(identity.headers()).toEqual({});
     });
 });

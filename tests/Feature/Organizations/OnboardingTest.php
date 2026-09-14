@@ -121,5 +121,5 @@ it('loads the platform onboarding form', function () {
     $this->actingAs($platformUser)
         ->get('/platform/onboard-organization')
         ->assertOk()
-        ->assertSee('Create organization');
+        ->assertSee('Tashkilot yaratish');
 });

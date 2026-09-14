@@ -136,7 +136,7 @@ it('allows an owner to use the Shield role manager', function () {
         ->withSession(['current_organization_id' => $organization->id])
         ->get('/admin/shield/roles')
         ->assertOk()
-        ->assertSee(OrganizationRole::Owner->value);
+        ->assertSee(OrganizationRole::Owner->label());
 
     $this->actingAs($owner)
         ->withSession(['current_organization_id' => $organization->id])

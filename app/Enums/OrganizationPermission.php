@@ -28,6 +28,8 @@ enum OrganizationPermission: string
     case StoresManage = 'stores.manage';
     case ShiftsView = 'shifts.view';
     case ShiftsManage = 'shifts.manage';
+    case ExpensesView = 'expenses.view';
+    case ExpensesManage = 'expenses.manage';
 
     public static function values(): array
     {
@@ -61,6 +63,8 @@ enum OrganizationPermission: string
             self::StoresManage => 'Filiallarni boshqarish',
             self::ShiftsView => 'Smenalarni ko‘rish',
             self::ShiftsManage => 'Smenalarni boshqarish',
+            self::ExpensesView => 'Chiqimlarni ko‘rish',
+            self::ExpensesManage => 'Chiqimlarni boshqarish',
         };
     }
 

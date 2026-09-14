@@ -10,12 +10,9 @@ it('boots the application', function () {
     $this->get('/up')->assertOk();
 });
 
-it('loads the POS shell', function () {
-    $this->withoutVite();
-
+it('requires login before loading the POS shell', function () {
     $this->get('/pos')
-        ->assertOk()
-        ->assertSee('id="pos-app"', false);
+        ->assertRedirect(route('filament.admin.auth.login'));
 });
 
 it('loads both Filament panel login pages', function () {
@@ -32,7 +29,7 @@ it('authenticates authorized users into their Filament panels', function () {
     $store->users()->attach($user);
 
     $this->actingAs($platformUser)->get('/platform')->assertOk();
-    $this->actingAs($user)->get('/admin')->assertOk();
+    $this->actingAs($user)->get('/admin')->assertRedirect('/pos');
 });
 
 it('connects to PostgreSQL', function () {

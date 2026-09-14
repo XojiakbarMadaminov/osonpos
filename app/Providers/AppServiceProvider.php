@@ -48,5 +48,7 @@ class AppServiceProvider extends ServiceProvider
             ->by($request->user()?->getAuthIdentifier() ?? $request->ip()));
         RateLimiter::for('qz-signing', fn (Request $request): Limit => Limit::perMinute(30)
             ->by($request->user()?->getAuthIdentifier() ?? $request->ip()));
+        RateLimiter::for('device-activation', fn (Request $request): Limit => Limit::perMinute(5)
+            ->by($request->user()?->getAuthIdentifier().'|'.$request->ip()));
     }
 }

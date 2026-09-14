@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Organization;
 use App\Models\Plan;
 use App\Models\Printer;
+use App\Models\Shift;
 use App\Models\Store;
 use App\Models\Subscription;
 use App\Models\User;
@@ -31,11 +32,12 @@ function securityContext(OrganizationRole $role = OrganizationRole::Manager, boo
         'ends_at' => $activeSubscription ? now()->addMonth() : now()->subDay(),
     ]);
     $device = Device::factory()->for($organization)->for($store)->create();
+    Shift::factory()->for($organization)->for($store)->for($device)->for($user)->create();
 
     return [$organization, $store, $user, $device, [
         'current_organization_id' => $organization->id,
         'current_store_id' => $store->id,
-        'current_device_id' => $device->id,
+        ...posDeviceSession($device),
     ]];
 }
 
@@ -94,7 +96,7 @@ it('rejects a device from another tenant even when its id is in session', functi
     $foreignOrganization = Organization::factory()->create();
     $foreignStore = Store::factory()->for($foreignOrganization)->create();
     $foreignDevice = Device::factory()->for($foreignOrganization)->for($foreignStore)->create();
-    $session['current_device_id'] = $foreignDevice->id;
+    $session = [...$session, ...posDeviceSession($foreignDevice)];
 
     $this->actingAs($user)->withSession($session)->getJson('/api/pos/bootstrap')->assertForbidden();
 });

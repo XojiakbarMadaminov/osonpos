@@ -25,7 +25,7 @@ class DevicePolicy
 
     public function create(User $user): bool
     {
-        return false;
+        return $this->allows($user, OrganizationPermission::PrintersManage);
     }
 
     public function update(User $user, Device $device): bool

@@ -11,6 +11,7 @@ use App\Support\DeviceContext;
 use App\Support\StoreContext;
 use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class CloseShift
@@ -35,26 +36,48 @@ class CloseShift
                 throw ValidationException::withMessages(['shift' => 'Faqat joriy qurilmaning smenasini yopish mumkin.']);
             }
 
-            $hasOpenOrders = Order::query()
-                ->where('organization_id', $shift->organization_id)
-                ->where('store_id', $shift->store_id)
-                ->where('device_id', $shift->device_id)
-                ->where('status', OrderStatus::Open)
-                ->exists();
+            return $this->finalize($shift, $closingCash);
+        });
+    }
 
-            if ($hasOpenOrders) {
+    public function executeAsSupervisor(Shift $shift, User $supervisor, int $closingCash): Shift
+    {
+        Gate::forUser($supervisor)->authorize('closeAsSupervisor', $shift);
+
+        return DB::transaction(function () use ($shift, $closingCash): Shift {
+            $shift = Shift::query()->lockForUpdate()->findOrFail($shift->getKey());
+
+            if ($shift->status !== ShiftStatus::Open) {
                 throw ValidationException::withMessages([
-                    'shift' => 'Smenani yopishdan oldin bu qurilmadagi ochiq buyurtmalarni yoping yoki bekor qiling.',
+                    'shift' => 'Faqat ochiq smenani yopish mumkin.',
                 ]);
             }
 
-            $shift->forceFill([
-                'closing_cash' => $closingCash,
-                'closed_at' => now(),
-                'status' => ShiftStatus::Closed,
-            ])->save();
-
-            return $shift;
+            return $this->finalize($shift, $closingCash);
         });
+    }
+
+    private function finalize(Shift $shift, int $closingCash): Shift
+    {
+        $hasOpenOrders = Order::query()
+            ->where('organization_id', $shift->organization_id)
+            ->where('store_id', $shift->store_id)
+            ->where('device_id', $shift->device_id)
+            ->where('status', OrderStatus::Open)
+            ->exists();
+
+        if ($hasOpenOrders) {
+            throw ValidationException::withMessages([
+                'shift' => 'Smenani yopishdan oldin bu qurilmadagi ochiq buyurtmalarni yoping yoki bekor qiling.',
+            ]);
+        }
+
+        $shift->forceFill([
+            'closing_cash' => $closingCash,
+            'closed_at' => now(),
+            'status' => ShiftStatus::Closed,
+        ])->save();
+
+        return $shift;
     }
 }

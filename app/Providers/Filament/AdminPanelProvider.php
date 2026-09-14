@@ -2,8 +2,11 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Admin\Pages\Dashboard;
+use App\Domain\Authorization\AccessibleAdminStores;
+use App\Enums\AdminNavigationGroup;
+use App\Http\Controllers\Admin\RedirectAdminHomeController;
 use App\Http\Middleware\InitializeTenantContext;
+use App\Support\TenantContext;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -12,13 +15,13 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -33,16 +36,31 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->navigationGroups(AdminNavigationGroup::class)
+            ->authenticatedRoutes(function (): void {
+                Route::get('/', RedirectAdminHomeController::class)->name('home');
+            })
+            ->renderHook(
+                PanelsRenderHook::USER_MENU_PROFILE_AFTER,
+                function () {
+                    $stores = app(AccessibleAdminStores::class)->forUser(request()->user());
+                    $currentStoreId = (int) session('current_store_id');
+
+                    if (! $stores->contains('id', $currentStoreId)) {
+                        $currentOrganizationId = app(TenantContext::class)->id();
+                        $currentStoreId = (int) ($stores->firstWhere('organization_id', $currentOrganizationId)?->getKey()
+                            ?? $stores->first()?->getKey());
+                    }
+
+                    return view('filament.admin.components.context-switcher', compact('stores', 'currentStoreId'));
+                },
+            )
+            ->renderHook(
+                PanelsRenderHook::AUTH_LOGIN_FORM_BEFORE,
+                fn () => view('filament.admin.components.pos-login-required'),
+            )
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\Filament\Admin\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\Filament\Admin\Pages')
-            ->pages([
-                Dashboard::class,
-            ])
-            ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\Filament\Admin\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
@@ -55,7 +73,9 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->plugins([
-                FilamentShieldPlugin::make(),
+                FilamentShieldPlugin::make()
+                    ->navigationGroup(AdminNavigationGroup::StaffAndPermissions)
+                    ->navigationSort(2),
             ])
             ->authMiddleware([
                 Authenticate::class,

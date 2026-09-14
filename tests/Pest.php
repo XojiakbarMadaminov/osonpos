@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Device;
+use App\Support\DeviceCredential;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -39,3 +41,10 @@ pest()->extend(TestCase::class)
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+function posDeviceSession(Device $device): array
+{
+    return [
+        DeviceCredential::SESSION_KEY => app(DeviceCredential::class)->issue($device),
+    ];
+}

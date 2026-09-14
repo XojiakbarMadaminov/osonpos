@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Categories;
 
+use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\Categories\Pages\CreateCategory;
 use App\Filament\Admin\Resources\Categories\Pages\EditCategory;
 use App\Filament\Admin\Resources\Categories\Pages\ListCategories;
@@ -15,6 +16,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class CategoryResource extends Resource
 {
@@ -25,6 +27,10 @@ class CategoryResource extends Resource
     protected static ?string $pluralModelLabel = 'kategoriyalar';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Catalog;
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
     {

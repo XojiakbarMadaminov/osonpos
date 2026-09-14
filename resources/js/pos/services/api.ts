@@ -88,9 +88,9 @@ export class ApiService {
         return payload.data;
     }
 
-    async registerDevice(name: string, code: string): Promise<RegisteredDevice> {
+    async activateDevice(activationCode: string): Promise<RegisteredDevice> {
         const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-        const response = await fetch('/api/pos/devices/register', {
+        const response = await fetch('/api/pos/devices/activate', {
             method: 'POST',
             credentials: 'same-origin',
             headers: {
@@ -98,11 +98,22 @@ export class ApiService {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken,
             },
-            body: JSON.stringify({ name, code }),
+            body: JSON.stringify({ activation_code: activationCode }),
         });
 
         if (!response.ok) {
-            throw new Error(response.status === 422 ? 'Qurilma nomi va kodini tekshiring.' : 'Qurilmani ro‘yxatdan o‘tkazib bo‘lmadi.');
+            if (response.status === 401) {
+                window.location.assign('/admin/login');
+                throw new Error('POS’dan foydalanish uchun avval tizimga kiring.');
+            }
+            if (response.status === 429) {
+                throw new Error('Juda ko‘p urinish qilindi. Bir daqiqadan keyin qayta urinib ko‘ring.');
+            }
+
+            const payload = await response.json().catch(() => null) as { message?: string; errors?: { activation_code?: string[] } } | null;
+            throw new Error(payload?.errors?.activation_code?.[0]
+                ?? payload?.message
+                ?? 'Qurilmani aktivatsiya qilib bo‘lmadi.');
         }
 
         const payload = (await response.json()) as { data: RegisteredDevice };

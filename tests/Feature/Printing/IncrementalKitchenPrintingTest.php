@@ -42,7 +42,7 @@ function kitchenContext(OrganizationRole $role = OrganizationRole::Cashier): arr
     return [$organization, $store, $user, $device, $order, [
         'current_organization_id' => $organization->id,
         'current_store_id' => $store->id,
-        'current_device_id' => $device->id,
+        ...posDeviceSession($device),
     ]];
 }
 

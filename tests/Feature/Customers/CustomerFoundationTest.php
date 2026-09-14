@@ -75,7 +75,7 @@ it('looks up a customer by phone through the POS API', function () {
         ->withSession([
             'current_organization_id' => $organization->id,
             'current_store_id' => $store->id,
-            'current_device_id' => $device->id,
+            ...posDeviceSession($device),
         ])
         ->getJson('/api/pos/customers/lookup?phone=%2B998%2090%20123-45-67')
         ->assertOk()
@@ -92,7 +92,7 @@ it('requires a phone for customer lookup', function () {
         ->withSession([
             'current_organization_id' => $organization->id,
             'current_store_id' => $store->id,
-            'current_device_id' => $device->id,
+            ...posDeviceSession($device),
         ])
         ->getJson('/api/pos/customers/lookup')
         ->assertUnprocessable()

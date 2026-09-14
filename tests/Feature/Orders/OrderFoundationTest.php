@@ -13,14 +13,21 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Organization;
 use App\Models\Product;
+use App\Models\Shift;
 use App\Models\Store;
 use App\Models\Subscription;
 use App\Models\Table;
 use App\Models\User;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Str;
 
-function orderUser(Organization $organization, Store $store, OrganizationRole $role = OrganizationRole::Cashier): array
-{
+function orderUser(
+    Organization $organization,
+    Store $store,
+    OrganizationRole $role = OrganizationRole::Cashier,
+    bool $withShift = true,
+): array {
     $user = User::factory()->create();
     $organization->users()->attach($user);
     $store->users()->attach($user);
@@ -32,13 +39,71 @@ function orderUser(Organization $organization, Store $store, OrganizationRole $r
     );
     Subscription::factory()->for($organization)->create();
     $device = Device::factory()->for($organization)->for($store)->create();
+    if ($withShift) {
+        Shift::factory()->for($organization)->for($store)->for($device)->for($user)->create();
+    }
 
     return [$user, $device, [
         'current_organization_id' => $organization->id,
         'current_store_id' => $store->id,
-        'current_device_id' => $device->id,
+        ...posDeviceSession($device),
     ]];
 }
+
+it('requires the current cashier shift for every order type', function (OrderType $type) {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    [$user, , $session] = orderUser($organization, $store, withShift: false);
+    $table = $type === OrderType::DineIn ? Table::factory()->for($organization)->for($store)->create() : null;
+    $payload = ['type' => $type->value];
+
+    if ($table) {
+        $payload['table_id'] = $table->id;
+    }
+    if ($type === OrderType::Delivery) {
+        $payload['customer'] = ['phone' => '+998901234567'];
+        $payload['delivery'] = ['address' => 'Toshkent', 'fee' => 0];
+    }
+
+    $this->actingAs($user)->withSession($session)->postJson('/api/pos/orders', $payload)
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('shift')
+        ->assertJsonPath('errors.shift.0', 'Buyurtma olish uchun avval smenani oching.');
+
+    expect(Order::query()->count())->toBe(0);
+})->with(OrderType::cases());
+
+it('does not use another device shift to create an order', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    [$user, $device, $session] = orderUser($organization, $store, withShift: false);
+    $otherDevice = Device::factory()->for($organization)->for($store)->create();
+    Shift::factory()->for($organization)->for($store)->for($otherDevice)->for($user)->create();
+
+    $this->actingAs($user)->withSession($session)->postJson('/api/pos/orders', [
+        'type' => OrderType::Takeaway->value,
+    ])->assertUnprocessable()->assertJsonValidationErrors('shift');
+
+    expect(Order::query()->count())->toBe(0)
+        ->and($device->is($otherDevice))->toBeFalse();
+});
+
+it('requires the current cashier shift when adding a product to an order', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    [$user, $device, $session] = orderUser($organization, $store, withShift: false);
+    $order = Order::factory()->for($organization)->for($store)->for($device)->for($user, 'creator')->create();
+    $product = orderProduct($organization);
+
+    $this->actingAs($user)->withSession($session)->postJson("/api/pos/orders/{$order->id}/items", [
+        'product_id' => $product->id,
+        'quantity' => 1,
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('shift')
+        ->assertJsonPath('errors.shift.0', 'Buyurtmaga mahsulot qo‘shish uchun avval smenani oching.');
+
+    expect(OrderItem::query()->count())->toBe(0);
+});
 
 function orderProduct(Organization $organization, array $attributes = []): Product
 {
@@ -100,7 +165,70 @@ it('creates takeaway orders with sequential store display numbers', function () 
     ])->assertCreated();
 
     expect($first->json('data.display_number'))->toBe('#0001')
-        ->and($second->json('data.display_number'))->toBe('#0002');
+        ->and($second->json('data.display_number'))->toBe('#0002')
+        ->and(Order::query()->latest('opened_at')->first()->business_date->toDateString())
+        ->toBe(now($store->timezone)->toDateString());
+});
+
+it('shows only orders from the current store-local business date', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create(['timezone' => 'America/New_York']);
+    [$user, , $session] = orderUser($organization, $store);
+    $this->travelTo(CarbonImmutable::parse('2026-09-15 04:30:00', 'Asia/Tashkent'));
+
+    $today = Order::factory()->for($organization)->for($store)->for($user, 'creator')->create([
+        'display_number' => '#0001',
+        'business_date' => '2026-09-14',
+    ]);
+    $yesterday = Order::factory()->for($organization)->for($store)->for($user, 'creator')->create([
+        'display_number' => '#0001',
+        'business_date' => '2026-09-13',
+    ]);
+
+    $this->actingAs($user)
+        ->withSession($session)
+        ->getJson('/api/pos/orders')
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $today->id)
+        ->assertJsonMissing(['id' => $yesterday->id]);
+});
+
+it('restarts display numbers on each store-local business date', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create(['timezone' => 'America/New_York']);
+    [$user, , $session] = orderUser($organization, $store);
+
+    $this->travelTo(CarbonImmutable::parse('2026-09-15 04:30:00', 'Asia/Tashkent'));
+    $firstDay = $this->actingAs($user)->withSession($session)->postJson('/api/pos/orders', [
+        'type' => OrderType::Takeaway->value,
+    ])->assertCreated();
+
+    $this->travelTo(CarbonImmutable::parse('2026-09-15 09:30:00', 'Asia/Tashkent'));
+    $secondDay = $this->actingAs($user)->withSession($session)->postJson('/api/pos/orders', [
+        'type' => OrderType::Takeaway->value,
+    ])->assertCreated();
+
+    expect($firstDay->json('data.display_number'))->toBe('#0001')
+        ->and($secondDay->json('data.display_number'))->toBe('#0001')
+        ->and(Order::query()->orderBy('business_date')->pluck('business_date')->map->toDateString()->all())
+        ->toBe(['2026-09-14', '2026-09-15']);
+});
+
+it('prevents duplicate display numbers within the same store business date', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $user = User::factory()->create();
+
+    Order::factory()->for($organization)->for($store)->for($user, 'creator')->create([
+        'display_number' => '#0001',
+        'business_date' => '2026-09-14',
+    ]);
+
+    expect(fn () => Order::factory()->for($organization)->for($store)->for($user, 'creator')->create([
+        'display_number' => '#0001',
+        'business_date' => '2026-09-14',
+    ]))->toThrow(QueryException::class);
 });
 
 it('creates delivery orders with a reusable customer and address snapshot', function () {

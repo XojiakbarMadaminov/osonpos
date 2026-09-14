@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\PrintRoutes;
 
 use App\Domain\Authorization\StoreAccess;
+use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\PrintRoutes\Pages\CreatePrintRoute;
 use App\Filament\Admin\Resources\PrintRoutes\Pages\EditPrintRoute;
 use App\Filament\Admin\Resources\PrintRoutes\Pages\ListPrintRoutes;
@@ -16,6 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class PrintRouteResource extends Resource
 {
@@ -26,6 +28,10 @@ class PrintRouteResource extends Resource
     protected static ?string $pluralModelLabel = 'chop etish yo‘nalishlari';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::BranchManagement;
+
+    protected static ?int $navigationSort = 5;
 
     public static function form(Schema $schema): Schema
     {

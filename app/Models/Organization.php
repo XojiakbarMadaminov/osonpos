@@ -23,6 +23,11 @@ class Organization extends Model
         return $this->hasMany(Store::class);
     }
 
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(Expense::class);
+    }
+
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class)

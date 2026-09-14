@@ -83,7 +83,7 @@ it('binds a logical printer to a physical name only for the current device and s
         ->withSession([
             'current_organization_id' => $organization->id,
             'current_store_id' => $store->id,
-            'current_device_id' => $device->id,
+            ...posDeviceSession($device),
         ])
         ->putJson("/api/pos/printers/{$printer->id}/binding", [
             'system_name' => 'EPSON TM-T20III',
@@ -93,6 +93,16 @@ it('binds a logical printer to a physical name only for the current device and s
 
     expect($printer->refresh()->system_name)->toBe('EPSON TM-T20III')
         ->and($printer->device_id)->toBe($device->id);
+
+    $this->actingAs($manager)
+        ->withSession([
+            'current_organization_id' => $organization->id,
+            'current_store_id' => $store->id,
+            ...posDeviceSession($device),
+        ])
+        ->get('/pos/device-setup')
+        ->assertOk()
+        ->assertSee('"can_manage_printers":true', false);
 });
 
 it('denies printer configuration without printers manage permission', function () {
@@ -103,11 +113,15 @@ it('denies printer configuration without printers manage permission', function (
     $session = [
         'current_organization_id' => $organization->id,
         'current_store_id' => $store->id,
-        'current_device_id' => $device->id,
+        ...posDeviceSession($device),
     ];
 
     $this->actingAs($cashier)->withSession($session)->getJson('/api/pos/printers')->assertForbidden();
-    $this->actingAs($cashier)->withSession($session)->get('/pos/device-setup')->assertForbidden();
+    $this->actingAs($cashier)
+        ->withSession($session)
+        ->get('/pos/device-setup')
+        ->assertOk()
+        ->assertSee('"can_manage_printers":false', false);
 });
 
 it('limits printer admin records by tenant and assigned store', function () {

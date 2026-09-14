@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { apiService } from '../services/api';
 import { printerService } from '../services/printer';
 import { ReceiptPrintService } from '../services/receipt-print';
 import { useOrderStore } from '../stores/order';
+import { useShiftStore } from '../stores/shift';
 
 const emit = defineEmits<{ navigate: [page: string] }>();
 const order = useOrderStore();
+const shift = useShiftStore();
 const method = ref('CASH');
 const paymentMethods = [
     { value: 'CASH', label: 'Naqd' },
@@ -18,10 +20,14 @@ const paymentMethods = [
 const amount = ref(order.current?.balance_due ?? 0);
 const busy = ref(false);
 const message = ref('');
-const canPay = computed(() => order.current !== null && (order.current.balance_due === 0 || amount.value > 0));
+const canPay = computed(() => shift.loaded && shift.current !== null && order.current !== null && (order.current.balance_due === 0 || amount.value > 0));
 
 async function pay(): Promise<void> {
     if (!order.current) return;
+    if (!shift.current) {
+        message.value = 'To‘lovni qabul qilish uchun avval smenani oching.';
+        return;
+    }
     busy.value = true;
     message.value = '';
     try {
@@ -50,6 +56,8 @@ async function pay(): Promise<void> {
         busy.value = false;
     }
 }
+
+onMounted(() => shift.load(true));
 </script>
 
 <template>
@@ -58,6 +66,11 @@ async function pay(): Promise<void> {
         <p v-if="order.current" class="mt-2 text-slate-400">{{ order.current.display_number }} · {{ order.current.total.toLocaleString() }} UZS</p>
         <p v-else class="mt-4 text-slate-400">Avval buyurtmani tanlang yoki yarating.</p>
         <div v-if="order.current" class="mt-6 space-y-5">
+            <div v-if="shift.loaded && !shift.current" class="rounded-lg border border-amber-700 bg-amber-500/10 p-4 text-sm text-amber-200">
+                <p>To‘lovni qabul qilish uchun avval smenani oching.</p>
+                <button class="mt-3 font-semibold text-amber-300 underline" type="button" @click="emit('navigate', 'shift')">Smenaga o‘tish</button>
+            </div>
+            <p v-else-if="shift.error" class="rounded-lg border border-red-800 bg-red-500/10 p-4 text-sm text-red-200">{{ shift.error }}</p>
             <div class="grid grid-cols-3 gap-2 sm:grid-cols-5">
                 <button v-for="item in paymentMethods" :key="item.value" class="min-h-12 rounded-lg border text-xs" :class="method === item.value ? 'border-amber-400 text-amber-300' : 'border-slate-700'" type="button" @click="method = item.value">{{ item.label }}</button>
             </div>

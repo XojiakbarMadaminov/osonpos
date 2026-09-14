@@ -2,3 +2,43 @@
 
 @source '../../../../app/Filament/Admin/**/*';
 @source '../../../../resources/views/filament/admin/**/*';
+
+.fi-dropdown-panel:has(.op-admin-context-switcher) {
+    max-width: min(22rem, calc(100vw - 1.5rem)) !important;
+}
+
+.op-admin-context-switcher {
+    padding: 0.75rem;
+}
+
+.op-admin-context-switcher label {
+    display: block;
+    margin-bottom: 0.375rem;
+    color: var(--gray-500);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.op-admin-context-switcher select {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    border: 1px solid var(--gray-300);
+    border-radius: 0.5rem;
+    background-color: white;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    color: var(--gray-950);
+    font-size: 0.875rem;
+}
+
+.dark .op-admin-context-switcher select {
+    border-color: var(--gray-700);
+    background-color: var(--gray-800);
+    color: white;
+}
+
+.op-admin-context-switcher p {
+    margin-top: 0.375rem;
+    color: var(--danger-600);
+    font-size: 0.75rem;
+}

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\SwitchAdminContextController;
 use App\Http\Controllers\Pos\DeviceSetupController;
 use Illuminate\Support\Facades\Route;
 
@@ -9,7 +10,13 @@ Route::get('/', function () {
 
 Route::redirect('/panel', '/admin');
 
-Route::view('/pos', 'pos')->name('pos');
+Route::post('/admin/context', SwitchAdminContextController::class)
+    ->middleware('auth')
+    ->name('admin.context.switch');
+
+Route::view('/pos', 'pos')
+    ->middleware(['pos.auth', 'pos.restore-device', 'context.tenant', 'context.store', 'pos.device.ready'])
+    ->name('pos');
 Route::get('/pos/device-setup', DeviceSetupController::class)
-    ->middleware(['auth', 'context.tenant', 'context.store'])
+    ->middleware(['pos.auth', 'pos.restore-device', 'context.tenant', 'context.store'])
     ->name('pos.device-setup');

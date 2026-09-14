@@ -2,28 +2,36 @@
 
 namespace App\Filament\Admin\Resources\Shifts;
 
+use App\Actions\Shifts\CloseShift;
 use App\Domain\Authorization\OrganizationAuthorization;
 use App\Domain\Authorization\StoreAccess;
+use App\Enums\AdminNavigationGroup;
 use App\Enums\OrganizationRole;
 use App\Enums\PaymentMethod;
 use App\Enums\ShiftStatus;
 use App\Filament\Admin\Resources\Shifts\Pages\ListShifts;
 use App\Filament\Admin\Resources\Shifts\Pages\ViewShift;
+use App\Filament\Admin\Support\DatePeriodFilter;
 use App\Models\Shift;
 use App\Models\Store;
 use App\Support\TenantContext;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
-use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
+use UnitEnum;
 
 class ShiftResource extends Resource
 {
@@ -34,6 +42,10 @@ class ShiftResource extends Resource
     protected static ?string $pluralModelLabel = 'smenalar';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Sales;
+
+    protected static ?int $navigationSort = 5;
 
     public static function table(Table $table): Table
     {
@@ -52,6 +64,7 @@ class ShiftResource extends Resource
                 TextColumn::make('closed_at')->dateTime()->placeholder('Ochiq')->sortable(),
             ])
             ->filters([
+                DatePeriodFilter::make('opened_at'),
                 SelectFilter::make('status')->options([
                     ShiftStatus::Open->value => ShiftStatus::Open->getLabel(),
                     ShiftStatus::Closed->value => ShiftStatus::Closed->getLabel(),
@@ -64,17 +77,13 @@ class ShiftResource extends Resource
                         ->orderBy('name')
                         ->pluck('name', 'id')
                         ->all()),
-                Filter::make('opened_at')
-                    ->schema([
-                        DatePicker::make('from'),
-                        DatePicker::make('until'),
-                    ])
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when($data['from'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('opened_at', '>=', $date))
-                        ->when($data['until'] ?? null, fn (Builder $query, string $date): Builder => $query->whereDate('opened_at', '<=', $date))),
-            ])
+            ], layout: FiltersLayout::AboveContent)
+            ->deferFilters(false)
             ->defaultSort('opened_at', 'desc')
-            ->recordActions([ViewAction::make()]);
+            ->recordActions([
+                ViewAction::make()->label('Ko‘rish'),
+                self::closeAction(),
+            ]);
     }
 
     public static function infolist(Schema $schema): Schema
@@ -130,5 +139,52 @@ class ShiftResource extends Resource
             'index' => ListShifts::route('/'),
             'view' => ViewShift::route('/{record}'),
         ];
+    }
+
+    public static function closeAction(): Action
+    {
+        return Action::make('close_shift')
+            ->label('Smenani yopish')
+            ->icon(Heroicon::OutlinedLockClosed)
+            ->color('danger')
+            ->visible(fn (Shift $record): bool => $record->status === ShiftStatus::Open
+                && Gate::allows('closeAsSupervisor', $record))
+            ->modalHeading('Smenani yopish')
+            ->modalDescription('Kassadagi haqiqiy naqd pulni kiriting. Ushbu amal smenani yakunlaydi.')
+            ->modalSubmitActionLabel('Smenani yopish')
+            ->schema([
+                TextInput::make('closing_cash')
+                    ->label('Yopilishdagi naqd pul')
+                    ->numeric()
+                    ->integer()
+                    ->minValue(0)
+                    ->suffix('UZS')
+                    ->required(),
+            ])
+            ->action(function (Shift $record, array $data): void {
+                Gate::authorize('closeAsSupervisor', $record);
+                try {
+                    app(CloseShift::class)->executeAsSupervisor(
+                        $record,
+                        request()->user(),
+                        (int) $data['closing_cash'],
+                    );
+                } catch (ValidationException $exception) {
+                    Notification::make()
+                        ->danger()
+                        ->title('Smena yopilmadi')
+                        ->body(collect($exception->errors())->flatten()->first())
+                        ->persistent()
+                        ->send();
+
+                    return;
+                }
+                $record->refresh();
+
+                Notification::make()
+                    ->success()
+                    ->title('Smena yopildi')
+                    ->send();
+            });
     }
 }

@@ -165,6 +165,7 @@ Organization, store, product, customer kabi foydalanuvchi kiritgan business data
 
 - Cashier shifts
 - Devices / POS terminals
+- Chiqimlar
 
 ---
 
@@ -737,7 +738,6 @@ Organization owner/manager uchun.
 
 Sections:
 
-- Dashboard
 - Stores
 - Products
 - Categories
@@ -748,9 +748,23 @@ Sections:
 - Roles
 - Printers
 - Reports
-- Settings
+
+Joriy organization va faol filial alohida sozlamalar sahifasida emas, admin panelning o‘ng yuqori profil menyusida ko‘rsatiladi. Foydalanuvchi shu menyudagi bitta select orqali faqat o‘zi kirish huquqiga ega faol filialni tanlaydi. Filial tanlanganda uning organization'i backend tomonidan aniqlanadi; requestdan `organization_id` qabul qilinmaydi.
 
 Menu user permission va organization subscription feature'lariga qarab avtomatik yashiriladi.
+
+Admin yon menyusi vazifasiga qarab quyidagi tartibda guruhlanadi:
+
+- Savdo — Hisobotlar, Buyurtmalar, Mijozlar, Chiqimlar, Smenalar
+- Katalog — Kategoriyalar, Mahsulotlar
+- Filial boshqaruvi — Filiallar, Stollar, Qurilmalar, Printerlar, Chop etish yo‘nalishlari
+- Xodimlar va ruxsatlar — Foydalanuvchilar, Rollar
+
+Guruhlash faqat navigatsiya ko‘rinishini tartiblaydi; permission va subscription feature tekshiruvlarini o‘zgartirmaydi.
+
+Organization admin uchun alohida bo‘sh dashboard mavjud emas. `/admin` foydalanuvchini permission va feature tekshiruvlaridan o‘tgan birinchi mavjud admin bo‘limiga, hech qanday admin bo‘limi mavjud bo‘lmasa `/pos` ga yo‘naltiradi.
+
+`/admin/orders`, `/admin/expenses` va `/admin/shifts` jadvallari ustida yagona davr filtri bo‘ladi: Bugun, Hafta, Oy va Oraliq. Standart qiymat Bugun. Hafta joriy kalendar haftasini, Oy joriy kalendar oyini, Oraliq esa foydalanuvchi kiritgan inclusive boshlanish va tugash sanalarini qo‘llaydi. Davr filtri tenant, store access va boshqa resource filterlarini chetlab o‘tmaydi.
 
 ---
 
@@ -768,6 +782,10 @@ name
 code
 is_active
 last_seen_at
+activation_code_hash nullable
+activation_expires_at nullable
+credential_hash nullable
+activated_at nullable
 created_at
 updated_at
 ```
@@ -778,7 +796,29 @@ Misollar:
 - Second Cashier
 - Waiter Tablet 1
 
-POS login qilgandan keyin device bir store bilan bog‘lanadi.
+`/pos` va `/pos/device-setup` faqat login qilingan user uchun ochiladi. Guest organization panelining `/admin/login` sahifasiga, dastlab so‘ralgan URL saqlangan holda yo‘naltiriladi. Login sahifasida POS uchun avval tizimga kirish kerakligi o‘zbek tilida ko‘rsatiladi.
+
+Device organization admin panelida `printers.manage` ruxsatiga ega owner yoki manager tomonidan yaratiladi. Har bir yangi browser profili device bilan quyidagi oqimda bir marta bog‘lanadi:
+
+```text
+Admin device yaratadi
+↓
+8 belgili, 10 daqiqalik bir martalik aktivatsiya kodi yaratadi
+↓
+POS user login qiladi
+↓
+/pos/device-setup da kodni kiritadi
+↓
+Backend membership + pos.access + store access + subscription + pos feature'ni tekshiradi
+↓
+Browserga uzoq muddatli HttpOnly device credential beriladi
+```
+
+Aktivatsiya kodi va device credential bazada ochiq saqlanmaydi. Kod faqat bir marta ishlaydi. Device qayta aktivatsiya qilinsa yoki admin ulanishni bekor qilsa eski browser credential darhol yaroqsiz bo‘ladi. Device `is_active = false` bo‘lsa barcha device-bound POS so‘rovlari bloklanadi.
+
+Device credential browser profiliga tegishli va login sessiyasidan alohida saqlanadi. Shu browser qayta ochilganda setup takrorlanmaydi; boshqa browser, inkognito profil yoki cookie tozalanganda qayta aktivatsiya talab qilinadi. Credential login qilgan userning organization membership, permission va store access tekshiruvlarini chetlab o‘tmaydi.
+
+Frontend saqlagan oddiy `device_id` kelajakdagi offline metadata uchun ishlatilishi mumkin, ammo authorization credential hisoblanmaydi va `X-POS-Device-ID` kabi request qiymatiga backend ishonmaydi.
 
 ---
 
@@ -914,6 +954,7 @@ organization_id
 store_id
 device_id nullable
 display_number
+business_date
 type
 table_id nullable
 customer_id nullable
@@ -957,9 +998,11 @@ Misol:
 #0152
 ```
 
-MVP'da store-level sequential number server orqali yaratiladi.
+MVP'da display number server orqali har bir store va store-local `business_date` kesimida ketma-ket yaratiladi. Har yangi mahalliy kunda birinchi buyurtma `#0001` dan boshlanadi. Store vaqt zonasi `stores.timezone` orqali aniqlanadi.
 
 `display_number` string sifatida saqlanishi kerak.
+
+`/api/pos/orders` faqat joriy store-local `business_date` buyurtmalarini qaytaradi. Eski kun buyurtmalari admin tarixida saqlanadi, ammo POS ish oynasida ko‘rsatilmaydi.
 
 Bu kelajakda offline mode'da device-specific numberingga o'tish imkonini beradi.
 
@@ -1215,10 +1258,18 @@ Shift faqat joriy organization, store, device va user kontekstida ochiladi/yopil
 
 `payments` jadvalida nullable `shift_id` bo‘ladi.
 
-- CASH payment uchun joriy OPEN shift majburiy.
-- Shift ochiq paytda qabul qilingan CARD, CLICK, PAYME va OTHER paymentlar ham shu shiftga bog‘lanadi.
-- Shift ochilmagan paytdagi non-cash payment backward-compatible tarzda `shift_id = null` bo‘lishi mumkin.
+- CASH, CARD, CLICK, PAYME va OTHER paymentlarning barchasi uchun joriy OPEN shift majburiy.
+- Har bir yangi payment joriy OPEN shiftga bog‘lanadi; smena ochilmagan paytda yangi payment qabul qilinmaydi.
+- Avvalgi versiyalarda yaratilgan tarixiy paymentlarda backward compatibility uchun `shift_id = null` qolishi mumkin.
 - Payment va shift organization, store, device va creator bo‘yicha bir xil kontekstga tegishli bo‘lishi shart.
+
+## Shift va buyurtma olish
+
+- DINE_IN, TAKEAWAY va DELIVERY buyurtmalarini yaratish uchun joriy organization, store, device va user kesimida OPEN shift majburiy.
+- Ochiq buyurtmaga yangi mahsulot qo‘shish ham joriy OPEN shiftni talab qiladi.
+- Boshqa user yoki device smenasi buyurtma olish huquqini bermaydi.
+- Client ULID bilan aynan oldin saqlangan buyurtma yoki item qayta yuborilsa, idempotent replay yangi transaction hisoblanmaydi.
+- POS smena bo‘lmaganda order-taking control'larini bloklaydi va kassirni Smena sahifasiga yo‘naltiradi; backend tekshiruvi baribir majburiy qoladi.
 
 ## Shift hisoblari
 
@@ -1244,12 +1295,74 @@ cash_difference = closing_cash - expected_cash
 
 POS `/pos` dagi Shift sahifasi OPEN holati, kassir, device, ochilgan vaqt, opening cash, payment method kesimidagi summalar, expected cash va closing difference'ni ko‘rsatadi.
 
-Organization admin `/admin/shifts` sahifasi read-only tarixdir:
+Organization admin `/admin/shifts` sahifasi smena tarixi va tashlab ketilgan ochiq smenani xavfsiz yakunlash uchun ishlatiladi:
 
 - Owner va Manager o‘ziga ruxsat berilgan store'lardagi shiftlarni ko‘radi.
 - Cashier faqat o‘z shiftlarini ko‘radi.
 - Boshqa organization yoki ruxsat berilmagan store shiftlari ko‘rinmaydi.
 - Status, store va ochilgan sana bo‘yicha filter mavjud.
+- Owner yoki Manager `shifts.manage` ruxsati va store access mavjud bo‘lsa, kassir tashlab ketgan OPEN smenani admin paneldan yopishi mumkin.
+- Admin orqali yopishda `closing_cash` majburiy kiritiladi va shu device'da OPEN order bo‘lsa smena yopilmaydi.
+- Admin yopishi smenani tahrirlash emas, ruxsat bilan bajariladigan yakuniy status transition hisoblanadi; CLOSED smena o‘zgartirilmaydi.
+
+---
+
+# 33.1. Chiqimlar
+
+Chiqimlar moduli organization egasiga filial xarajatlarini sodda tarzda qayd etish va kuzatish imkonini beradi. Bu modul buxgalteriya, ombor, ingredient, supplier yoki purchase tizimi emas.
+
+## expenses
+
+```text
+id ULID
+organization_id
+store_id
+type
+amount
+description nullable
+incurred_on
+status
+created_by
+cancelled_by nullable
+cancelled_at nullable
+cancellation_reason nullable
+created_at
+updated_at
+```
+
+Chiqim turi:
+
+- PRODUCT_COST — Mahsulotlar xarajati
+- RENT — Ijara
+- SALARY — Oylik maosh
+- OTHER — Boshqa
+
+Status:
+
+- ACTIVE — Faol
+- CANCELLED — Bekor qilingan
+
+Qoidalar:
+
+- `amount` integer UZS bo‘lib, noldan katta bo‘lishi shart.
+- `description` ixtiyoriy; foydalanuvchi kerak bo‘lsa chiqim nima uchun qilinganini yozadi.
+- `incurred_on` xarajat amalga oshirilgan sanani saqlaydi.
+- Organization va store request qiymatidan ko‘r-ko‘rona olinmaydi; joriy tenant hamda userning store access'i backendda tekshiriladi.
+- Chiqim moliyaviy tarix bo‘lgani uchun tahrirlanmaydi va fizik o‘chirilmaydi.
+- Xato kiritilgan chiqim faqat majburiy sabab bilan CANCELLED qilinadi.
+- Umumiy summa faqat ACTIVE chiqimlardan hisoblanadi.
+
+Ruxsatlar:
+
+- `expenses.view`
+- `expenses.manage`
+- Owner ikkala permissionni default oladi.
+- Manager, Cashier va Waiter bu permissionlarni default olmaydi; owner role sozlamasi orqali keyinchalik alohida berishi mumkin.
+- User faqat o‘ziga ruxsat berilgan store chiqimlarini ko‘radi va yaratadi.
+
+`/admin/expenses` sahifasida chiqimlar ro‘yxati, yangi chiqim yaratish, read-only tafsilot, bekor qilish, sana/store/type/status filterlari va joriy filterga mos ACTIVE chiqimlar jami ko‘rsatiladi. Yangi chiqim formasida admin profil menyusida tanlangan faol store default tanlanadi. Barcha ko‘rinadigan matnlar o‘zbek tilida bo‘ladi.
+
+`/admin/reports` sahifasi tanlangan sana va ruxsat etilgan store filtrlari bo‘yicha faqat ACTIVE chiqimlar jami va chiqim turi bo‘yicha taqsimotni ko‘rsatadi. CANCELLED chiqimlar, boshqa tenant va ruxsat berilmagan store ma’lumotlari hisobotga kiritilmaydi.
 
 ---
 
@@ -1344,7 +1457,7 @@ Masalan:
 /pos/device-setup
 ```
 
-Bu sahifa `printers.manage` permission talab qiladi.
+Bu sahifaning terminal aktivatsiya qismi login, `pos.access` va haqiqiy bir martalik kod talab qiladi. Physical printerlarni aniqlash, test qilish va binding saqlash qismi esa alohida `printers.manage` permission talab qiladi.
 
 ---
 
@@ -1495,7 +1608,7 @@ POST   /api/pos/orders/{order}/cancel
 POST   /api/pos/shifts
 POST   /api/pos/shifts/{shift}/close
 
-POST   /api/pos/devices/register
+POST   /api/pos/devices/activate
 ```
 
 Exact route naming implementation vaqtida Laravel convention'ga moslashtirilishi mumkin.

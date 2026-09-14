@@ -7,7 +7,7 @@ it('can promote an existing user as the first platform administrator', function 
     $user = User::factory()->create(['email' => 'operator@example.test']);
 
     $this->artisan('app:platform-admin', ['email' => $user->email])
-        ->expectsOutputToContain('can now access /platform')
+        ->expectsOutputToContain('endi /platform sahifasiga kira oladi')
         ->assertSuccessful();
 
     expect($user->refresh()->is_platform_admin)->toBeTrue();

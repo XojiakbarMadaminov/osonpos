@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Printers;
 
 use App\Domain\Authorization\StoreAccess;
+use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\Printers\Pages\CreatePrinter;
 use App\Filament\Admin\Resources\Printers\Pages\EditPrinter;
 use App\Filament\Admin\Resources\Printers\Pages\ListPrinters;
@@ -16,6 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class PrinterResource extends Resource
 {
@@ -26,6 +28,10 @@ class PrinterResource extends Resource
     protected static ?string $pluralModelLabel = 'printerlar';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedPrinter;
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::BranchManagement;
+
+    protected static ?int $navigationSort = 4;
 
     public static function form(Schema $schema): Schema
     {

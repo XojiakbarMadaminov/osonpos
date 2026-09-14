@@ -108,6 +108,7 @@ class Order extends Model
             'total' => 'integer',
             'opened_at' => 'immutable_datetime',
             'closed_at' => 'immutable_datetime',
+            'business_date' => 'immutable_date',
         ];
     }
 }

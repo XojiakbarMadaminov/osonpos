@@ -40,6 +40,12 @@ class ShiftPolicy
             && app(StoreAccess::class)->allows($user, $shift->store);
     }
 
+    public function closeAsSupervisor(User $user, Shift $shift): bool
+    {
+        return $this->update($user, $shift)
+            && $user->hasAnyRole([OrganizationRole::Owner->value, OrganizationRole::Manager->value]);
+    }
+
     public function delete(User $user, Shift $shift): bool
     {
         return false;

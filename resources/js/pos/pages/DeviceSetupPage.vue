@@ -3,23 +3,30 @@ import { ref } from 'vue';
 import { apiService, type ConfiguredPrinter, type RegisteredDevice } from '../services/api';
 import { printerService } from '../services/printer';
 
-const name = ref('');
-const code = ref('');
+interface PosSetupState {
+    device: RegisteredDevice | null;
+    can_manage_printers: boolean;
+}
+
+const setup = (window as Window & { __OSONPOS_SETUP__?: PosSetupState }).__OSONPOS_SETUP__;
+const activationCode = ref('');
 const saving = ref(false);
 const error = ref('');
-const device = ref<RegisteredDevice | null>(null);
+const device = ref<RegisteredDevice | null>(setup?.device ?? null);
+const canManagePrinters = setup?.can_manage_printers ?? false;
 const configuredPrinters = ref<ConfiguredPrinter[]>([]);
 const discoveredPrinters = ref<string[]>([]);
 const logicalPrinterId = ref<number | null>(null);
 const physicalPrinter = ref('');
 const qzConnected = ref(false);
 
-async function register(): Promise<void> {
+async function activate(): Promise<void> {
     saving.value = true;
     error.value = '';
 
     try {
-        device.value = await apiService.registerDevice(name.value, code.value);
+        await apiService.activateDevice(activationCode.value);
+        window.location.assign('/pos');
     } catch (exception) {
         error.value = exception instanceof Error ? exception.message : 'Qurilmani ro‘yxatdan o‘tkazib bo‘lmadi.';
     } finally {
@@ -75,12 +82,12 @@ async function saveBinding(): Promise<void> {
                 <a class="flex min-h-12 w-full items-center justify-center rounded-lg bg-amber-400 px-5 font-semibold text-slate-950" href="/pos">
                     POS’ga o‘tish
                 </a>
-                <p class="text-center text-sm text-slate-400">Printerni hozir yoki keyinroq ulashingiz mumkin.</p>
-                <button class="min-h-12 w-full rounded-lg border border-amber-400 px-5 font-semibold text-amber-300" :disabled="saving" type="button" @click="discoverPrinters">
+                <p v-if="canManagePrinters" class="text-center text-sm text-slate-400">Printerni hozir yoki keyinroq ulashingiz mumkin.</p>
+                <button v-if="canManagePrinters" class="min-h-12 w-full rounded-lg border border-amber-400 px-5 font-semibold text-amber-300" :disabled="saving" type="button" @click="discoverPrinters">
                     {{ qzConnected ? 'Printerlar ro‘yxatini yangilash' : 'Ulanish va printerlarni aniqlash' }}
                 </button>
-                <p class="text-sm" :class="qzConnected ? 'text-emerald-300' : 'text-slate-400'">QZ Tray: {{ qzConnected ? 'ulangan' : 'ulanmagan' }}</p>
-                <form v-if="discoveredPrinters.length" class="space-y-4" @submit.prevent="saveBinding">
+                <p v-if="canManagePrinters" class="text-sm" :class="qzConnected ? 'text-emerald-300' : 'text-slate-400'">QZ Tray: {{ qzConnected ? 'ulangan' : 'ulanmagan' }}</p>
+                <form v-if="canManagePrinters && discoveredPrinters.length" class="space-y-4" @submit.prevent="saveBinding">
                     <select v-model="logicalPrinterId" class="min-h-12 w-full rounded-lg border border-slate-700 bg-slate-950 px-4" required>
                         <option :value="null" disabled>Sozlangan printerni tanlang</option>
                         <option v-for="printer in configuredPrinters" :key="printer.id" :value="printer.id">{{ printer.name }}</option>
@@ -94,18 +101,17 @@ async function saveBinding(): Promise<void> {
                 <p v-if="error" class="text-sm text-red-300" role="alert">{{ error }}</p>
             </div>
 
-            <form v-else class="mt-6 space-y-5" @submit.prevent="register">
+            <form v-else class="mt-6 space-y-5" @submit.prevent="activate">
+                <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-4 text-sm text-slate-300">
+                    Tashkilot egasi yoki boshqaruvchidan 10 daqiqalik bir martalik aktivatsiya kodini oling.
+                </div>
                 <label class="block">
-                    <span class="text-sm font-medium">Qurilma nomi</span>
-                    <input v-model="name" class="mt-2 min-h-12 w-full rounded-lg border border-slate-700 bg-slate-950 px-4" required maxlength="255">
-                </label>
-                <label class="block">
-                    <span class="text-sm font-medium">Qurilma kodi</span>
-                    <input v-model="code" class="mt-2 min-h-12 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 uppercase" required maxlength="255" pattern="[A-Za-z0-9_-]+">
+                    <span class="text-sm font-medium">Aktivatsiya kodi</span>
+                    <input v-model="activationCode" class="mt-2 min-h-12 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 text-center text-xl font-semibold uppercase tracking-[0.3em]" required minlength="8" maxlength="8" pattern="[A-Za-z0-9]+" autocomplete="one-time-code">
                 </label>
                 <p v-if="error" class="text-sm text-red-300" role="alert">{{ error }}</p>
                 <button class="min-h-12 w-full rounded-lg bg-amber-400 px-5 font-semibold text-slate-950 disabled:opacity-60" :disabled="saving" type="submit">
-                    {{ saving ? 'Ro‘yxatdan o‘tkazilmoqda…' : 'Qurilmani ro‘yxatdan o‘tkazish' }}
+                    {{ saving ? 'Aktivatsiya qilinmoqda…' : 'Qurilmani aktivatsiya qilish' }}
                 </button>
             </form>
         </section>

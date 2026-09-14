@@ -16,13 +16,14 @@
         </x-filament::section>
 
         @php($report = $this->report())
-        <div class="grid gap-4 md:grid-cols-3">
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <x-filament::section heading="Tushum"><div class="text-2xl font-semibold">{{ number_format($report['revenue']) }} UZS</div></x-filament::section>
+            <x-filament::section heading="Chiqimlar"><div class="text-2xl font-semibold">{{ number_format($report['expense_total']) }} UZS</div></x-filament::section>
             <x-filament::section heading="Buyurtmalar"><div class="text-2xl font-semibold">{{ number_format($report['order_count']) }}</div></x-filament::section>
             <x-filament::section heading="O‘rtacha chek"><div class="text-2xl font-semibold">{{ number_format($report['average_check']) }} UZS</div></x-filament::section>
         </div>
 
-        <div class="grid gap-6 lg:grid-cols-2">
+        <div class="grid gap-6 lg:grid-cols-3">
             <x-filament::section heading="To‘lov turlari bo‘yicha">
                 <div class="space-y-2">
                     @forelse ($report['payment_breakdown'] as $row)
@@ -39,6 +40,16 @@
                         <div class="flex justify-between"><span>{{ $row['label'] }}</span><strong>{{ number_format($row['total']) }}</strong></div>
                     @empty
                         <p>Bu davrda yakunlangan buyurtmalar yo‘q.</p>
+                    @endforelse
+                </div>
+            </x-filament::section>
+
+            <x-filament::section heading="Chiqim turlari bo‘yicha">
+                <div class="space-y-2">
+                    @forelse ($report['expense_breakdown'] as $row)
+                        <div class="flex justify-between gap-4"><span>{{ $row['label'] }}</span><strong class="text-right">{{ number_format($row['total']) }} UZS</strong></div>
+                    @empty
+                        <p>Bu davrda faol chiqimlar yo‘q.</p>
                     @endforelse
                 </div>
             </x-filament::section>

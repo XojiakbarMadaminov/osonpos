@@ -46,7 +46,7 @@ function completionContext(OrderType $type = OrderType::Takeaway): array
     return [$organization, $store, $manager, $device, $table, $order, [
         'current_organization_id' => $organization->id,
         'current_store_id' => $store->id,
-        'current_device_id' => $device->id,
+        ...posDeviceSession($device),
     ]];
 }
 

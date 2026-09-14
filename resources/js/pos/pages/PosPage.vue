@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { apiService } from '../services/api';
 import { KitchenPrintService } from '../services/kitchen-print';
 import { printerService } from '../services/printer';
 import { useCartStore } from '../stores/cart';
 import { useOrderStore } from '../stores/order';
+import { useShiftStore } from '../stores/shift';
 import type { PosBootstrap, PosProduct } from '../types/bootstrap';
 
 const props = defineProps<{ bootstrap: PosBootstrap }>();
 const emit = defineEmits<{ navigate: [page: string] }>();
 const cart = useCartStore();
 const order = useOrderStore();
+const shift = useShiftStore();
 const kitchenPrinter = new KitchenPrintService(apiService, printerService);
 const selectedCategory = ref<number | null>(props.bootstrap.categories[0]?.id ?? null);
 const busy = ref(false);
@@ -19,9 +21,15 @@ const products = computed(() => props.bootstrap.products.filter(
     (product) => selectedCategory.value === null || product.category_id === selectedCategory.value,
 ));
 const isAddingToOrder = computed(() => order.current?.status === 'OPEN');
+const canTakeOrder = computed(() => shift.loaded && shift.current !== null);
 const displayedTotal = computed(() => (isAddingToOrder.value ? order.current?.total ?? 0 : 0) + cart.subtotal);
 
 function add(product: PosProduct): void {
+    if (!canTakeOrder.value) {
+        error.value = 'Buyurtma olish uchun avval smenani oching.';
+        return;
+    }
+
     cart.add(product);
 }
 
@@ -32,12 +40,22 @@ function cancelAddingProducts(): void {
 }
 
 function chooseType(type: 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY'): void {
+    if (!canTakeOrder.value) {
+        error.value = 'Buyurtma olish uchun avval smenani oching.';
+        return;
+    }
+
     order.start(type);
     if (type === 'DINE_IN') emit('navigate', 'tables');
     if (type === 'DELIVERY') emit('navigate', 'delivery');
 }
 
 async function saveOrder(): Promise<void> {
+    if (!canTakeOrder.value) {
+        error.value = 'Buyurtma olish uchun avval smenani oching.';
+        return;
+    }
+
     if (cart.items.length === 0) return;
     if (order.type === 'DINE_IN' && order.tableId === null) {
         emit('navigate', 'tables');
@@ -96,17 +114,24 @@ async function saveOrder(): Promise<void> {
         busy.value = false;
     }
 }
+
+onMounted(() => shift.load(true));
 </script>
 
 <template>
     <section class="grid gap-5 lg:h-full lg:min-h-0 lg:grid-cols-[13rem_1fr_22rem]">
+        <div v-if="shift.loaded && !shift.current" class="rounded-xl border border-amber-700 bg-amber-500/10 p-4 text-sm text-amber-200 lg:col-span-3">
+            <p>Buyurtma olish uchun avval smenani oching.</p>
+            <button class="mt-2 font-semibold text-amber-300 underline" type="button" @click="emit('navigate', 'shift')">Smenaga o‘tish</button>
+        </div>
+        <p v-else-if="shift.error" class="rounded-xl border border-red-800 bg-red-500/10 p-4 text-sm text-red-200 lg:col-span-3">{{ shift.error }}</p>
         <aside class="rounded-xl border border-slate-800 bg-slate-900 p-3 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable]" aria-label="Kategoriyalar">
             <button v-for="category in bootstrap.categories" :key="category.id" class="mb-2 min-h-12 w-full rounded-lg px-4 text-left font-medium" :class="selectedCategory === category.id ? 'bg-amber-400 text-slate-950' : 'bg-slate-800'" type="button" @click="selectedCategory = category.id">
                 {{ category.name }}
             </button>
         </aside>
         <div class="grid content-start grid-cols-2 gap-3 rounded-xl border border-slate-800 bg-slate-900 p-4 md:grid-cols-3 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable] xl:grid-cols-4">
-            <button v-for="product in products" :key="product.id" class="min-h-24 rounded-xl border border-slate-700 bg-slate-800 p-4 text-left hover:border-amber-400 active:scale-95" type="button" @click="add(product)">
+            <button v-for="product in products" :key="product.id" class="min-h-24 rounded-xl border border-slate-700 bg-slate-800 p-4 text-left hover:border-amber-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canTakeOrder" type="button" @click="add(product)">
                 <span class="block font-semibold">{{ product.name }}</span>
                 <span class="mt-2 block text-sm text-amber-300">{{ product.price.toLocaleString() }} UZS</span>
             </button>
@@ -117,9 +142,9 @@ async function saveOrder(): Promise<void> {
                 <button class="flex min-h-8 min-w-8 items-center justify-center rounded-md text-xl leading-none hover:bg-amber-400/15" :disabled="busy" type="button" aria-label="Mahsulot qo‘shishni bekor qilish" title="Mahsulot qo‘shishni bekor qilish" @click="cancelAddingProducts">×</button>
             </div>
             <div class="grid grid-cols-3 gap-2">
-                <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'DINE_IN' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'DINE_IN'" :disabled="isAddingToOrder" type="button" @click="chooseType('DINE_IN')">Zalda</button>
-                <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'TAKEAWAY' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'TAKEAWAY'" :disabled="isAddingToOrder" type="button" @click="chooseType('TAKEAWAY')">Olib ketish</button>
-                <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'DELIVERY' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'DELIVERY'" :disabled="isAddingToOrder" type="button" @click="chooseType('DELIVERY')">Yetkazish</button>
+                <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'DINE_IN' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'DINE_IN'" :disabled="isAddingToOrder || !canTakeOrder" type="button" @click="chooseType('DINE_IN')">Zalda</button>
+                <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'TAKEAWAY' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'TAKEAWAY'" :disabled="isAddingToOrder || !canTakeOrder" type="button" @click="chooseType('TAKEAWAY')">Olib ketish</button>
+                <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'DELIVERY' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'DELIVERY'" :disabled="isAddingToOrder || !canTakeOrder" type="button" @click="chooseType('DELIVERY')">Yetkazish</button>
             </div>
             <div class="mt-4 space-y-3">
                 <div v-for="(item, index) in cart.items" :key="`${item.productId}-${index}`" class="rounded-xl border border-slate-700/80 bg-slate-800 p-3 shadow-sm">
@@ -150,7 +175,7 @@ async function saveOrder(): Promise<void> {
             </div>
             <div class="mt-5 flex items-center justify-between border-t border-slate-700 pt-4 text-lg font-bold"><span>Jami</span><span>{{ displayedTotal.toLocaleString() }} UZS</span></div>
             <p v-if="error" class="mt-3 text-sm text-red-300">{{ error }}</p>
-            <button class="mt-4 min-h-14 w-full rounded-xl bg-amber-400 px-5 font-bold text-slate-950 disabled:opacity-50" :disabled="busy || cart.items.length === 0" type="button" @click="saveOrder">
+            <button class="mt-4 min-h-14 w-full rounded-xl bg-amber-400 px-5 font-bold text-slate-950 disabled:opacity-50" :disabled="busy || !canTakeOrder || cart.items.length === 0" type="button" @click="saveOrder">
                 {{ busy ? 'Saqlanmoqda va chop etilmoqda…' : isAddingToOrder ? 'Qo‘shish va oshxonaga yuborish' : 'Saqlash va oshxonaga yuborish' }}
             </button>
         </aside>

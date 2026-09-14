@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Tables;
 
 use App\Domain\Authorization\StoreAccess;
 use App\Domain\Subscription\SubscriptionAccess;
+use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\Tables\Pages\CreateTable;
 use App\Filament\Admin\Resources\Tables\Pages\EditTable;
 use App\Filament\Admin\Resources\Tables\Pages\ListTables;
@@ -17,6 +18,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class TableResource extends Resource
 {
@@ -27,6 +29,10 @@ class TableResource extends Resource
     protected static ?string $pluralModelLabel = 'stollar';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::BranchManagement;
+
+    protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
     {

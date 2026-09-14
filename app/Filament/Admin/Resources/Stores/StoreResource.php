@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Resources\Stores;
 
 use App\Domain\Authorization\StoreAccess;
+use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\Stores\Pages\CreateStore;
 use App\Filament\Admin\Resources\Stores\Pages\EditStore;
 use App\Filament\Admin\Resources\Stores\Pages\ListStores;
@@ -19,6 +20,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class StoreResource extends Resource
 {
@@ -29,6 +31,10 @@ class StoreResource extends Resource
     protected static ?string $pluralModelLabel = 'filiallar';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::BranchManagement;
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
     {

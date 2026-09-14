@@ -2,6 +2,7 @@
 
 namespace App\Actions\Orders;
 
+use App\Domain\Shift\CurrentShift;
 use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -18,6 +19,7 @@ class AddOrderItem
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly StoreContext $storeContext,
+        private readonly CurrentShift $currentShift,
     ) {}
 
     public function execute(Order $order, User $user, AddOrderItemData $data): OrderItem
@@ -34,6 +36,12 @@ class AddOrderItem
                 }
 
                 return $existing;
+            }
+
+            if (! $this->currentShift->for($user)) {
+                throw ValidationException::withMessages([
+                    'shift' => 'Buyurtmaga mahsulot qo‘shish uchun avval smenani oching.',
+                ]);
             }
 
             $product = Product::query()

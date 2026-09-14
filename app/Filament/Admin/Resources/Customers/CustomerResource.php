@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Customers;
 
+use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\Customers\Pages\ListCustomers;
 use App\Filament\Admin\Resources\Customers\Tables\CustomersTable;
 use App\Models\Customer;
@@ -11,6 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class CustomerResource extends Resource
 {
@@ -21,6 +23,10 @@ class CustomerResource extends Resource
     protected static ?string $pluralModelLabel = 'mijozlar';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUserGroup;
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::Sales;
+
+    protected static ?int $navigationSort = 3;
 
     public static function table(Table $table): Table
     {

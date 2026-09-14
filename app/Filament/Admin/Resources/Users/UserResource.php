@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Users;
 
 use App\Domain\Authorization\OrganizationAuthorization;
 use App\Domain\Authorization\StoreAccess;
+use App\Enums\AdminNavigationGroup;
 use App\Enums\OrganizationRole;
 use App\Filament\Admin\Resources\Users\Pages\CreateUser;
 use App\Filament\Admin\Resources\Users\Pages\EditUser;
@@ -21,6 +22,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Permission\Models\Role;
+use UnitEnum;
 
 class UserResource extends Resource
 {
@@ -31,6 +33,10 @@ class UserResource extends Resource
     protected static ?string $pluralModelLabel = 'foydalanuvchilar';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+
+    protected static string|UnitEnum|null $navigationGroup = AdminNavigationGroup::StaffAndPermissions;
+
+    protected static ?int $navigationSort = 1;
 
     public static function form(Schema $schema): Schema
     {

@@ -3,6 +3,7 @@
 namespace App\Actions\Orders;
 
 use App\Actions\Customers\FindOrCreateCustomer;
+use App\Domain\Shift\CurrentShift;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
@@ -13,6 +14,7 @@ use App\Models\Store;
 use App\Models\Table;
 use App\Models\User;
 use App\Support\DeviceContext;
+use App\Support\StoreBusinessDate;
 use App\Support\StoreContext;
 use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
@@ -24,8 +26,10 @@ class CreateOrder
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly StoreContext $storeContext,
+        private readonly StoreBusinessDate $businessDate,
         private readonly DeviceContext $deviceContext,
         private readonly FindOrCreateCustomer $customers,
+        private readonly CurrentShift $currentShift,
     ) {}
 
     public function execute(User $user, CreateOrderData $data): Order
@@ -42,10 +46,17 @@ class CreateOrder
                 return $existing;
             }
 
+            if (! $this->currentShift->for($user)) {
+                throw ValidationException::withMessages([
+                    'shift' => 'Buyurtma olish uchun avval smenani oching.',
+                ]);
+            }
+
             $table = $this->resolveTable($data, $organization->getKey(), $store->getKey());
             $customer = $this->resolveCustomer($data, $organization->getKey());
             $deliveryFee = $data->type === OrderType::Delivery ? $data->deliveryFee : 0;
-            $displayNumber = $this->nextDisplayNumber($store);
+            $businessDate = $this->businessDate->current($store);
+            $displayNumber = $this->nextDisplayNumber($store, $businessDate);
 
             $order = new Order([
                 'type' => $data->type,
@@ -60,6 +71,7 @@ class CreateOrder
             $order->creator()->associate($user);
             $order->forceFill([
                 'display_number' => $displayNumber,
+                'business_date' => $businessDate,
                 'status' => OrderStatus::Open,
                 'payment_status' => PaymentStatus::Unpaid,
                 'subtotal' => 0,
@@ -124,10 +136,11 @@ class CreateOrder
             ]);
     }
 
-    private function nextDisplayNumber(Store $store): string
+    private function nextDisplayNumber(Store $store, string $businessDate): string
     {
         $last = Order::query()
             ->where('store_id', $store->getKey())
+            ->where('business_date', $businessDate)
             ->orderByRaw('CAST(SUBSTRING(display_number FROM 2) AS BIGINT) DESC')
             ->value('display_number');
 

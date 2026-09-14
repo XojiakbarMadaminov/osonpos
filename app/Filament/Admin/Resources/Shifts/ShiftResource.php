@@ -65,10 +65,12 @@ class ShiftResource extends Resource
             ])
             ->filters([
                 DatePeriodFilter::make('opened_at'),
-                SelectFilter::make('status')->options([
-                    ShiftStatus::Open->value => ShiftStatus::Open->getLabel(),
-                    ShiftStatus::Closed->value => ShiftStatus::Closed->getLabel(),
-                ]),
+                SelectFilter::make('status')
+                    ->label('Holati')
+                    ->options([
+                        ShiftStatus::Open->value => ShiftStatus::Open->getLabel(),
+                        ShiftStatus::Closed->value => ShiftStatus::Closed->getLabel(),
+                    ]),
                 SelectFilter::make('store_id')
                     ->label('Filial')
                     ->options(fn (): array => Store::query()
@@ -78,6 +80,7 @@ class ShiftResource extends Resource
                         ->pluck('name', 'id')
                         ->all()),
             ], layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(['sm' => 2, 'lg' => 3])
             ->deferFilters(false)
             ->defaultSort('opened_at', 'desc')
             ->recordActions([

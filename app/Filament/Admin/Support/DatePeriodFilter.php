@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Support;
 
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\ToggleButtons;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables\Filters\Filter;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,6 +15,7 @@ class DatePeriodFilter
     {
         return Filter::make('date_period')
             ->label('Davr')
+            ->columnSpanFull()
             ->schema([
                 ToggleButtons::make('period')
                     ->label('Davr')
@@ -27,19 +29,20 @@ class DatePeriodFilter
                     ->default('TODAY')
                     ->inline()
                     ->grouped()
-                    ->live()
-                    ->columnSpanFull(),
-                DatePicker::make('from')
-                    ->label('Boshlanish sanasi')
-                    ->default(today())
+                    ->live(),
+                Grid::make(['default' => 1, 'sm' => 2, 'md' => 3])
                     ->visible(fn (Get $get): bool => $get('period') === 'CUSTOM')
-                    ->required(fn (Get $get): bool => $get('period') === 'CUSTOM'),
-                DatePicker::make('until')
-                    ->label('Tugash sanasi')
-                    ->default(today())
-                    ->visible(fn (Get $get): bool => $get('period') === 'CUSTOM')
-                    ->required(fn (Get $get): bool => $get('period') === 'CUSTOM')
-                    ->afterOrEqual('from'),
+                    ->schema([
+                        DatePicker::make('from')
+                            ->label('Boshlanish sanasi')
+                            ->default(today())
+                            ->required(fn (Get $get): bool => $get('period') === 'CUSTOM'),
+                        DatePicker::make('until')
+                            ->label('Tugash sanasi')
+                            ->default(today())
+                            ->required(fn (Get $get): bool => $get('period') === 'CUSTOM')
+                            ->afterOrEqual('from'),
+                    ]),
             ])
             ->default([
                 'period' => 'TODAY',

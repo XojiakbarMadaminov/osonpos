@@ -121,6 +121,7 @@ class ExpenseResource extends Resource
                     fn (ExpenseStatus $status): array => [$status->value => $status->getLabel()],
                 )->all()),
             ], layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(['sm' => 2, 'lg' => 3])
             ->deferFilters(false)
             ->defaultSort('incurred_on', 'desc')
             ->recordActions([

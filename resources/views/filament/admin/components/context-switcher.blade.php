@@ -8,7 +8,7 @@
                 id="admin-active-store"
                 name="store_id"
                 aria-label="Faol filial"
-                onchange="this.disabled = true; this.form.submit()"
+                onchange="this.form.submit()"
             >
                 @foreach ($stores as $store)
                     <option value="{{ $store->getKey() }}" @selected($store->getKey() === $currentStoreId)>

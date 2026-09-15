@@ -81,8 +81,10 @@ it('allows new POS transactions for an active subscription', function () {
 
 it('keeps admin read access available after subscription expiry', function () {
     $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
     $user = User::factory()->create();
     $organization->users()->attach($user);
+    $store->users()->attach($user);
     Subscription::factory()->for($organization)->create([
         'status' => SubscriptionStatus::Expired,
         'starts_at' => now()->subMonth(),
@@ -90,7 +92,7 @@ it('keeps admin read access available after subscription expiry', function () {
     ]);
 
     $this->actingAs($user)
-        ->withSession(['current_organization_id' => $organization->id])
+        ->withSession(['current_organization_id' => $organization->id, 'current_store_id' => $store->id])
         ->get('/admin')
         ->assertRedirect('/pos');
 });

@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\Products\Pages\ListProducts;
 use App\Filament\Admin\Resources\Products\Schemas\ProductForm;
 use App\Filament\Admin\Resources\Products\Tables\ProductsTable;
 use App\Models\Product;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -53,7 +54,8 @@ class ProductResource extends Resource
     {
         return parent::getEloquentQuery()
             ->with('category')
-            ->forTenant(app(TenantContext::class)->requireCurrent());
+            ->forTenant(app(TenantContext::class)->requireCurrent())
+            ->forStore(app(StoreContext::class)->requireCurrent());
     }
 
     public static function getPages(): array

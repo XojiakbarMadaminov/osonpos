@@ -8,6 +8,7 @@ import { ReceiptPrintService } from '../services/receipt-print';
 import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
 import { useOrderStore } from '../stores/order';
+import { formatMoney } from '../utils/money';
 
 const emit = defineEmits<{ navigate: [page: string] }>();
 const orders = ref<CreatedOrder[]>([]);
@@ -96,7 +97,7 @@ onMounted(async () => {
                     {{ orderTypeLabel(order.type) }}
                     <span v-if="order.type === 'DINE_IN'" class="ml-2 rounded-md bg-amber-400/15 px-2 py-1 font-medium text-amber-300">Stol {{ order.table?.number ?? order.table_id }}</span>
                 </p>
-                <p class="mt-4 text-lg font-semibold">{{ order.total.toLocaleString() }} UZS</p>
+                <p class="mt-4 text-lg font-semibold">{{ formatMoney(order.total) }} UZS</p>
                 <div class="mt-4 grid grid-cols-2 gap-2">
                     <button v-if="order.status === 'OPEN'" class="col-span-2 min-h-11 rounded-lg bg-amber-400 text-sm font-semibold text-slate-950" type="button" @click="addProducts(order)">Mahsulot qo‘shish</button>
                     <button v-if="order.status === 'OPEN' && auth.can('payments.create')" class="col-span-2 min-h-11 rounded-lg bg-emerald-500 text-sm font-semibold text-slate-950" type="button" @click="openPayment(order)">{{ order.balance_due > 0 ? 'To‘lov / yopish' : 'Buyurtmani yopish' }}</button>

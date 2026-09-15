@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { useContextStore } from '../stores/context';
 import { useShiftStore } from '../stores/shift';
+import { formatMoney } from '../utils/money';
 
 const shift = useShiftStore();
 const context = useContextStore();
@@ -54,7 +55,7 @@ onMounted(() => shift.load());
         <div v-if="shift.current" class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
                 <p class="text-sm text-slate-400">Boshlang‘ich naqd pul</p>
-                <p class="mt-2 text-2xl font-semibold">{{ shift.current.opening_cash.toLocaleString() }} UZS</p>
+                <p class="mt-2 text-2xl font-semibold">{{ formatMoney(shift.current.opening_cash) }} UZS</p>
             </div>
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
                 <p class="text-sm text-slate-400">Ochilgan vaqt</p>
@@ -62,18 +63,18 @@ onMounted(() => shift.load());
             </div>
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
                 <p class="text-sm text-slate-400">Naqd to‘lovlar</p>
-                <p class="mt-2 text-2xl font-semibold">{{ shift.current.cash_payments_total.toLocaleString() }} UZS</p>
+                <p class="mt-2 text-2xl font-semibold">{{ formatMoney(shift.current.cash_payments_total) }} UZS</p>
             </div>
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
                 <p class="text-sm text-slate-400">Kutilayotgan naqd pul</p>
-                <p class="mt-2 text-2xl font-semibold text-amber-300">{{ shift.current.expected_cash.toLocaleString() }} UZS</p>
+                <p class="mt-2 text-2xl font-semibold text-amber-300">{{ formatMoney(shift.current.expected_cash) }} UZS</p>
             </div>
         </div>
 
         <div v-if="shift.current" class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
             <div v-for="(total, method) in shift.current.payment_totals" :key="method" class="rounded-lg border border-slate-800 bg-slate-900 p-3">
                 <p class="text-xs text-slate-400">{{ paymentMethodLabel(method) }}</p>
-                <p class="mt-1 font-medium">{{ total.toLocaleString() }} UZS</p>
+                <p class="mt-1 font-medium">{{ formatMoney(total) }} UZS</p>
             </div>
         </div>
 
@@ -91,7 +92,7 @@ onMounted(() => shift.load());
             <div v-if="shift.current" class="mt-4 flex items-center justify-between rounded-lg bg-slate-950 px-4 py-3">
                 <span class="text-sm text-slate-400">Hisoblangan farq</span>
                 <span class="font-semibold" :class="closingDifference === 0 ? 'text-emerald-300' : 'text-amber-300'">
-                    {{ closingDifference?.toLocaleString() }} UZS
+                    {{ formatMoney(closingDifference ?? 0) }} UZS
                 </span>
             </div>
             <p v-if="shift.error" class="mt-3 text-sm text-red-300">{{ shift.error }}</p>

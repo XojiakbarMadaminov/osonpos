@@ -142,40 +142,44 @@ class DemoCatalogSeeder extends Seeder
             return;
         }
 
-        Organization::query()->each(function (Organization $organization): void {
-            DB::transaction(function () use ($organization): void {
-                $categorySortOrder = 0;
+        Organization::query()->with('stores')->each(function (Organization $organization): void {
+            $organization->stores->each(function ($store) use ($organization): void {
+                DB::transaction(function () use ($organization, $store): void {
+                    $categorySortOrder = 0;
 
-                foreach (self::CATALOG as $categoryName => $products) {
-                    $categorySortOrder++;
-                    $category = $organization->categories()->updateOrCreate(
-                        ['name' => $categoryName],
-                        [
-                            'sort_order' => $categorySortOrder,
-                            'is_active' => true,
-                        ],
-                    );
-
-                    $productSortOrder = 0;
-
-                    foreach ($products as $productName => $price) {
-                        $productSortOrder++;
-                        $organization->products()->updateOrCreate(
+                    foreach (self::CATALOG as $categoryName => $products) {
+                        $categorySortOrder++;
+                        $category = $store->categories()->updateOrCreate(
+                            ['name' => $categoryName],
                             [
-                                'category_id' => $category->getKey(),
-                                'name' => $productName,
-                            ],
-                            [
-                                'price' => $price,
-                                'sort_order' => $productSortOrder,
+                                'organization_id' => $organization->getKey(),
+                                'sort_order' => $categorySortOrder,
                                 'is_active' => true,
                             ],
                         );
+
+                        $productSortOrder = 0;
+
+                        foreach ($products as $productName => $price) {
+                            $productSortOrder++;
+                            $store->products()->updateOrCreate(
+                                [
+                                    'category_id' => $category->getKey(),
+                                    'name' => $productName,
+                                ],
+                                [
+                                    'organization_id' => $organization->getKey(),
+                                    'price' => $price,
+                                    'sort_order' => $productSortOrder,
+                                    'is_active' => true,
+                                ],
+                            );
+                        }
                     }
-                }
+                });
             });
 
-            $this->command?->info("{$organization->name}: 10 ta kategoriya va 100 ta mahsulot tayyor.");
+            $this->command?->info("{$organization->name}: har bir filial uchun 10 ta kategoriya va 100 ta mahsulot tayyor.");
         });
     }
 }

@@ -51,7 +51,7 @@ function bootstrapContext(): array
 it('loads all required POS base state in one bootstrap response', function () {
     [$organization, $store, $user, $device, $session] = bootstrapContext();
     $category = Category::factory()->for($organization)->create();
-    $product = Product::factory()->for($organization)->for($category)->create();
+    $product = Product::factory()->for($organization)->for($category)->create(['cost_price' => 43210]);
     $table = Table::factory()->for($organization)->for($store)->create();
     $openOrder = Order::factory()->for($organization)->for($store)->for($table)->for($user, 'creator')->create();
     $printer = Printer::factory()->for($organization)->for($store)->for($device)->create();
@@ -76,6 +76,9 @@ it('loads all required POS base state in one bootstrap response', function () {
         ->and(collect($response->json('data.printers'))->pluck('id'))->toContain($printer->id)
         ->and(collect($response->json('data.print_routes'))->pluck('id'))->toContain($route->id)
         ->and($response->json('data.active_shift.id'))->toBe($shift->id);
+
+    $posProduct = collect($response->json('data.products'))->firstWhere('id', $product->id);
+    expect($posProduct)->not->toHaveKey('cost_price');
 });
 
 it('returns only the current tenant and store data with permissions and features', function () {
@@ -83,6 +86,10 @@ it('returns only the current tenant and store data with permissions and features
     $otherStore = Store::factory()->for($organization)->create();
     $allowedTable = Table::factory()->for($organization)->for($store)->create();
     $otherStoreTable = Table::factory()->for($organization)->for($otherStore)->create();
+    $allowedCategory = Category::factory()->for($organization)->for($store)->create();
+    $allowedProduct = Product::factory()->for($organization)->for($allowedCategory)->create();
+    $otherStoreCategory = Category::factory()->for($organization)->for($otherStore)->create();
+    $otherStoreProduct = Product::factory()->for($organization)->for($otherStoreCategory)->create();
     $foreignProduct = Product::factory()->create();
 
     $response = $this->actingAs($user)->withSession($session)->getJson('/api/pos/bootstrap')->assertOk();
@@ -91,6 +98,8 @@ it('returns only the current tenant and store data with permissions and features
 
     expect($tableIds)->toContain($allowedTable->id)
         ->and($tableIds)->not->toContain($otherStoreTable->id)
+        ->and($productIds)->toContain($allowedProduct->id)
+        ->and($productIds)->not->toContain($otherStoreProduct->id)
         ->and($productIds)->not->toContain($foreignProduct->id)
         ->and($response->json('data.permissions'))->toContain(OrganizationPermission::PosAccess->value)
         ->and($response->json('data.features'))->toBe(['pos']);

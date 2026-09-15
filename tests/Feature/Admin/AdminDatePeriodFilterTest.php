@@ -14,6 +14,7 @@ use App\Models\Organization;
 use App\Models\Shift;
 use App\Models\Store;
 use App\Models\User;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
@@ -32,7 +33,9 @@ function dateFilterContext(): array
         $organization,
         fn (User $tenantUser) => $tenantUser->assignRole(OrganizationRole::Owner->value),
     );
-    app(TenantContext::class)->resolveFor($owner, $organization->id);
+    $tenantContext = app(TenantContext::class);
+    $tenantContext->resolveFor($owner, $organization->id);
+    app(StoreContext::class)->resolveFor($owner, $tenantContext, $store->id);
 
     test()->actingAs($owner)->withSession([
         'current_organization_id' => $organization->id,

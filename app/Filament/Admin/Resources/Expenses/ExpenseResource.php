@@ -3,7 +3,6 @@
 namespace App\Filament\Admin\Resources\Expenses;
 
 use App\Actions\Expenses\CancelExpense;
-use App\Domain\Authorization\StoreAccess;
 use App\Enums\AdminNavigationGroup;
 use App\Enums\ExpenseStatus;
 use App\Enums\ExpenseType;
@@ -12,7 +11,7 @@ use App\Filament\Admin\Resources\Expenses\Pages\ListExpenses;
 use App\Filament\Admin\Resources\Expenses\Pages\ViewExpense;
 use App\Filament\Admin\Support\DatePeriodFilter;
 use App\Models\Expense;
-use App\Models\Store;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -55,12 +54,6 @@ class ExpenseResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('store_id')
-                ->label('Filial')
-                ->options(fn (): array => self::accessibleStores())
-                ->default(fn (): ?int => self::activeStoreId())
-                ->required()
-                ->searchable(),
             Select::make('type')
                 ->label('Chiqim turi')
                 ->options(collect(ExpenseType::cases())->mapWithKeys(
@@ -97,7 +90,7 @@ class ExpenseResource extends Resource
                 TextColumn::make('description')->label('Sababi')->wrap()->limit(70)->searchable()->placeholder('—'),
                 TextColumn::make('amount')
                     ->label('Summa')
-                    ->money('UZS', divideBy: 1)
+                    ->money('UZS', divideBy: 1, decimalPlaces: 0)
                     ->sortable()
                     ->summarize(
                         Summarizer::make()
@@ -105,7 +98,7 @@ class ExpenseResource extends Resource
                             ->using(fn (QueryBuilder $query): int => (int) $query
                                 ->where('status', ExpenseStatus::Active->value)
                                 ->sum('amount'))
-                            ->money('UZS', divideBy: 1),
+                            ->money('UZS', divideBy: 1, decimalPlaces: 0),
                     ),
                 TextColumn::make('status')->label('Holati')->badge()->sortable(),
                 TextColumn::make('creator.name')->label('Kiritgan foydalanuvchi'),
@@ -113,7 +106,6 @@ class ExpenseResource extends Resource
             ])
             ->filters([
                 DatePeriodFilter::make('incurred_on'),
-                SelectFilter::make('store_id')->label('Filial')->options(fn (): array => self::accessibleStores()),
                 SelectFilter::make('type')->label('Chiqim turi')->options(collect(ExpenseType::cases())->mapWithKeys(
                     fn (ExpenseType $type): array => [$type->value => $type->getLabel()],
                 )->all()),
@@ -155,7 +147,7 @@ class ExpenseResource extends Resource
             TextEntry::make('status')->label('Holati')->badge(),
             TextEntry::make('store.name')->label('Filial'),
             TextEntry::make('type')->label('Chiqim turi')->badge(),
-            TextEntry::make('amount')->label('Summa')->money('UZS', divideBy: 1),
+            TextEntry::make('amount')->label('Summa')->money('UZS', divideBy: 1, decimalPlaces: 0),
             TextEntry::make('incurred_on')->label('Chiqim sanasi')->date(),
             TextEntry::make('creator.name')->label('Kiritgan foydalanuvchi'),
             TextEntry::make('description')->label('Sababi')->placeholder('—')->columnSpanFull(),
@@ -170,7 +162,7 @@ class ExpenseResource extends Resource
         return parent::getEloquentQuery()
             ->with(['store', 'creator', 'canceller'])
             ->forTenant(app(TenantContext::class)->requireCurrent())
-            ->whereIn('store_id', app(StoreAccess::class)->accessibleStoreIds(request()->user()));
+            ->forStore(app(StoreContext::class)->requireCurrent());
     }
 
     public static function getPages(): array
@@ -180,22 +172,5 @@ class ExpenseResource extends Resource
             'create' => CreateExpense::route('/create'),
             'view' => ViewExpense::route('/{record}'),
         ];
-    }
-
-    private static function accessibleStores(): array
-    {
-        return Store::query()
-            ->forTenant(app(TenantContext::class)->requireCurrent())
-            ->whereIn('id', app(StoreAccess::class)->accessibleStoreIds(request()->user()))
-            ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
-    }
-
-    private static function activeStoreId(): ?int
-    {
-        $storeId = (int) session('current_store_id');
-
-        return array_key_exists($storeId, self::accessibleStores()) ? $storeId : null;
     }
 }

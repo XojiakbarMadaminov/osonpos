@@ -7,6 +7,7 @@ import { useCartStore } from '../stores/cart';
 import { useOrderStore } from '../stores/order';
 import { useShiftStore } from '../stores/shift';
 import type { PosBootstrap, PosProduct } from '../types/bootstrap';
+import { formatMoney } from '../utils/money';
 
 const props = defineProps<{ bootstrap: PosBootstrap }>();
 const emit = defineEmits<{ navigate: [page: string] }>();
@@ -133,7 +134,7 @@ onMounted(() => shift.load(true));
         <div class="grid content-start grid-cols-2 gap-3 rounded-xl border border-slate-800 bg-slate-900 p-4 md:grid-cols-3 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable] xl:grid-cols-4">
             <button v-for="product in products" :key="product.id" class="min-h-24 rounded-xl border border-slate-700 bg-slate-800 p-4 text-left hover:border-amber-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canTakeOrder" type="button" @click="add(product)">
                 <span class="block font-semibold">{{ product.name }}</span>
-                <span class="mt-2 block text-sm text-amber-300">{{ product.price.toLocaleString() }} UZS</span>
+                <span class="mt-2 block text-sm text-amber-300">{{ formatMoney(product.price) }} UZS</span>
             </button>
         </div>
         <aside class="rounded-xl border border-slate-800 bg-slate-900 p-4 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:[scrollbar-gutter:stable]">
@@ -151,7 +152,7 @@ onMounted(() => shift.load(true));
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 flex-1">
                             <p class="truncate font-semibold text-slate-100">{{ item.name }}</p>
-                            <p class="mt-1 text-xs text-slate-400">{{ item.unitPrice.toLocaleString() }} UZS / dona</p>
+                            <p class="mt-1 text-xs text-slate-400">{{ formatMoney(item.unitPrice) }} UZS / dona</p>
                         </div>
                         <button class="flex min-h-10 min-w-10 items-center justify-center rounded-lg border border-red-400/30 bg-red-400/10 text-red-300 transition-colors hover:border-red-400/60 hover:bg-red-400/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400 disabled:opacity-50" :aria-label="`${item.name} mahsulotini savatdan o‘chirish`" :title="`${item.name} mahsulotini savatdan o‘chirish`" :disabled="busy" type="button" @click="cart.remove(index)">
                             <svg aria-hidden="true" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -167,13 +168,13 @@ onMounted(() => shift.load(true));
                         </div>
                         <div class="text-right">
                             <p class="text-xs text-slate-400">Jami</p>
-                            <p class="font-semibold text-slate-100">{{ (item.quantity * item.unitPrice).toLocaleString() }} UZS</p>
+                            <p class="font-semibold text-slate-100">{{ formatMoney(item.quantity * item.unitPrice) }} UZS</p>
                         </div>
                     </div>
                     <input :value="item.note" class="mt-2 min-h-10 w-full rounded border border-slate-700 bg-slate-950 px-3 text-sm" placeholder="Mahsulot izohi" @input="cart.setNote(index, ($event.target as HTMLInputElement).value)">
                 </div>
             </div>
-            <div class="mt-5 flex items-center justify-between border-t border-slate-700 pt-4 text-lg font-bold"><span>Jami</span><span>{{ displayedTotal.toLocaleString() }} UZS</span></div>
+            <div class="mt-5 flex items-center justify-between border-t border-slate-700 pt-4 text-lg font-bold"><span>Jami</span><span>{{ formatMoney(displayedTotal) }} UZS</span></div>
             <p v-if="error" class="mt-3 text-sm text-red-300">{{ error }}</p>
             <button class="mt-4 min-h-14 w-full rounded-xl bg-amber-400 px-5 font-bold text-slate-950 disabled:opacity-50" :disabled="busy || !canTakeOrder || cart.items.length === 0" type="button" @click="saveOrder">
                 {{ busy ? 'Saqlanmoqda va chop etilmoqda…' : isAddingToOrder ? 'Qo‘shish va oshxonaga yuborish' : 'Saqlash va oshxonaga yuborish' }}

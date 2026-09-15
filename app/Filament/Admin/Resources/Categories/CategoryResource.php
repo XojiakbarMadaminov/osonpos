@@ -9,6 +9,7 @@ use App\Filament\Admin\Resources\Categories\Pages\ListCategories;
 use App\Filament\Admin\Resources\Categories\Schemas\CategoryForm;
 use App\Filament\Admin\Resources\Categories\Tables\CategoriesTable;
 use App\Models\Category;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -51,7 +52,9 @@ class CategoryResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->forTenant(app(TenantContext::class)->requireCurrent());
+        return parent::getEloquentQuery()
+            ->forTenant(app(TenantContext::class)->requireCurrent())
+            ->forStore(app(StoreContext::class)->requireCurrent());
     }
 
     public static function getPages(): array

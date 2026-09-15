@@ -117,7 +117,7 @@ it('creates an unpaid open dine-in order and snapshots added products', function
     $store = Store::factory()->for($organization)->create();
     [$user, $device, $session] = orderUser($organization, $store);
     $table = Table::factory()->for($organization)->for($store)->create();
-    $product = orderProduct($organization, ['name' => 'Original Plov', 'price' => 65000]);
+    $product = orderProduct($organization, ['name' => 'Original Plov', 'price' => 65000, 'cost_price' => 40000]);
 
     $orderResponse = $this->actingAs($user)->withSession($session)->postJson('/api/pos/orders', [
         'type' => OrderType::DineIn->value,
@@ -135,12 +135,14 @@ it('creates an unpaid open dine-in order and snapshots added products', function
     $this->actingAs($user)->withSession($session)->postJson("/api/pos/orders/{$order->id}/items", [
         'product_id' => $product->id,
         'quantity' => 2,
-    ])->assertCreated();
-    $product->update(['name' => 'Renamed Plov', 'price' => 80000]);
+    ])->assertCreated()
+        ->assertJsonMissingPath('data.unit_cost');
+    $product->update(['name' => 'Renamed Plov', 'price' => 80000, 'cost_price' => 55000]);
     $item = OrderItem::query()->sole();
 
     expect($item->product_name)->toBe('Original Plov')
         ->and($item->unit_price)->toBe(65000)
+        ->and($item->unit_cost)->toBe(40000)
         ->and($item->total)->toBe(130000)
         ->and($order->refresh()->subtotal)->toBe(130000)
         ->and($order->total)->toBe(130000);
@@ -148,8 +150,28 @@ it('creates an unpaid open dine-in order and snapshots added products', function
     $this->actingAs($user)->withSession($session)
         ->getJson('/api/pos/orders')
         ->assertOk()
+        ->assertJsonMissingPath('data.0.items.0.unit_cost')
         ->assertJsonPath('data.0.table.id', $table->id)
         ->assertJsonPath('data.0.table.number', $table->number);
+});
+
+it('rejects a product from another store in the same organization', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $otherStore = Store::factory()->for($organization)->create();
+    [$user, $device, $session] = orderUser($organization, $store);
+    $order = Order::factory()->for($organization)->for($store)->for($device)->for($user, 'creator')->create();
+    $otherCategory = Category::factory()->for($organization)->for($otherStore)->create();
+    $otherProduct = Product::factory()->for($organization)->for($otherCategory)->create();
+
+    $this->actingAs($user)->withSession($session)->postJson("/api/pos/orders/{$order->id}/items", [
+        'product_id' => $otherProduct->id,
+        'quantity' => 1,
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('product_id')
+        ->assertJsonPath('errors.product_id.0', 'Joriy filialdan faol mahsulotni tanlang.');
+
+    expect(OrderItem::query()->count())->toBe(0);
 });
 
 it('creates takeaway orders with sequential store display numbers', function () {

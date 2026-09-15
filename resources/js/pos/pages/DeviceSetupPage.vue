@@ -77,7 +77,7 @@ async function saveBinding(): Promise<void> {
 
             <div v-if="device" class="mt-6 space-y-5">
                 <div class="rounded-lg border border-emerald-700 bg-emerald-500/10 p-4 text-emerald-200">
-                    {{ device.name }} qurilmasi {{ device.code }} kodi bilan tayyor.
+                    {{ device.name }} qurilmasi tayyor.
                 </div>
                 <a class="flex min-h-12 w-full items-center justify-center rounded-lg bg-amber-400 px-5 font-semibold text-slate-950" href="/pos">
                     POS’ga o‘tish
@@ -103,11 +103,11 @@ async function saveBinding(): Promise<void> {
 
             <form v-else class="mt-6 space-y-5" @submit.prevent="activate">
                 <div class="rounded-lg border border-slate-700 bg-slate-950/60 p-4 text-sm text-slate-300">
-                    Tashkilot egasi yoki boshqaruvchidan 10 daqiqalik bir martalik aktivatsiya kodini oling.
+                    Tashkilot egasi yoki boshqaruvchi qurilma uchun belgilagan doimiy aktivatsiya kodini kiriting.
                 </div>
                 <label class="block">
                     <span class="text-sm font-medium">Aktivatsiya kodi</span>
-                    <input v-model="activationCode" class="mt-2 min-h-12 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 text-center text-xl font-semibold uppercase tracking-[0.3em]" required minlength="8" maxlength="8" pattern="[A-Za-z0-9]+" autocomplete="one-time-code">
+                    <input v-model="activationCode" class="mt-2 min-h-12 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 text-center text-xl font-semibold tracking-[0.3em]" required minlength="6" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="current-password">
                 </label>
                 <p v-if="error" class="text-sm text-red-300" role="alert">{{ error }}</p>
                 <button class="min-h-12 w-full rounded-lg bg-amber-400 px-5 font-semibold text-slate-950 disabled:opacity-60" :disabled="saving" type="submit">

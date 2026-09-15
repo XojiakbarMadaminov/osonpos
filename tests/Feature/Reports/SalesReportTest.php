@@ -27,6 +27,7 @@ function completedSale(
     OrderType $type,
     string $product,
     int $quantity,
+    int $unitCost = 0,
 ): Order {
     $order = Order::factory()->for($organization)->for($store)->for($user, 'creator')->create([
         'status' => OrderStatus::Completed,
@@ -45,6 +46,7 @@ function completedSale(
         'product_name' => $product,
         'quantity' => $quantity,
         'unit_price' => intdiv($total, $quantity),
+        'unit_cost' => $unitCost,
         'total' => $total,
     ]);
 
@@ -55,8 +57,8 @@ it('calculates revenue average check and grouped breakdowns', function () {
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create();
     $user = User::factory()->create();
-    completedSale($organization, $store, $user, 60000, PaymentMethod::Cash, OrderType::DineIn, 'Burger', 2);
-    completedSale($organization, $store, $user, 40000, PaymentMethod::Card, OrderType::Takeaway, 'Cola', 4);
+    completedSale($organization, $store, $user, 60000, PaymentMethod::Cash, OrderType::DineIn, 'Burger', 2, 15000);
+    completedSale($organization, $store, $user, 40000, PaymentMethod::Card, OrderType::Takeaway, 'Cola', 4, 5000);
     Expense::factory()->for($organization)->for($store)->for($user, 'creator')->create([
         'type' => ExpenseType::ProductCost,
         'amount' => 25000,
@@ -81,6 +83,7 @@ it('calculates revenue average check and grouped breakdowns', function () {
     );
 
     expect($report['revenue'])->toBe(100000)
+        ->and($report['estimated_gross_profit'])->toBe(50000)
         ->and($report['expense_total'])->toBe(35000)
         ->and($report['order_count'])->toBe(2)
         ->and($report['average_check'])->toBe(50000)
@@ -119,9 +122,9 @@ it('applies store filters without mixing tenant data', function () {
     $foreignOrganization = Organization::factory()->create();
     $foreignStore = Store::factory()->for($foreignOrganization)->create();
     $user = User::factory()->create();
-    completedSale($organization, $firstStore, $user, 10000, PaymentMethod::Cash, OrderType::Takeaway, 'Local A', 1);
-    completedSale($organization, $secondStore, $user, 20000, PaymentMethod::Cash, OrderType::Takeaway, 'Local B', 1);
-    completedSale($foreignOrganization, $foreignStore, $user, 900000, PaymentMethod::Cash, OrderType::Takeaway, 'Foreign', 1);
+    completedSale($organization, $firstStore, $user, 10000, PaymentMethod::Cash, OrderType::Takeaway, 'Local A', 1, 3000);
+    completedSale($organization, $secondStore, $user, 20000, PaymentMethod::Cash, OrderType::Takeaway, 'Local B', 1, 4000);
+    completedSale($foreignOrganization, $foreignStore, $user, 900000, PaymentMethod::Cash, OrderType::Takeaway, 'Foreign', 1, 800000);
     Expense::factory()->for($organization)->for($firstStore)->for($user, 'creator')->create(['amount' => 1000]);
     Expense::factory()->for($organization)->for($secondStore)->for($user, 'creator')->create(['amount' => 2000]);
     Expense::factory()->for($foreignOrganization)->for($foreignStore)->for($user, 'creator')->create(['amount' => 900000]);
@@ -132,9 +135,11 @@ it('applies store filters without mixing tenant data', function () {
     $allLocal = app(SalesReport::class)->generate($organization, $from, $to, [$firstStore->id, $secondStore->id]);
 
     expect($firstOnly['revenue'])->toBe(10000)
+        ->and($firstOnly['estimated_gross_profit'])->toBe(7000)
         ->and($firstOnly['expense_total'])->toBe(1000)
         ->and($firstOnly['order_count'])->toBe(1)
         ->and($allLocal['revenue'])->toBe(30000)
+        ->and($allLocal['estimated_gross_profit'])->toBe(23000)
         ->and($allLocal['expense_total'])->toBe(3000)
         ->and(collect($allLocal['top_products'])->pluck('name')->all())->not->toContain('Foreign');
 });
@@ -176,11 +181,16 @@ it('allows a manager with reports permission to open bounded reports', function 
         $organization,
         fn (User $user) => $user->assignRole(OrganizationRole::Manager->value),
     );
+    completedSale($organization, $store, $manager, 100000, PaymentMethod::Cash, OrderType::Takeaway, 'Format mahsuloti', 1);
 
     $this->actingAs($manager)
-        ->withSession(['current_organization_id' => $organization->id])
+        ->withSession(['current_organization_id' => $organization->id, 'current_store_id' => $store->id])
         ->get('/admin/reports')
         ->assertOk()
+        ->assertSee('100 000 UZS')
+        ->assertDontSee('100,000')
+        ->assertDontSee('Sotilgan mahsulotlar tannarxi')
+        ->assertSee('Taxminiy yalpi foyda')
         ->assertSee('O‘rtacha chek')
         ->assertSee('Chiqimlar')
         ->assertSee('Chiqim turlari bo‘yicha');

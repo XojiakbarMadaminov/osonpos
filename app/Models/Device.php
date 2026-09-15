@@ -44,7 +44,6 @@ class Device extends Model
         return [
             'is_active' => 'boolean',
             'last_seen_at' => 'immutable_datetime',
-            'activation_expires_at' => 'immutable_datetime',
             'activated_at' => 'immutable_datetime',
         ];
     }

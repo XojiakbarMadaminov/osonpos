@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Domain\Authorization\AccessibleAdminStores;
 use App\Enums\AdminNavigationGroup;
 use App\Http\Controllers\Admin\RedirectAdminHomeController;
+use App\Http\Middleware\InitializeStoreContext;
 use App\Http\Middleware\InitializeTenantContext;
 use App\Support\TenantContext;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
@@ -80,6 +81,7 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
                 InitializeTenantContext::class,
+                InitializeStoreContext::class,
             ], isPersistent: true);
     }
 }

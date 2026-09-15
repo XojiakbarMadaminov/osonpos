@@ -1,10 +1,11 @@
 <?php
 
-use App\Actions\Devices\GenerateDeviceActivationCode;
+use App\Actions\Devices\SetDeviceActivationCode;
 use App\Actions\Organizations\CreateDefaultOrganizationRoles;
 use App\Domain\Authorization\OrganizationAuthorization;
 use App\Enums\OrganizationRole;
 use App\Filament\Admin\Resources\Devices\Pages\CreateDevice as CreateDevicePage;
+use App\Filament\Admin\Resources\Devices\Pages\ListDevices;
 use App\Models\Device;
 use App\Models\Feature;
 use App\Models\Organization;
@@ -12,7 +13,9 @@ use App\Models\Plan;
 use App\Models\Store;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Support\DeviceActivationCode;
 use App\Support\DeviceCredential;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use Filament\Facades\Filament;
 use Livewire\Livewire;
@@ -53,7 +56,9 @@ it('allows an owner to create a device in an accessible store from admin', funct
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create();
     $owner = activationUser($organization, $store, OrganizationRole::Owner);
-    app(TenantContext::class)->resolveFor($owner, $organization->id);
+    $tenantContext = app(TenantContext::class);
+    $tenantContext->resolveFor($owner, $organization->id);
+    app(StoreContext::class)->resolveFor($owner, $tenantContext, $store->id);
 
     $this->actingAs($owner)->withSession([
         'current_organization_id' => $organization->id,
@@ -62,11 +67,11 @@ it('allows an owner to create a device in an accessible store from admin', funct
     Filament::setCurrentPanel(Filament::getPanel('admin'));
 
     Livewire::test(CreateDevicePage::class)
-        ->assertFormSet(['store_id' => $store->id])
+        ->assertFormFieldDoesNotExist('store_id')
+        ->assertFormFieldDoesNotExist('code')
         ->fillForm([
-            'store_id' => $store->id,
             'name' => 'Asosiy kassa',
-            'code' => 'kassa-01',
+            'activation_code' => '482731',
             'is_active' => true,
         ])
         ->call('create')
@@ -75,7 +80,18 @@ it('allows an owner to create a device in an accessible store from admin', funct
     $device = Device::query()->sole();
     expect($device->organization_id)->toBe($organization->id)
         ->and($device->store_id)->toBe($store->id)
-        ->and($device->code)->toBe('KASSA-01');
+        ->and($device->code)->toStartWith('POS-')
+        ->and($device->activation_code_hash)->toBe(app(DeviceActivationCode::class)->hash('482731'))
+        ->and($device->getAttributes())->not->toContain('482731');
+
+    Livewire::test(ListDevices::class)
+        ->callTableAction('activation_code', $device, [
+            'activation_code' => '593842',
+        ])
+        ->assertHasNoActionErrors();
+
+    expect($device->refresh()->activation_code_hash)
+        ->toBe(app(DeviceActivationCode::class)->hash('593842'));
 });
 
 it('redirects POS guests to login with the intended URL and an Uzbek message', function () {
@@ -120,13 +136,14 @@ it('redirects an authenticated unpaired browser to setup and loads POS after pai
         ->assertSee('id="pos-app"', false);
 });
 
-it('activates a device once and stores a long lived browser credential', function () {
+it('activates a device with its permanent code and stores a long lived browser credential', function () {
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create();
     $user = activationUser($organization, $store);
     enablePosForActivation($organization);
     $device = Device::factory()->for($organization)->for($store)->create();
-    $code = app(GenerateDeviceActivationCode::class)->execute($device);
+    $code = '482731';
+    app(SetDeviceActivationCode::class)->execute($device, $code);
 
     $response = $this->actingAs($user)->postJson('/api/pos/devices/activate', [
         'activation_code' => mb_strtolower($code),
@@ -139,8 +156,7 @@ it('activates a device once and stores a long lived browser credential', functio
         ->assertSessionHas('current_store_id', $store->id)
         ->assertSessionHas(DeviceCredential::SESSION_KEY);
 
-    expect($device->refresh()->activation_code_hash)->toBeNull()
-        ->and($device->activation_expires_at)->toBeNull()
+    expect($device->refresh()->activation_code_hash)->toBe(app(DeviceActivationCode::class)->hash($code))
         ->and($device->credential_hash)->not->toBeNull()
         ->and($device->activated_at)->not->toBeNull();
 
@@ -150,28 +166,53 @@ it('activates a device once and stores a long lived browser credential', functio
         ->and($cookie->getExpiresTime())->toBeGreaterThan(now()->addMonths(11)->timestamp);
 });
 
-it('rejects expired, invalid, and already used activation codes', function () {
+it('keeps a permanent activation code reusable and rejects an invalid code', function () {
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create();
     $user = activationUser($organization, $store);
     enablePosForActivation($organization);
     $device = Device::factory()->for($organization)->for($store)->create();
-    $code = app(GenerateDeviceActivationCode::class)->execute($device);
-    $device->forceFill(['activation_expires_at' => now()->subSecond()])->save();
+    $code = '482731';
+    app(SetDeviceActivationCode::class)->execute($device, $code);
+
+    $this->actingAs($user)->postJson('/api/pos/devices/activate', [
+        'activation_code' => '999999',
+    ])->assertUnprocessable()->assertJsonValidationErrors('activation_code');
+
+    $this->postJson('/api/pos/devices/activate', ['activation_code' => $code])->assertOk();
+    $this->postJson('/api/pos/devices/activate', ['activation_code' => $code])
+        ->assertOk();
+
+    expect($device->refresh()->activation_code_hash)->not->toBeNull();
+});
+
+it('requires an exactly 6 digit activation code', function (string $code) {
+    $user = User::factory()->create();
 
     $this->actingAs($user)->postJson('/api/pos/devices/activate', [
         'activation_code' => $code,
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors('activation_code')
+        ->assertJsonPath('errors.activation_code.0', 'Aktivatsiya kodi 6 xonali raqam bo‘lishi kerak.');
+})->with(['12345', 'ABC123', '1234567']);
+
+it('invalidates the previous permanent code when an admin replaces it', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $user = activationUser($organization, $store);
+    enablePosForActivation($organization);
+    $device = Device::factory()->for($organization)->for($store)->create();
+
+    app(SetDeviceActivationCode::class)->execute($device, '482731');
+    app(SetDeviceActivationCode::class)->execute($device, '593842');
+
+    $this->actingAs($user)->postJson('/api/pos/devices/activate', [
+        'activation_code' => '482731',
     ])->assertUnprocessable()->assertJsonValidationErrors('activation_code');
 
     $this->postJson('/api/pos/devices/activate', [
-        'activation_code' => 'BADCODE1',
-    ])->assertUnprocessable()->assertJsonValidationErrors('activation_code');
-
-    $code = app(GenerateDeviceActivationCode::class)->execute($device);
-    $this->postJson('/api/pos/devices/activate', ['activation_code' => $code])->assertOk();
-    $this->postJson('/api/pos/devices/activate', ['activation_code' => $code])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('activation_code');
+        'activation_code' => '593842',
+    ])->assertOk()->assertJsonPath('data.id', $device->id);
 });
 
 it('blocks activation across tenant, store, permission, subscription, and feature boundaries', function (string $boundary) {
@@ -194,7 +235,8 @@ it('blocks activation across tenant, store, permission, subscription, and featur
         $boundary !== 'feature',
     );
     $device = Device::factory()->for($deviceOrganization)->for($deviceStore)->create();
-    $code = app(GenerateDeviceActivationCode::class)->execute($device);
+    $code = '482731';
+    app(SetDeviceActivationCode::class)->execute($device, $code);
 
     $this->actingAs($user)->postJson('/api/pos/devices/activate', [
         'activation_code' => $code,

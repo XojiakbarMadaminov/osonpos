@@ -30,23 +30,18 @@ class ActivateDevice
             $device = Device::query()
                 ->with(['organization', 'store'])
                 ->where('activation_code_hash', $this->activationCode->hash($code))
-                ->where('activation_expires_at', '>', now())
                 ->lockForUpdate()
                 ->first();
 
             if (! $device || ! $this->canActivate($user, $device)) {
                 throw ValidationException::withMessages([
-                    'activation_code' => 'Aktivatsiya kodi noto‘g‘ri yoki muddati tugagan.',
+                    'activation_code' => 'Aktivatsiya kodi noto‘g‘ri.',
                 ]);
             }
 
             $credential = $this->credential->issue($device);
 
-            $device->forceFill([
-                'activation_code_hash' => null,
-                'activation_expires_at' => null,
-                'last_seen_at' => now(),
-            ])->save();
+            $device->forceFill(['last_seen_at' => now()])->save();
 
             return compact('device', 'credential');
         });

@@ -298,7 +298,7 @@ Tasks:
 
 - [x] Create category migration/model.
 - [x] Create product migration/model.
-- [x] Add `organization_id`.
+- [x] Add `organization_id` and `store_id`.
 - [x] Add `is_active`.
 - [x] Add `sort_order`.
 - [x] Store product prices as integer UZS.
@@ -312,7 +312,7 @@ Acceptance criteria:
 
 - Owner/authorized manager can manage catalog.
 - Cashier cannot manage catalog unless permitted.
-- Product belongs to organization, not directly to one store.
+- Product and category belong to the selected store within the organization.
 - Inactive products do not appear in POS.
 - Price changes do not modify historical order items later.
 
@@ -1641,13 +1641,13 @@ Depends on:
 
 Goal:
 
-Require authentication before POS access and securely pair each browser profile to one POS device with a short-lived, one-time activation code.
+Require authentication before POS access and securely pair each browser profile to one POS device.
 
 Tasks:
 
 - [x] Redirect POS guests to the organization login with an Uzbek explanation and intended URL preservation.
 - [x] Create and manage store-owned devices from the admin panel.
-- [x] Generate hashed, expiring, single-use activation codes.
+- [x] Store activation codes and browser credentials without exposing their plain values.
 - [x] Exchange a valid activation code for a long-lived hashed device credential.
 - [x] Resolve device context only from the secure browser credential.
 - [x] Keep printer configuration restricted to `printers.manage`.
@@ -1657,7 +1657,7 @@ Acceptance criteria:
 
 - Guests never receive a missing `login` route exception from POS pages.
 - A browser profile is paired once and restores its device after a later login.
-- Activation codes expire, are single-use, and cannot cross tenant or store access boundaries.
+- Activation codes cannot cross tenant or store access boundaries.
 - Re-pairing or revocation invalidates the old browser credential.
 - Cashiers can activate with a valid code but cannot configure printers.
 
@@ -1778,6 +1778,156 @@ Acceptance criteria:
 - Week and month choices apply their current calendar bounds.
 - Custom range applies inclusive start and end dates.
 - Cross-tenant and inaccessible-store records remain excluded.
+
+---
+
+# Phase 36 — Store-specific Catalog
+
+Status: DONE
+
+Depends on:
+
+- Phase 5
+- Phase 27
+
+Goal:
+
+Give every store an independent category, product, and price catalog.
+
+Tasks:
+
+- [x] Add store ownership to categories and products and copy existing catalogs to every existing store.
+- [x] Scope admin category and product pages to the active store.
+- [x] Scope POS bootstrap and order item creation to the active store.
+- [x] Make catalog caching store-specific.
+- [x] Add tenant, store, permission, migration, and localization coverage.
+
+Acceptance criteria:
+
+- Admin users see and manage only the catalog of the active store.
+- Switching the active store switches the visible admin catalog.
+- POS receives only the current store catalog and prices.
+- Products from another store cannot be added to an order.
+- Existing catalogs remain available in every existing store after migration.
+
+---
+
+# Phase 37 — Active Store Scoped Admin Pages
+
+Status: DONE
+
+Depends on:
+
+- Phase 27
+- Phase 35
+
+Goal:
+
+Scope operational and branch-owned admin pages exclusively to the active store selected in the profile menu.
+
+Tasks:
+
+- [x] Remove store filters from orders, expenses, shifts, tables, devices, and printers.
+- [x] Scope every resource query to the active store.
+- [x] Bind new expenses, tables, devices, and printers to the active store without a separate store selector.
+- [x] Add coverage for active-store results and profile-menu switching on all six pages.
+
+Acceptance criteria:
+
+- All six tables show only records from the active store.
+- None of the six tables exposes a store filter.
+- Switching the active store from the profile menu changes the visible records.
+- Create and edit flows cannot target another store through submitted form data.
+
+---
+
+# Phase 38 — Product Cost and Estimated Profit
+
+Status: DONE
+
+Depends on:
+
+- Phase 5
+- Phase 10
+- Phase 18
+
+Goal:
+
+Track store-specific product cost and report estimated gross profit without exposing cost data to POS users or printed documents.
+
+Tasks:
+
+- [x] Add non-negative integer UZS cost to products and order item snapshots.
+- [x] Show cost only in the admin product CRUD.
+- [x] Calculate estimated gross profit from sold product cost without displaying the cost total.
+- [x] Keep cost fields out of POS responses, receipts, and kitchen tickets.
+- [x] Add migration, snapshot, reporting, and non-exposure coverage.
+
+Acceptance criteria:
+
+- Authorized admin users can manage a product's cost.
+- Later cost changes do not alter historical order profitability.
+- Reports show estimated gross profit for the selected bounds without exposing the sold product cost total.
+- POS payloads and printed documents never expose cost values.
+
+---
+
+# Phase 39 — Consistent Integer UZS Display
+
+Status: DONE
+
+Depends on:
+
+- Phase 5
+- Phase 18
+
+Goal:
+
+Display all user-facing UZS values without decimal noise and with readable space-separated thousands.
+
+Tasks:
+
+- [x] Set zero decimal places on all Filament money columns, summaries, and entries.
+- [x] Use space-separated integer formatting in reports and POS.
+- [x] Preserve the existing space-separated receipt and kitchen print formatting.
+- [x] Add backend and frontend formatting coverage.
+
+Acceptance criteria:
+
+- `40000` is displayed as `40 000` with the relevant UZS label.
+- `1000000` is displayed as `1 000 000` with the relevant UZS label.
+- No user-facing money output contains `.00` or `,00`.
+
+---
+
+# Phase 40 — Permanent POS Device Activation Codes
+
+Status: DONE
+
+Depends on:
+
+- Phase 31
+- Phase 37
+
+Goal:
+
+Let an admin assign a reusable activation code to each POS device instead of generating a new short-lived code for every browser setup.
+
+Tasks:
+
+- [x] Require a permanent 6-digit activation code when creating a device.
+- [x] Generate the technical device code automatically and hide it from user-facing device screens.
+- [x] Let authorized admins replace the permanent code from the device table.
+- [x] Keep the code hashed and reusable until an admin replaces it.
+- [x] Preserve tenant, store, permission, subscription, feature, and rate-limit boundaries.
+- [x] Replace one-time wording in the POS setup screen and add regression coverage.
+
+Acceptance criteria:
+
+- A valid permanent code can activate the same device more than once.
+- Changing the code invalidates the previous code without exposing either code in storage.
+- Re-activation replaces the old browser credential.
+- Inactive and inaccessible devices remain impossible to activate.
 
 ---
 

@@ -13,6 +13,7 @@ use App\Models\Expense;
 use App\Models\Organization;
 use App\Models\Store;
 use App\Models\User;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use Carbon\CarbonImmutable;
 use Filament\Facades\Filament;
@@ -33,7 +34,9 @@ function expenseContext(OrganizationRole $role = OrganizationRole::Owner): array
         $organization,
         fn (User $tenantUser) => $tenantUser->assignRole($role->value),
     );
-    app(TenantContext::class)->resolveFor($user, $organization->id);
+    $tenantContext = app(TenantContext::class);
+    $tenantContext->resolveFor($user, $organization->id);
+    app(StoreContext::class)->resolveFor($user, $tenantContext, $store->id);
 
     return [$organization, $store, $user, [
         'current_organization_id' => $organization->id,
@@ -77,14 +80,23 @@ it('allows creating an expense without a description', function () {
         ->and($expense->description)->toBeNull();
 });
 
-it('defaults the expense form to the active store', function () {
+it('creates expenses for the active store without a store selector', function () {
     [, $store, $owner, $session] = expenseContext();
 
     $this->actingAs($owner)->withSession($session);
     Filament::setCurrentPanel(Filament::getPanel('admin'));
 
     Livewire::test(CreateExpensePage::class)
-        ->assertFormSet(['store_id' => $store->id]);
+        ->assertFormFieldDoesNotExist('store_id')
+        ->fillForm([
+            'type' => ExpenseType::Other->value,
+            'amount' => 25000,
+            'incurred_on' => today()->toDateString(),
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Expense::query()->sole()->store_id)->toBe($store->id);
 });
 
 it('validates amount and tenant store ownership', function () {

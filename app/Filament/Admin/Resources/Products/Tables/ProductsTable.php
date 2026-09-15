@@ -18,7 +18,12 @@ class ProductsTable
                 TextColumn::make('name')
                     ->searchable(),
                 TextColumn::make('price')
-                    ->money('UZS', divideBy: 1)
+                    ->label('Sotuv narxi')
+                    ->money('UZS', divideBy: 1, decimalPlaces: 0)
+                    ->sortable(),
+                TextColumn::make('cost_price')
+                    ->label('Tannarx')
+                    ->money('UZS', divideBy: 1, decimalPlaces: 0)
                     ->sortable(),
                 IconColumn::make('is_active')
                     ->boolean(),

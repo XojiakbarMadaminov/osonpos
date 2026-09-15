@@ -4,7 +4,6 @@ namespace App\Filament\Admin\Resources\Shifts;
 
 use App\Actions\Shifts\CloseShift;
 use App\Domain\Authorization\OrganizationAuthorization;
-use App\Domain\Authorization\StoreAccess;
 use App\Enums\AdminNavigationGroup;
 use App\Enums\OrganizationRole;
 use App\Enums\PaymentMethod;
@@ -13,7 +12,7 @@ use App\Filament\Admin\Resources\Shifts\Pages\ListShifts;
 use App\Filament\Admin\Resources\Shifts\Pages\ViewShift;
 use App\Filament\Admin\Support\DatePeriodFilter;
 use App\Models\Shift;
-use App\Models\Store;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -55,11 +54,11 @@ class ShiftResource extends Resource
                 TextColumn::make('store.name')->sortable(),
                 TextColumn::make('user.name')->label('Kassir')->searchable()->sortable(),
                 TextColumn::make('device.name')->label('Qurilma')->sortable(),
-                TextColumn::make('opening_cash')->money('UZS', divideBy: 1)->sortable(),
-                TextColumn::make('cash_payments_total')->label('Naqd savdo')->money('UZS', divideBy: 1),
-                TextColumn::make('expected_cash')->state(fn (Shift $record): int => $record->expectedCash())->money('UZS', divideBy: 1),
-                TextColumn::make('closing_cash')->money('UZS', divideBy: 1)->placeholder('Ochiq'),
-                TextColumn::make('cash_difference')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1)->placeholder('Ochiq'),
+                TextColumn::make('opening_cash')->money('UZS', divideBy: 1, decimalPlaces: 0)->sortable(),
+                TextColumn::make('cash_payments_total')->label('Naqd savdo')->money('UZS', divideBy: 1, decimalPlaces: 0),
+                TextColumn::make('expected_cash')->state(fn (Shift $record): int => $record->expectedCash())->money('UZS', divideBy: 1, decimalPlaces: 0),
+                TextColumn::make('closing_cash')->money('UZS', divideBy: 1, decimalPlaces: 0)->placeholder('Ochiq'),
+                TextColumn::make('cash_difference')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1, decimalPlaces: 0)->placeholder('Ochiq'),
                 TextColumn::make('opened_at')->dateTime()->sortable(),
                 TextColumn::make('closed_at')->dateTime()->placeholder('Ochiq')->sortable(),
             ])
@@ -71,14 +70,6 @@ class ShiftResource extends Resource
                         ShiftStatus::Open->value => ShiftStatus::Open->getLabel(),
                         ShiftStatus::Closed->value => ShiftStatus::Closed->getLabel(),
                     ]),
-                SelectFilter::make('store_id')
-                    ->label('Filial')
-                    ->options(fn (): array => Store::query()
-                        ->forTenant(app(TenantContext::class)->requireCurrent())
-                        ->whereIn('id', app(StoreAccess::class)->accessibleStoreIds(request()->user()))
-                        ->orderBy('name')
-                        ->pluck('name', 'id')
-                        ->all()),
             ], layout: FiltersLayout::AboveContent)
             ->filtersFormColumns(['sm' => 2, 'lg' => 3])
             ->deferFilters(false)
@@ -96,16 +87,16 @@ class ShiftResource extends Resource
             TextEntry::make('store.name')->label('Filial'),
             TextEntry::make('user.name')->label('Kassir'),
             TextEntry::make('device.name')->label('Qurilma'),
-            TextEntry::make('opening_cash')->money('UZS', divideBy: 1),
-            TextEntry::make('cash_payments_total')->label('Naqd savdo')->money('UZS', divideBy: 1),
-            TextEntry::make('card_payments_total')->label('Karta orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Card))->money('UZS', divideBy: 1),
-            TextEntry::make('click_payments_total')->label('Click orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Click))->money('UZS', divideBy: 1),
-            TextEntry::make('payme_payments_total')->label('Payme orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Payme))->money('UZS', divideBy: 1),
-            TextEntry::make('other_payments_total')->label('Boshqa to‘lovlar orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Other))->money('UZS', divideBy: 1),
-            TextEntry::make('payments_total')->label('Barcha to‘lovlar')->money('UZS', divideBy: 1),
-            TextEntry::make('expected_cash')->state(fn (Shift $record): int => $record->expectedCash())->money('UZS', divideBy: 1),
-            TextEntry::make('closing_cash')->money('UZS', divideBy: 1)->placeholder('Ochiq'),
-            TextEntry::make('cash_difference')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1)->placeholder('Ochiq'),
+            TextEntry::make('opening_cash')->money('UZS', divideBy: 1, decimalPlaces: 0),
+            TextEntry::make('cash_payments_total')->label('Naqd savdo')->money('UZS', divideBy: 1, decimalPlaces: 0),
+            TextEntry::make('card_payments_total')->label('Karta orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Card))->money('UZS', divideBy: 1, decimalPlaces: 0),
+            TextEntry::make('click_payments_total')->label('Click orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Click))->money('UZS', divideBy: 1, decimalPlaces: 0),
+            TextEntry::make('payme_payments_total')->label('Payme orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Payme))->money('UZS', divideBy: 1, decimalPlaces: 0),
+            TextEntry::make('other_payments_total')->label('Boshqa to‘lovlar orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Other))->money('UZS', divideBy: 1, decimalPlaces: 0),
+            TextEntry::make('payments_total')->label('Barcha to‘lovlar')->money('UZS', divideBy: 1, decimalPlaces: 0),
+            TextEntry::make('expected_cash')->state(fn (Shift $record): int => $record->expectedCash())->money('UZS', divideBy: 1, decimalPlaces: 0),
+            TextEntry::make('closing_cash')->money('UZS', divideBy: 1, decimalPlaces: 0)->placeholder('Ochiq'),
+            TextEntry::make('cash_difference')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1, decimalPlaces: 0)->placeholder('Ochiq'),
             TextEntry::make('opened_at')->dateTime(),
             TextEntry::make('closed_at')->dateTime()->placeholder('Ochiq'),
         ]);
@@ -132,7 +123,7 @@ class ShiftResource extends Resource
                     ->where('method', PaymentMethod::Cash->value),
             ], 'amount')
             ->forTenant($organization)
-            ->whereIn('store_id', app(StoreAccess::class)->accessibleStoreIds($user))
+            ->forStore(app(StoreContext::class)->requireCurrent())
             ->when(! $isSupervisor, fn (Builder $query): Builder => $query->where('user_id', $user->getKey()));
     }
 

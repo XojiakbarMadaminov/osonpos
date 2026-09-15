@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Resources\Printers;
 
-use App\Domain\Authorization\StoreAccess;
 use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\Printers\Pages\CreatePrinter;
 use App\Filament\Admin\Resources\Printers\Pages\EditPrinter;
@@ -10,6 +9,7 @@ use App\Filament\Admin\Resources\Printers\Pages\ListPrinters;
 use App\Filament\Admin\Resources\Printers\Schemas\PrinterForm;
 use App\Filament\Admin\Resources\Printers\Tables\PrintersTable;
 use App\Models\Printer;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -48,7 +48,7 @@ class PrinterResource extends Resource
         return parent::getEloquentQuery()
             ->with(['store', 'device'])
             ->forTenant(app(TenantContext::class)->requireCurrent())
-            ->whereIn('store_id', app(StoreAccess::class)->accessibleStoreIds(request()->user()));
+            ->forStore(app(StoreContext::class)->requireCurrent());
     }
 
     public static function getPages(): array

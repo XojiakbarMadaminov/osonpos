@@ -223,6 +223,8 @@ it('shows the active store switcher below the admin user profile', function () {
         ->get('/admin/reports')
         ->assertOk()
         ->assertSee('admin-active-store', false)
+        ->assertSee('onchange="this.form.submit()"', false)
+        ->assertDontSee('this.disabled', false)
         ->assertSeeText('Faol filial')
         ->assertSeeText('Sinov tashkiloti — Chilonzor filiali')
         ->assertDontSeeText('Sozlamalar')

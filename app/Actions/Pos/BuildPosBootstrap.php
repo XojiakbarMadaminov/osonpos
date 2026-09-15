@@ -30,7 +30,7 @@ class BuildPosBootstrap
         $organization = $this->tenantContext->requireCurrent();
         $store = $this->storeContext->requireCurrent();
         $device = $this->deviceContext->requireCurrent();
-        $catalog = $this->catalog->forOrganization($organization);
+        $catalog = $this->catalog->forStore($organization, $store);
         $configuration = $this->configuration->forStore($organization->getKey(), $store->getKey());
         $openOrdersByTableId = Order::query()
             ->where('organization_id', $organization->getKey())

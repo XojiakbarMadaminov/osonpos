@@ -33,6 +33,7 @@ class OrderItem extends Model
             $productIsValid = $item->product_id === null || Product::query()
                 ->whereKey($item->product_id)
                 ->where('organization_id', $item->organization_id)
+                ->where('store_id', $item->store_id)
                 ->exists();
 
             if (! $orderIsValid || ! $productIsValid) {
@@ -63,6 +64,7 @@ class OrderItem extends Model
         return [
             'quantity' => 'integer',
             'unit_price' => 'integer',
+            'unit_cost' => 'integer',
             'total' => 'integer',
             'kitchen_printed_at' => 'immutable_datetime',
         ];

@@ -6,6 +6,7 @@ use App\Enums\OrganizationPermission;
 use App\Models\Product;
 use App\Models\User;
 use App\Policies\Concerns\AuthorizesTenantResources;
+use App\Support\StoreContext;
 
 class ProductPolicy
 {
@@ -18,7 +19,8 @@ class ProductPolicy
 
     public function view(User $user, Product $product): bool
     {
-        return $this->allows($user, OrganizationPermission::ProductsView, $product);
+        return $this->allows($user, OrganizationPermission::ProductsView, $product)
+            && $product->belongsToStore(app(StoreContext::class)->requireCurrent());
     }
 
     public function create(User $user): bool
@@ -28,7 +30,8 @@ class ProductPolicy
 
     public function update(User $user, Product $product): bool
     {
-        return $this->allows($user, OrganizationPermission::ProductsManage, $product);
+        return $this->allows($user, OrganizationPermission::ProductsManage, $product)
+            && $product->belongsToStore(app(StoreContext::class)->requireCurrent());
     }
 
     public function delete(User $user, Product $product): bool

@@ -49,6 +49,7 @@ function printableItem(): OrderItem
         'product_name' => 'Double Cheeseburger',
         'quantity' => 2,
         'unit_price' => 32500,
+        'unit_cost' => 12345,
         'total' => 65000,
         'note' => 'No onions',
     ]);
@@ -73,7 +74,9 @@ it('builds a kitchen-first ticket with order context, notes and item count', fun
         ->toContain(str_repeat('=', 32))
         ->and(collect($data['lines'])->contains(
             fn (string $line): bool => str_contains($line, 'JAMI MAHSULOT') && str_ends_with($line, '2'),
-        ))->toBeTrue();
+        ))->toBeTrue()
+        ->and(implode("\n", $data['lines']))->not->toContain('12 345')
+        ->not->toContain('TANNARX');
 });
 
 it('builds a customer receipt with aligned totals and payment breakdown', function () {
@@ -95,4 +98,6 @@ it('builds a customer receipt with aligned totals and payment breakdown', functi
         ->and(collect($data['lines'])->contains(
             fn (string $line): bool => str_starts_with($line, 'NAQD') && str_ends_with($line, '65 000'),
         ))->toBeTrue();
+    expect(implode("\n", $data['lines']))->not->toContain('12 345')
+        ->not->toContain('TANNARX');
 });

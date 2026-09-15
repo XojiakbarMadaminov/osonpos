@@ -20,7 +20,7 @@ class PlansTable
                 TextColumn::make('code')
                     ->searchable(),
                 TextColumn::make('price')
-                    ->money()
+                    ->money('UZS', divideBy: 1, decimalPlaces: 0)
                     ->sortable(),
                 TextColumn::make('billing_period')
                     ->formatStateUsing(fn (string $state): string => match ($state) {

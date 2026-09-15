@@ -766,6 +766,8 @@ Organization admin uchun alohida bo‘sh dashboard mavjud emas. `/admin` foydala
 
 `/admin/orders`, `/admin/expenses` va `/admin/shifts` jadvallari ustida yagona davr filtri bo‘ladi: Bugun, Hafta, Oy va Oraliq. Standart qiymat Bugun. Hafta joriy kalendar haftasini, Oy joriy kalendar oyini, Oraliq esa foydalanuvchi kiritgan inclusive boshlanish va tugash sanalarini qo‘llaydi. Davr filtri tenant, store access va boshqa resource filterlarini chetlab o‘tmaydi.
 
+`/admin/orders`, `/admin/expenses`, `/admin/shifts`, `/admin/tables`, `/admin/devices` va `/admin/printers` sahifalari faqat profil menyusida tanlangan faol filial ma’lumotlarini ko‘rsatadi. Bu jadvallarda alohida filial filtri bo‘lmaydi. Boshqa filial ma’lumotlarini ko‘rish yoki boshqarish uchun user profil menyusidan faol filialni almashtiradi. Yangi chiqim, stol, qurilma va printer ham backend tomonidan faqat faol filialga biriktiriladi.
+
 ---
 
 # 18. POS Device Model
@@ -783,7 +785,6 @@ code
 is_active
 last_seen_at
 activation_code_hash nullable
-activation_expires_at nullable
 credential_hash nullable
 activated_at nullable
 created_at
@@ -798,12 +799,12 @@ Misollar:
 
 `/pos` va `/pos/device-setup` faqat login qilingan user uchun ochiladi. Guest organization panelining `/admin/login` sahifasiga, dastlab so‘ralgan URL saqlangan holda yo‘naltiriladi. Login sahifasida POS uchun avval tizimga kirish kerakligi o‘zbek tilida ko‘rsatiladi.
 
-Device organization admin panelida `printers.manage` ruxsatiga ega owner yoki manager tomonidan yaratiladi. Har bir yangi browser profili device bilan quyidagi oqimda bir marta bog‘lanadi:
+Device organization admin panelida `printers.manage` ruxsatiga ega owner yoki manager tomonidan yaratiladi. Admin faqat qurilma nomi va har bir device uchun 6 xonali doimiy aktivatsiya kodini belgilaydi; texnik `code` tizim tomonidan avtomatik yaratiladi va interfeysda ko‘rsatilmaydi. Aktivatsiya kodi admin uni almashtirmaguncha amal qiladi va yangi browser profili yoki cookie tozalangandan keyin qayta ishlatilishi mumkin:
 
 ```text
 Admin device yaratadi
 ↓
-8 belgili, 10 daqiqalik bir martalik aktivatsiya kodi yaratadi
+6 xonali doimiy aktivatsiya kodini belgilaydi
 ↓
 POS user login qiladi
 ↓
@@ -814,7 +815,7 @@ Backend membership + pos.access + store access + subscription + pos feature'ni t
 Browserga uzoq muddatli HttpOnly device credential beriladi
 ```
 
-Aktivatsiya kodi va device credential bazada ochiq saqlanmaydi. Kod faqat bir marta ishlaydi. Device qayta aktivatsiya qilinsa yoki admin ulanishni bekor qilsa eski browser credential darhol yaroqsiz bo‘ladi. Device `is_active = false` bo‘lsa barcha device-bound POS so‘rovlari bloklanadi.
+Aktivatsiya kodi va device credential bazada ochiq saqlanmaydi. Aktivatsiya kodi har ishlatilganda yangi browser credential beriladi va shu device'ning avvalgi browser credential'i darhol yaroqsiz bo‘ladi. Admin kodni istalgan payt almashtirishi mumkin. Admin ulanishni bekor qilsa credential darhol yaroqsiz bo‘ladi, lekin doimiy kod bilan qurilmani qayta ulash mumkin. Device `is_active = false` bo‘lsa aktivatsiya va barcha device-bound POS so‘rovlari bloklanadi.
 
 Device credential browser profiliga tegishli va login sessiyasidan alohida saqlanadi. Shu browser qayta ochilganda setup takrorlanmaydi; boshqa browser, inkognito profil yoki cookie tozalanganda qayta aktivatsiya talab qilinadi. Credential login qilgan userning organization membership, permission va store access tekshiruvlarini chetlab o‘tmaydi.
 
@@ -829,6 +830,7 @@ Frontend saqlagan oddiy `device_id` kelajakdagi offline metadata uchun ishlatili
 ```text
 id
 organization_id
+store_id
 name
 sort_order
 is_active
@@ -841,9 +843,11 @@ updated_at
 ```text
 id
 organization_id
+store_id
 category_id
 name
 price
+cost_price
 is_active
 sort_order
 created_at
@@ -858,11 +862,11 @@ MVP'da quyidagilar bo‘lmaydi:
 - recipes
 - stock
 
-Product organizationga tegishli.
+Kategoriya va product organization ichidagi bitta store'ga tegishli.
 
-MVP'da organizationning barcha store'lari bir xil product katalogdan foydalanadi.
+Har bir store o‘zining mustaqil kategoriya, product va narx katalogidan foydalanadi. Admin panel va POS faqat tanlangan faol store katalogini ko‘rsatadi. Boshqa store katalogiga to‘g‘ridan-to‘g‘ri kirish backendda bloklanadi.
 
-Store-specific product va price keyingi versiyada qo‘shilishi mumkin.
+`cost_price` bir dona mahsulotning integer UZS’dagi tannarxi bo‘lib, faqat admin mahsulot CRUD’ida ko‘rinadi. U POS API, POS UI, mijoz cheki, oshxona chiptasi yoki hisobotda alohida summa sifatida chiqarilmaydi. Hisobot tannarxdan faqat taxminiy yalpi foydani hisoblash uchun ichki foydalanadi.
 
 ---
 
@@ -976,6 +980,8 @@ Money `float` sifatida saqlanmasin.
 
 UZS uchun integer amount ishlatiladi.
 
+Barcha user-facing pul qiymatlari kasr qismisiz va mingliklar bo‘sh joy bilan ajratilgan holda ko‘rsatiladi: `40 000`, `1 000 000`. `.00` yoki `,00` chiqarilmaydi. Bu qoida admin, platform, POS, hisobot va chop hujjatlariga bir xil qo‘llanadi.
+
 ---
 
 # 24. Order Number
@@ -1021,6 +1027,7 @@ product_id nullable
 product_name
 quantity
 unit_price
+unit_cost
 total
 note nullable
 kitchen_printed_at nullable
@@ -1029,7 +1036,7 @@ created_at
 updated_at
 ```
 
-`product_name` va `unit_price` snapshot sifatida saqlanadi.
+`product_name`, `unit_price` va `unit_cost` snapshot sifatida saqlanadi.
 
 Product keyinchalik narxi o‘zgarsa ham eski order o‘zgarmasligi kerak.
 
@@ -1457,7 +1464,7 @@ Masalan:
 /pos/device-setup
 ```
 
-Bu sahifaning terminal aktivatsiya qismi login, `pos.access` va haqiqiy bir martalik kod talab qiladi. Physical printerlarni aniqlash, test qilish va binding saqlash qismi esa alohida `printers.manage` permission talab qiladi.
+Bu sahifaning terminal aktivatsiya qismi login, `pos.access` va admin qurilma uchun belgilagan haqiqiy doimiy kodni talab qiladi. Physical printerlarni aniqlash, test qilish va binding saqlash qismi esa alohida `printers.manage` permission talab qiladi.
 
 ---
 
@@ -1692,6 +1699,7 @@ MVP reports:
 - Revenue
 - Order count
 - Average check
+- Estimated gross profit (`revenue - sold product cost`)
 
 ## Payment breakdown
 

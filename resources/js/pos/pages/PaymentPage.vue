@@ -5,6 +5,7 @@ import { printerService } from '../services/printer';
 import { ReceiptPrintService } from '../services/receipt-print';
 import { useOrderStore } from '../stores/order';
 import { useShiftStore } from '../stores/shift';
+import { formatMoney } from '../utils/money';
 
 const emit = defineEmits<{ navigate: [page: string] }>();
 const order = useOrderStore();
@@ -63,7 +64,7 @@ onMounted(() => shift.load(true));
 <template>
     <section class="mx-auto max-w-xl rounded-xl border border-slate-800 bg-slate-900 p-6">
         <h2 class="text-xl font-semibold">To‘lov</h2>
-        <p v-if="order.current" class="mt-2 text-slate-400">{{ order.current.display_number }} · {{ order.current.total.toLocaleString() }} UZS</p>
+        <p v-if="order.current" class="mt-2 text-slate-400">{{ order.current.display_number }} · {{ formatMoney(order.current.total) }} UZS</p>
         <p v-else class="mt-4 text-slate-400">Avval buyurtmani tanlang yoki yarating.</p>
         <div v-if="order.current" class="mt-6 space-y-5">
             <div v-if="shift.loaded && !shift.current" class="rounded-lg border border-amber-700 bg-amber-500/10 p-4 text-sm text-amber-200">

@@ -80,12 +80,18 @@ class SalesReport
             ])
             ->all();
 
-        $topProducts = DB::table('order_items')
+        $soldItems = DB::table('order_items')
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->where('order_items.organization_id', $organization->getKey())
             ->whereIn('order_items.store_id', $storeIds)
             ->where('orders.status', OrderStatus::Completed->value)
-            ->whereBetween('orders.opened_at', [$from, $to])
+            ->whereBetween('orders.opened_at', [$from, $to]);
+        $productCostSummary = (clone $soldItems)
+            ->selectRaw('COALESCE(SUM(order_items.quantity * order_items.unit_cost), 0) AS total')
+            ->first();
+        $productCostTotal = (int) $productCostSummary->total;
+
+        $topProducts = (clone $soldItems)
             ->selectRaw('order_items.product_name, SUM(order_items.quantity) AS quantity, SUM(order_items.total) AS revenue')
             ->groupBy('order_items.product_name')
             ->orderByDesc('quantity')
@@ -100,6 +106,7 @@ class SalesReport
 
         return [
             'revenue' => $revenue,
+            'estimated_gross_profit' => $revenue - $productCostTotal,
             'expense_total' => $expenseTotal,
             'order_count' => $orderCount,
             'average_check' => $orderCount > 0 ? intdiv($revenue, $orderCount) : 0,

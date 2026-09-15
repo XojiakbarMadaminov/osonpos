@@ -2,12 +2,12 @@
 
 namespace App\Filament\Admin\Resources\Orders;
 
-use App\Domain\Authorization\StoreAccess;
 use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\Orders\Pages\ListOrders;
 use App\Filament\Admin\Resources\Orders\Pages\ViewOrder;
 use App\Filament\Admin\Support\DatePeriodFilter;
 use App\Models\Order;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use BackedEnum;
 use Filament\Actions\ViewAction;
@@ -44,7 +44,7 @@ class OrderResource extends Resource
                 TextColumn::make('type')->badge(),
                 TextColumn::make('status')->badge(),
                 TextColumn::make('payment_status')->badge(),
-                TextColumn::make('total')->money('UZS', divideBy: 1)->sortable(),
+                TextColumn::make('total')->money('UZS', divideBy: 1, decimalPlaces: 0)->sortable(),
                 TextColumn::make('opened_at')->dateTime()->sortable(),
             ])
             ->filters([
@@ -63,9 +63,9 @@ class OrderResource extends Resource
             TextEntry::make('type')->badge(),
             TextEntry::make('status')->badge(),
             TextEntry::make('payment_status')->badge(),
-            TextEntry::make('subtotal')->money('UZS', divideBy: 1),
-            TextEntry::make('delivery_fee')->money('UZS', divideBy: 1),
-            TextEntry::make('total')->money('UZS', divideBy: 1),
+            TextEntry::make('subtotal')->money('UZS', divideBy: 1, decimalPlaces: 0),
+            TextEntry::make('delivery_fee')->money('UZS', divideBy: 1, decimalPlaces: 0),
+            TextEntry::make('total')->money('UZS', divideBy: 1, decimalPlaces: 0),
             TextEntry::make('creator.name'),
             TextEntry::make('opened_at')->dateTime(),
             TextEntry::make('closed_at')->dateTime(),
@@ -78,7 +78,7 @@ class OrderResource extends Resource
         return parent::getEloquentQuery()
             ->with(['store', 'creator'])
             ->forTenant(app(TenantContext::class)->requireCurrent())
-            ->whereIn('store_id', app(StoreAccess::class)->accessibleStoreIds(request()->user()));
+            ->forStore(app(StoreContext::class)->requireCurrent());
     }
 
     public static function getPages(): array

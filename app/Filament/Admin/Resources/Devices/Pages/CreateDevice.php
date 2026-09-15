@@ -2,14 +2,14 @@
 
 namespace App\Filament\Admin\Resources\Devices\Pages;
 
-use App\Domain\Authorization\StoreAccess;
+use App\Actions\Devices\SetDeviceActivationCode;
 use App\Filament\Admin\Resources\Devices\DeviceResource;
 use App\Models\Device;
-use App\Models\Store;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;
 
 class CreateDevice extends CreateRecord
 {
@@ -20,19 +20,11 @@ class CreateDevice extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         $organization = app(TenantContext::class)->requireCurrent();
-        $store = Store::query()
-            ->where('organization_id', $organization->getKey())
-            ->where('is_active', true)
-            ->findOrFail($data['store_id']);
+        $store = app(StoreContext::class)->requireCurrent();
 
-        abort_unless(app(StoreAccess::class)->allows(request()->user(), $store), 403);
-
-        $code = mb_strtoupper(trim($data['code']));
-        if (Device::query()->forTenant($organization)->where('code', $code)->exists()) {
-            throw ValidationException::withMessages([
-                'data.code' => 'Bu qurilma kodi tashkilotda allaqachon mavjud.',
-            ]);
-        }
+        do {
+            $code = 'POS-'.mb_strtoupper(Str::random(8));
+        } while (Device::query()->forTenant($organization)->where('code', $code)->exists());
 
         $device = new Device([
             'name' => $data['name'],
@@ -42,6 +34,8 @@ class CreateDevice extends CreateRecord
         $device->organization()->associate($organization);
         $device->store()->associate($store);
         $device->save();
+
+        app(SetDeviceActivationCode::class)->execute($device, $data['activation_code']);
 
         return $device;
     }

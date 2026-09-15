@@ -2,7 +2,6 @@
 
 namespace App\Filament\Admin\Resources\Tables;
 
-use App\Domain\Authorization\StoreAccess;
 use App\Domain\Subscription\SubscriptionAccess;
 use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\Tables\Pages\CreateTable;
@@ -11,6 +10,7 @@ use App\Filament\Admin\Resources\Tables\Pages\ListTables;
 use App\Filament\Admin\Resources\Tables\Schemas\TableForm;
 use App\Filament\Admin\Resources\Tables\Tables\TablesTable;
 use App\Models\Table as TableModel;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -65,7 +65,7 @@ class TableResource extends Resource
         return parent::getEloquentQuery()
             ->with('store')
             ->forTenant(app(TenantContext::class)->requireCurrent())
-            ->whereIn('store_id', app(StoreAccess::class)->accessibleStoreIds(request()->user()));
+            ->forStore(app(StoreContext::class)->requireCurrent());
     }
 
     public static function getPages(): array

@@ -16,6 +16,7 @@ use App\Models\Shift;
 use App\Models\Store;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -37,6 +38,9 @@ function shiftContext(OrganizationRole $role = OrganizationRole::Cashier): array
     );
     Subscription::factory()->for($organization)->create();
     $device = Device::factory()->for($organization)->for($store)->create();
+    $tenantContext = app(TenantContext::class);
+    $tenantContext->resolveFor($user, $organization->id);
+    app(StoreContext::class)->resolveFor($user, $tenantContext, $store->id);
 
     return [$organization, $store, $user, $device, [
         'current_organization_id' => $organization->id,

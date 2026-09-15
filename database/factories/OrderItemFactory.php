@@ -28,6 +28,7 @@ class OrderItemFactory extends Factory
             'product_name' => fake()->words(2, true),
             'quantity' => $quantity,
             'unit_price' => $unitPrice,
+            'unit_cost' => fake()->numberBetween(0, $unitPrice),
             'total' => $quantity * $unitPrice,
             'note' => null,
             'kitchen_printed_at' => null,

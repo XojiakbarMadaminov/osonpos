@@ -2,16 +2,14 @@
 
 namespace App\Filament\Admin\Resources\Devices;
 
-use App\Domain\Authorization\StoreAccess;
 use App\Enums\AdminNavigationGroup;
 use App\Filament\Admin\Resources\Devices\Pages\CreateDevice;
 use App\Filament\Admin\Resources\Devices\Pages\ListDevices;
 use App\Filament\Admin\Resources\Devices\Tables\DevicesTable;
 use App\Models\Device;
-use App\Models\Store;
+use App\Support\StoreContext;
 use App\Support\TenantContext;
 use BackedEnum;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
@@ -38,27 +36,21 @@ class DeviceResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('store_id')
-                ->label('Filial')
-                ->options(fn (): array => Store::query()
-                    ->forTenant(app(TenantContext::class)->requireCurrent())
-                    ->whereIn('id', app(StoreAccess::class)->accessibleStoreIds(request()->user()))
-                    ->where('is_active', true)
-                    ->orderBy('name')
-                    ->pluck('name', 'id')
-                    ->all())
-                ->default(fn (): ?int => session('current_store_id'))
-                ->required(),
             TextInput::make('name')
                 ->label('Qurilma nomi')
                 ->required()
                 ->maxLength(255),
-            TextInput::make('code')
-                ->label('Qurilma kodi')
-                ->helperText('Masalan: KASSA-01')
+            TextInput::make('activation_code')
+                ->label('Doimiy aktivatsiya kodi')
+                ->helperText('6 xonali raqam kiriting. Kod uni almashtirmaguningizcha amal qiladi.')
                 ->required()
-                ->alphaDash()
-                ->maxLength(255),
+                ->length(6)
+                ->rules(['digits:6'])
+                ->inputMode('numeric')
+                ->extraInputAttributes(['pattern' => '[0-9]{6}'])
+                ->password()
+                ->revealable()
+                ->dehydrated(),
             Toggle::make('is_active')
                 ->label('Faol')
                 ->default(true),
@@ -75,7 +67,7 @@ class DeviceResource extends Resource
         return parent::getEloquentQuery()
             ->with('store')
             ->forTenant(app(TenantContext::class)->requireCurrent())
-            ->whereIn('store_id', app(StoreAccess::class)->accessibleStoreIds(request()->user()));
+            ->forStore(app(StoreContext::class)->requireCurrent());
     }
 
     public static function getPages(): array

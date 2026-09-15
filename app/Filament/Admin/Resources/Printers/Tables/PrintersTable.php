@@ -18,6 +18,8 @@ class PrintersTable
             TextColumn::make('system_name')->placeholder('Aniqlanmagan'),
             TextColumn::make('paper_width')->suffix(' mm'),
             IconColumn::make('is_active')->boolean(),
-        ])->recordActions([EditAction::make()])->toolbarActions([]);
+        ])
+            ->recordActions([EditAction::make()])
+            ->toolbarActions([]);
     }
 }

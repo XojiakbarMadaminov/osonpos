@@ -47,9 +47,10 @@ class AddOrderItem
             $product = Product::query()
                 ->whereKey($data->productId)
                 ->where('organization_id', $order->organization_id)
+                ->where('store_id', $order->store_id)
                 ->where('is_active', true)
                 ->first() ?? throw ValidationException::withMessages([
-                    'product_id' => 'Joriy tashkilotdan faol mahsulotni tanlang.',
+                    'product_id' => 'Joriy filialdan faol mahsulotni tanlang.',
                 ]);
 
             $item = new OrderItem(['note' => $data->note]);
@@ -63,6 +64,7 @@ class AddOrderItem
                 'product_name' => $product->name,
                 'quantity' => $data->quantity,
                 'unit_price' => $product->price,
+                'unit_cost' => $product->cost_price,
                 'total' => $product->price * $data->quantity,
             ])->save();
 

@@ -192,6 +192,128 @@ it('creates takeaway orders with sequential store display numbers', function () 
         ->toBe(now($store->timezone)->toDateString());
 });
 
+it('creates a takeaway order with an optional existing customer snapshot', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    [$user, , $session] = orderUser($organization, $store);
+    $customer = Customer::factory()->for($organization)->create([
+        'name' => 'Xojiakbar',
+        'phone' => '+998901234567',
+    ]);
+
+    $response = $this->actingAs($user)->withSession($session)->postJson('/api/pos/orders', [
+        'type' => OrderType::Takeaway->value,
+        'customer_id' => $customer->id,
+    ])->assertCreated()
+        ->assertJsonPath('data.customer.id', $customer->id)
+        ->assertJsonPath('data.customer.name', 'Xojiakbar')
+        ->assertJsonPath('data.customer.phone', '+998901234567');
+
+    $order = Order::query()->findOrFail($response->json('data.id'));
+    $customer->update(['name' => 'Yangi ism', 'phone' => '+998909999999']);
+
+    expect($order->refresh()->customer_name)->toBe('Xojiakbar')
+        ->and($order->customer_phone)->toBe('+998901234567');
+});
+
+it('creates and reuses a normalized customer from the POS before a takeaway order', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    [$user, , $session] = orderUser($organization, $store);
+
+    $first = $this->actingAs($user)->withSession($session)->postJson('/api/pos/customers', [
+        'phone' => '90 123-45-67',
+        'name' => 'Ali',
+    ])->assertOk()->assertJsonPath('data.phone', '+998901234567');
+
+    $this->actingAs($user)->withSession($session)->postJson('/api/pos/customers', [
+        'phone' => '+998 (90) 123 45 67',
+        'name' => 'Boshqa ism',
+    ])->assertOk()->assertJsonPath('data.id', $first->json('data.id'));
+
+    $this->actingAs($user)->withSession($session)->postJson('/api/pos/orders', [
+        'type' => OrderType::Takeaway->value,
+        'customer_id' => $first->json('data.id'),
+    ])->assertCreated()->assertJsonPath('data.customer.name', 'Ali');
+
+    expect(Customer::query()->count())->toBe(1);
+});
+
+it('attaches replaces and removes a customer on an open dine-in order', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    [$user, $device, $session] = orderUser($organization, $store);
+    $order = Order::factory()->for($organization)->for($store)->for($device)->for($user, 'creator')->create([
+        'type' => OrderType::DineIn,
+    ]);
+    $first = Customer::factory()->for($organization)->create(['name' => 'Birinchi', 'phone' => '+998901111111']);
+    $second = Customer::factory()->for($organization)->create(['name' => 'Ikkinchi', 'phone' => '+998902222222']);
+
+    $this->actingAs($user)->withSession($session)->putJson("/api/pos/orders/{$order->id}/customer", [
+        'customer_id' => $first->id,
+    ])->assertOk()->assertJsonPath('data.customer.name', 'Birinchi');
+
+    $this->putJson("/api/pos/orders/{$order->id}/customer", [
+        'customer_id' => $second->id,
+    ])->assertOk()->assertJsonPath('data.customer.name', 'Ikkinchi');
+
+    $this->deleteJson("/api/pos/orders/{$order->id}/customer")
+        ->assertOk()->assertJsonPath('data.customer', null);
+
+    expect($order->refresh()->customer_id)->toBeNull()
+        ->and($order->customer_name)->toBeNull()
+        ->and($order->customer_phone)->toBeNull()
+        ->and(Customer::query()->count())->toBe(2);
+});
+
+it('rejects customer changes on completed or cross-store orders', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $otherStore = Store::factory()->for($organization)->create();
+    [$user, $device, $session] = orderUser($organization, $store);
+    $otherStore->users()->attach($user);
+    $customer = Customer::factory()->for($organization)->create();
+    $completed = Order::factory()->for($organization)->for($store)->for($device)->for($user, 'creator')->create([
+        'status' => OrderStatus::Completed,
+    ]);
+    $otherStoreOrder = Order::factory()->for($organization)->for($otherStore)->for($user, 'creator')->create();
+
+    $this->actingAs($user)->withSession($session)->putJson("/api/pos/orders/{$completed->id}/customer", [
+        'customer_id' => $customer->id,
+    ])->assertUnprocessable()->assertJsonValidationErrors('order');
+
+    $this->putJson("/api/pos/orders/{$otherStoreOrder->id}/customer", [
+        'customer_id' => $customer->id,
+    ])->assertUnprocessable()->assertJsonValidationErrors('order');
+});
+
+it('blocks a foreign tenant customer but permits an organization customer from another store', function () {
+    $organization = Organization::factory()->create();
+    $firstStore = Store::factory()->for($organization)->create();
+    $otherStore = Store::factory()->for($organization)->create();
+    [$user] = orderUser($organization, $firstStore, withShift: false);
+    $otherStore->users()->attach($user);
+    $device = Device::factory()->for($organization)->for($otherStore)->create();
+    $session = [
+        'current_organization_id' => $organization->id,
+        'current_store_id' => $otherStore->id,
+        ...posDeviceSession($device),
+    ];
+    $order = Order::factory()->for($organization)->for($otherStore)->for($device)->for($user, 'creator')->create();
+    $sharedCustomer = Customer::factory()->for($organization)->create();
+    $foreignCustomer = Customer::factory()->create();
+
+    $this->actingAs($user)->withSession($session)->putJson("/api/pos/orders/{$order->id}/customer", [
+        'customer_id' => $sharedCustomer->id,
+    ])->assertOk()->assertJsonPath('data.customer.id', $sharedCustomer->id);
+
+    $this->putJson("/api/pos/orders/{$order->id}/customer", [
+        'customer_id' => $foreignCustomer->id,
+    ])->assertUnprocessable()->assertJsonValidationErrors('customer_id');
+
+    expect($order->refresh()->customer_id)->toBe($sharedCustomer->id);
+});
+
 it('shows only orders from the current store-local business date', function () {
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create(['timezone' => 'America/New_York']);
@@ -274,6 +396,8 @@ it('creates delivery orders with a reusable customer and address snapshot', func
 
     expect(Customer::query()->count())->toBe(1)
         ->and($order->customer_id)->toBe($customer->id)
+        ->and($order->customer_name)->toBe('Ali')
+        ->and($order->customer_phone)->toBe('+998901234567')
         ->and($order->deliveryDetail->address)->toBe('12 Original Street')
         ->and($order->delivery_fee)->toBe(15000)
         ->and($order->total)->toBe(15000);

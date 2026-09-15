@@ -6,6 +6,7 @@ use App\Enums\OrderType;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderItemRemoval;
 use App\Models\Payment;
 use App\Models\Printer;
 use App\Models\Store;
@@ -52,7 +53,7 @@ function printableItem(): OrderItem
         'unit_cost' => 12345,
         'total' => 65000,
         'note' => 'No onions',
-    ]);
+    ])->setRelation('removals', collect());
 }
 
 function thermalPrinter(int $paperWidth): Printer
@@ -100,4 +101,33 @@ it('builds a customer receipt with aligned totals and payment breakdown', functi
         ))->toBeTrue();
     expect(implode("\n", $data['lines']))->not->toContain('12 345')
         ->not->toContain('TANNARX');
+});
+
+it('prints only the remaining product quantity on the customer receipt', function () {
+    $order = printableOrder()->forceFill(['subtotal' => 32500, 'total' => 32500]);
+    $item = printableItem()->setRelation('removals', collect([
+        (new OrderItemRemoval)->forceFill(['quantity' => 1, 'total' => 32500]),
+    ]));
+    $payment = (new Payment)->forceFill(['method' => PaymentMethod::Cash, 'amount' => 32500]);
+    $order->setRelation('items', collect([$item]))->setRelation('payments', collect([$payment]));
+
+    $text = implode("\n", (new CustomerReceiptData($order, thermalPrinter(80), false))->toArray()['lines']);
+
+    expect($text)->toContain('1 x 32 500')
+        ->not->toContain('2 x 32 500');
+});
+
+it('prints the historical customer snapshot instead of a mutable customer relation', function () {
+    $order = printableOrder()->forceFill([
+        'customer_name' => 'Tarixiy mijoz',
+        'customer_phone' => '+998901234567',
+    ]);
+    $order->setRelation('items', collect([printableItem()]))
+        ->setRelation('payments', collect());
+
+    $lines = (new CustomerReceiptData($order, thermalPrinter(80), false))->toArray()['lines'];
+    $text = implode("\n", $lines);
+
+    expect($text)->toContain('Tarixiy mijoz')
+        ->toContain('+998901234567');
 });

@@ -2,9 +2,10 @@
 
 namespace App\Enums;
 
+use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-enum PaymentStatus: string implements HasLabel
+enum PaymentStatus: string implements HasColor, HasLabel
 {
     case Unpaid = 'UNPAID';
     case PartiallyPaid = 'PARTIALLY_PAID';
@@ -18,6 +19,16 @@ enum PaymentStatus: string implements HasLabel
             self::PartiallyPaid => 'Qisman to‘langan',
             self::Paid => 'To‘langan',
             self::Refunded => 'Qaytarilgan',
+        };
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::Unpaid => 'danger',
+            self::PartiallyPaid => 'warning',
+            self::Paid => 'success',
+            self::Refunded => 'gray',
         };
     }
 }

@@ -82,6 +82,24 @@ it('looks up a customer by phone through the POS API', function () {
         ->assertJsonPath('data.id', $customer->id);
 });
 
+it('does not expose another organization customer through phone lookup', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $user = customerUser($organization, $store);
+    $device = Device::factory()->for($organization)->for($store)->create();
+    Customer::factory()->create(['phone' => '+998901234567']);
+
+    $this->actingAs($user)
+        ->withSession([
+            'current_organization_id' => $organization->id,
+            'current_store_id' => $store->id,
+            ...posDeviceSession($device),
+        ])
+        ->getJson('/api/pos/customers/lookup?phone=%2B998901234567')
+        ->assertOk()
+        ->assertJsonPath('data', null);
+});
+
 it('requires a phone for customer lookup', function () {
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create();

@@ -17,4 +17,12 @@ class LookupCustomerRequest extends FormRequest
             'phone' => ['required', 'string', 'max:30', 'regex:/^\+?[0-9 ()-]{7,30}$/'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'phone.required' => 'Mijoz telefonini kiriting.',
+            'phone.regex' => 'Telefon raqamini to‘g‘ri kiriting.',
+        ];
+    }
 }

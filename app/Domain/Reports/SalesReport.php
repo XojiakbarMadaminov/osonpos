@@ -80,20 +80,25 @@ class SalesReport
             ])
             ->all();
 
+        $removedItems = DB::table('order_item_removals')
+            ->selectRaw('order_item_id, SUM(quantity) AS removed_quantity, SUM(total) AS removed_total')
+            ->groupBy('order_item_id');
         $soldItems = DB::table('order_items')
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
+            ->leftJoinSub($removedItems, 'removed_items', 'removed_items.order_item_id', '=', 'order_items.id')
             ->where('order_items.organization_id', $organization->getKey())
             ->whereIn('order_items.store_id', $storeIds)
             ->where('orders.status', OrderStatus::Completed->value)
             ->whereBetween('orders.opened_at', [$from, $to]);
         $productCostSummary = (clone $soldItems)
-            ->selectRaw('COALESCE(SUM(order_items.quantity * order_items.unit_cost), 0) AS total')
+            ->selectRaw('COALESCE(SUM((order_items.quantity - COALESCE(removed_items.removed_quantity, 0)) * order_items.unit_cost), 0) AS total')
             ->first();
         $productCostTotal = (int) $productCostSummary->total;
 
         $topProducts = (clone $soldItems)
-            ->selectRaw('order_items.product_name, SUM(order_items.quantity) AS quantity, SUM(order_items.total) AS revenue')
+            ->selectRaw('order_items.product_name, SUM(order_items.quantity - COALESCE(removed_items.removed_quantity, 0)) AS quantity, SUM(order_items.total - COALESCE(removed_items.removed_total, 0)) AS revenue')
             ->groupBy('order_items.product_name')
+            ->havingRaw('SUM(order_items.quantity - COALESCE(removed_items.removed_quantity, 0)) > 0')
             ->orderByDesc('quantity')
             ->limit(10)
             ->get()

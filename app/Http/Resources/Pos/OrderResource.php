@@ -24,27 +24,39 @@ class OrderResource extends JsonResource
                 null,
             ),
             'customer_id' => $this->customer_id,
+            'customer' => $this->customer_phone ? [
+                'id' => $this->customer_id,
+                'name' => $this->customer_name,
+                'phone' => $this->customer_phone,
+            ] : null,
             'subtotal' => $this->subtotal,
             'delivery_fee' => $this->delivery_fee,
             'total' => $this->total,
             'paid_amount' => $paidAmount,
             'balance_due' => max(0, $this->total - $paidAmount),
             'unprinted_items_count' => (int) ($this->unprinted_items_count ?? 0),
+            'pending_item_removals_count' => (int) ($this->pending_item_removals_count ?? 0),
             'note' => $this->note,
             'delivery' => $this->whenLoaded('deliveryDetail', fn (): array => [
                 'address' => $this->deliveryDetail->address,
                 'delivery_fee' => $this->deliveryDetail->delivery_fee,
                 'note' => $this->deliveryDetail->note,
             ]),
-            'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item): array => [
-                'id' => $item->getKey(),
-                'product_id' => $item->product_id,
-                'product_name' => $item->product_name,
-                'quantity' => $item->quantity,
-                'unit_price' => $item->unit_price,
-                'total' => $item->total,
-                'note' => $item->note,
-            ])),
+            'items' => $this->whenLoaded('items', fn () => $this->items
+                ->filter(fn ($item): bool => $item->remainingQuantity() > 0)
+                ->values()
+                ->map(fn ($item): array => [
+                    'id' => $item->getKey(),
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product_name,
+                    'original_quantity' => $item->quantity,
+                    'removed_quantity' => $item->removedQuantity(),
+                    'quantity' => $item->remainingQuantity(),
+                    'unit_price' => $item->unit_price,
+                    'total' => $item->remainingTotal(),
+                    'note' => $item->note,
+                    'kitchen_printed' => $item->kitchen_printed_at !== null,
+                ])),
         ];
     }
 }

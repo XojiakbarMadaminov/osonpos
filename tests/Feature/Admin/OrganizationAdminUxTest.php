@@ -23,6 +23,8 @@ use App\Filament\Admin\Resources\Users\UserResource;
 use App\Http\Middleware\InitializeTenantContext;
 use App\Models\Feature;
 use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\OrderItemRemoval;
 use App\Models\Organization;
 use App\Models\Plan;
 use App\Models\Store;
@@ -123,6 +125,36 @@ it('keeps store order and user listings inside the current organization', functi
         ->assertOk()->assertSee('#LOCAL-18')->assertDontSee('#FOREIGN-18');
     $this->actingAs($owner)->withSession($session)->get('/admin/users')
         ->assertOk()->assertSee($owner->name)->assertDontSee('Foreign Person');
+});
+
+it('shows original removed and remaining product quantities in order details', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $owner = adminOwner($organization, $store);
+    $order = Order::factory()->for($organization)->for($store)->for($owner, 'creator')->create([
+        'subtotal' => 20000,
+        'total' => 20000,
+    ]);
+    $item = OrderItem::factory()->for($organization)->for($store)->for($order)->for($owner, 'creator')->create([
+        'product_name' => 'Sinov lavash',
+        'quantity' => 3,
+        'unit_price' => 10000,
+        'total' => 30000,
+    ]);
+    OrderItemRemoval::factory()->for($organization)->for($store)->for($order)->for($item, 'orderItem')->for($owner, 'creator')->create([
+        'quantity' => 1,
+        'unit_price' => 10000,
+        'total' => 10000,
+    ]);
+
+    $this->actingAs($owner)
+        ->withSession(['current_organization_id' => $organization->id, 'current_store_id' => $store->id])
+        ->get("/admin/orders/{$order->id}")
+        ->assertOk()
+        ->assertSee('Sinov lavash')
+        ->assertSee('Dastlabki miqdor')
+        ->assertSee('Ayirilgan')
+        ->assertSee('Qolgan miqdor');
 });
 
 it('limits store-owned admin listings to stores assigned to a manager', function () {

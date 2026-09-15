@@ -11,6 +11,7 @@ use App\Support\StoreContext;
 use App\Support\TenantContext;
 use BackedEnum;
 use Filament\Actions\ViewAction;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -63,6 +64,8 @@ class OrderResource extends Resource
             TextEntry::make('type')->badge(),
             TextEntry::make('status')->badge(),
             TextEntry::make('payment_status')->badge(),
+            TextEntry::make('customer_name')->label('Mijoz')->placeholder('Biriktirilmagan'),
+            TextEntry::make('customer_phone')->label('Mijoz telefoni')->placeholder('—'),
             TextEntry::make('subtotal')->money('UZS', divideBy: 1, decimalPlaces: 0),
             TextEntry::make('delivery_fee')->money('UZS', divideBy: 1, decimalPlaces: 0),
             TextEntry::make('total')->money('UZS', divideBy: 1, decimalPlaces: 0),
@@ -70,13 +73,32 @@ class OrderResource extends Resource
             TextEntry::make('opened_at')->dateTime(),
             TextEntry::make('closed_at')->dateTime(),
             TextEntry::make('note')->columnSpanFull(),
+            RepeatableEntry::make('items')
+                ->label('Mahsulotlar')
+                ->schema([
+                    TextEntry::make('product_name')->label('Mahsulot'),
+                    TextEntry::make('quantity')
+                        ->label('Dastlabki miqdor'),
+                    TextEntry::make('removed_quantity')
+                        ->label('Ayirilgan')
+                        ->state(fn ($record): int => $record->removedQuantity()),
+                    TextEntry::make('remaining_quantity')
+                        ->label('Qolgan miqdor')
+                        ->state(fn ($record): int => $record->remainingQuantity()),
+                    TextEntry::make('remaining_total')
+                        ->label('Qolgan summa')
+                        ->state(fn ($record): int => $record->remainingTotal())
+                        ->money('UZS', divideBy: 1, decimalPlaces: 0),
+                ])
+                ->columns(5)
+                ->columnSpanFull(),
         ]);
     }
 
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['store', 'creator'])
+            ->with(['store', 'creator', 'items.removals'])
             ->forTenant(app(TenantContext::class)->requireCurrent())
             ->forStore(app(StoreContext::class)->requireCurrent());
     }

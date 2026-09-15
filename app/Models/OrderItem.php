@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Validation\ValidationException;
 
 #[Fillable(['note'])]
@@ -57,6 +58,38 @@ class OrderItem extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function removals(): HasMany
+    {
+        return $this->hasMany(OrderItemRemoval::class);
+    }
+
+    public function removedQuantity(): int
+    {
+        if (isset($this->attributes['removals_sum_quantity'])) {
+            return (int) $this->attributes['removals_sum_quantity'];
+        }
+
+        if ($this->relationLoaded('removals')) {
+            return (int) $this->removals->sum('quantity');
+        }
+
+        if (! $this->exists) {
+            return 0;
+        }
+
+        return (int) $this->removals()->sum('quantity');
+    }
+
+    public function remainingQuantity(): int
+    {
+        return max(0, $this->quantity - $this->removedQuantity());
+    }
+
+    public function remainingTotal(): int
+    {
+        return $this->remainingQuantity() * $this->unit_price;
     }
 
     protected function casts(): array

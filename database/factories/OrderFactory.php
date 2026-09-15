@@ -25,6 +25,8 @@ class OrderFactory extends Factory
             'type' => OrderType::Takeaway,
             'table_id' => null,
             'customer_id' => null,
+            'customer_name' => null,
+            'customer_phone' => null,
             'status' => OrderStatus::Open,
             'payment_status' => PaymentStatus::Unpaid,
             'subtotal' => 0,

@@ -62,6 +62,8 @@ class CreateOrder
                 'type' => $data->type,
                 'table_id' => $table?->getKey(),
                 'customer_id' => $customer?->getKey(),
+                'customer_name' => $customer?->name,
+                'customer_phone' => $customer?->phone,
                 'note' => $data->note,
             ]);
             $order->setAttribute('id', $id);
@@ -117,12 +119,12 @@ class CreateOrder
     private function resolveCustomer(CreateOrderData $data, int $organizationId): ?Customer
     {
         if ($data->customerId === null) {
-            if ($data->type === OrderType::Delivery) {
-                if ($data->customerPhone === null) {
-                    throw ValidationException::withMessages(['customer.phone' => 'Yetkazib berish uchun mijoz telefoni kiritilishi shart.']);
-                }
-
+            if ($data->customerPhone !== null) {
                 return $this->customers->execute($data->customerPhone, $data->customerName);
+            }
+
+            if ($data->type === OrderType::Delivery) {
+                throw ValidationException::withMessages(['customer.phone' => 'Yetkazib berish uchun mijoz telefoni kiritilishi shart.']);
             }
 
             return null;

@@ -53,21 +53,25 @@ readonly class CustomerReceiptData
             $lines->push($format->columns('STOL', $this->order->table->number));
         }
 
-        if ($this->order->customer) {
-            if ($this->order->customer->name) {
-                $lines->push($format->columns('MIJOZ', $this->order->customer->name));
+        if ($this->order->customer_phone) {
+            if ($this->order->customer_name) {
+                $lines->push($format->columns('MIJOZ', $this->order->customer_name));
             }
 
-            $lines->push($format->columns('TELEFON', $this->order->customer->phone));
+            $lines->push($format->columns('TELEFON', $this->order->customer_phone));
         }
 
         $lines->push($format->separator());
 
         foreach ($this->order->items as $item) {
+            if ($item->remainingQuantity() === 0) {
+                continue;
+            }
+
             $lines->push(...$format->wrap($item->product_name));
             $lines->push($format->columns(
-                "  {$item->quantity} x {$format->money($item->unit_price)}",
-                $format->money($item->total),
+                "  {$item->remainingQuantity()} x {$format->money($item->unit_price)}",
+                $format->money($item->remainingTotal()),
             ));
         }
 

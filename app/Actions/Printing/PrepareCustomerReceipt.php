@@ -46,9 +46,8 @@ class PrepareCustomerReceipt
             order: $order->loadMissing([
                 'store',
                 'table',
-                'customer',
                 'creator',
-                'items',
+                'items.removals',
                 'payments',
                 'deliveryDetail',
             ]),

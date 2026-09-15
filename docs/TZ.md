@@ -962,6 +962,8 @@ business_date
 type
 table_id nullable
 customer_id nullable
+customer_name nullable
+customer_phone nullable
 status
 payment_status
 subtotal
@@ -981,6 +983,8 @@ Money `float` sifatida saqlanmasin.
 UZS uchun integer amount ishlatiladi.
 
 Barcha user-facing pul qiymatlari kasr qismisiz va mingliklar bo‘sh joy bilan ajratilgan holda ko‘rsatiladi: `40 000`, `1 000 000`. `.00` yoki `,00` chiqarilmaydi. Bu qoida admin, platform, POS, hisobot va chop hujjatlariga bir xil qo‘llanadi.
+
+`customer_name` va `customer_phone` buyurtma yaratilganda yoki ochiq buyurtmaga mijoz biriktirilganda snapshot sifatida saqlanadi. Mijoz profili keyin o‘zgarsa ham tarixiy buyurtma va mijoz cheki o‘zgarmaydi. Mijozni ochiq buyurtmadan olib tashlash customer yozuvini o‘chirmaydi.
 
 ---
 
@@ -1052,6 +1056,10 @@ Keyin aynan shu product yana qo‘shilsa yangi `order_item` yaratiladi.
 
 Keyingi kitchen ticketda faqat yangi itemlar chiqadi.
 
+Ochiq buyurtmadagi mahsulotni ayirish refund hisoblanmaydi. Asl `order_item` o‘zgartirilmaydi yoki o‘chirilmaydi; ayirish `order_item_removals` tarixida ULID bilan idempotent saqlanadi. Hali oshxonaga chiqmagan item navbatdagi kitchen ticketda qolgan miqdori bilan chiqadi. `kitchen_printed_at != null` item ayirilsa, ayni `KITCHEN_TICKET` printer yo‘nalishida `MAHSULOT BEKOR QILINDI` hujjati alohida chop etiladi. Print xatosi saqlangan ayirishni rollback qilmaydi.
+
+Ayirish faqat joriy tashkilot va faol filialdagi `OPEN` order, joriy device va ochiq smena bilan bajariladi. Qolgan miqdordan ortiq ayirish va order jami mavjud paymentlar summasidan kamayib ketishi taqiqlanadi. To‘lovsiz orderdagi oxirgi mahsulot ayirilsa order avtomatik `CANCELLED` bo‘ladi; oshxonaga chiqarilgan mahsulot uchun pending bekor qilish cheki `CANCELLED` orderda ham chop etiladi. Payment mavjud bo‘lsa barcha mahsulotlarni ayirish taqiqlanadi. Delivery fee o‘zgarmaydi. Receipt, admin tafsilotlari va reportlar mahsulotning qolgan miqdori hamda summasidan foydalanadi.
+
 ---
 
 # 27. Dine-in Workflow
@@ -1105,6 +1113,8 @@ New Order
 ↓
 TAKEAWAY
 ↓
+Optional customer selection/create by phone
+↓
 Products
 ↓
 Payment
@@ -1117,6 +1127,12 @@ COMPLETED
 ```
 
 KDS MVP'da mavjud emas.
+
+Takeaway mijozsiz odatdagi tezkor oqimda yaratiladi. Mijoz kerak bo‘lsa, kassir asosiy savat sahifasidagi ixcham `+ Mijoz qo‘shish` amalini ochadi. Telefon bo‘yicha qidirish faqat shu picker ichida va kassir qidirish amalini bosganda bajariladi.
+
+Dine-in buyurtma yaratishda mijoz formasi ko‘rsatilmaydi. Mijozni to‘lov sahifasida ixtiyoriy biriktirish, almashtirish yoki olib tashlash mumkin. Bu amallar faqat joriy filialdagi `OPEN` buyurtmada bajariladi.
+
+Customer organization miqyosidagi entity: bir tashkilotning mijozini uning boshqa ruxsat berilgan filialidagi buyurtmada ishlatish mumkin. Boshqa tashkilot mijozini biriktirish va boshqa faol filial buyurtmasini o‘zgartirish bloklanadi.
 
 ---
 

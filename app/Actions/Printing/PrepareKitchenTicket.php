@@ -25,8 +25,17 @@ class PrepareKitchenTicket
         $this->ensureCurrentOrder($order, $reprint);
         $items = $order->items()
             ->when(! $reprint, fn ($query) => $query->whereNull('kitchen_printed_at'))
+            ->withSum('removals', 'quantity')
             ->orderBy('created_at')
-            ->get();
+            ->get()
+            ->when(! $reprint, fn ($items) => $items
+                ->filter(fn ($item): bool => $item->remainingQuantity() > 0)
+                ->each(function ($item): void {
+                    $remainingQuantity = $item->remainingQuantity();
+                    $item->quantity = $remainingQuantity;
+                    $item->total = $remainingQuantity * $item->unit_price;
+                })
+                ->values());
 
         if ($items->isEmpty()) {
             throw ValidationException::withMessages([

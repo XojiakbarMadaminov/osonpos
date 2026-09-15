@@ -6,11 +6,15 @@ use App\Http\Controllers\Api\Pos\CancelOrderController;
 use App\Http\Controllers\Api\Pos\CompleteOrderController;
 use App\Http\Controllers\Api\Pos\CreatePaymentController;
 use App\Http\Controllers\Api\Pos\CurrentDeviceController;
+use App\Http\Controllers\Api\Pos\CustomerController;
 use App\Http\Controllers\Api\Pos\CustomerLookupController;
 use App\Http\Controllers\Api\Pos\CustomerReceiptController;
 use App\Http\Controllers\Api\Pos\KitchenPrintController;
+use App\Http\Controllers\Api\Pos\KitchenRemovalPrintController;
 use App\Http\Controllers\Api\Pos\OrderController;
+use App\Http\Controllers\Api\Pos\OrderCustomerController;
 use App\Http\Controllers\Api\Pos\OrderItemController;
+use App\Http\Controllers\Api\Pos\OrderItemRemovalController;
 use App\Http\Controllers\Api\Pos\PrinterController;
 use App\Http\Controllers\Api\Pos\QzSecurityController;
 use App\Http\Controllers\Api\Pos\ShiftController;
@@ -41,6 +45,7 @@ Route::prefix('pos')
                 Route::post('/qz/sign', [QzSecurityController::class, 'sign'])->middleware('throttle:qz-signing');
 
                 Route::middleware('subscription.active')->group(function (): void {
+                    Route::post('/customers', [CustomerController::class, 'store']);
                     Route::get('/shifts/current', [ShiftController::class, 'current']);
                     Route::post('/shifts', [ShiftController::class, 'store']);
                     Route::post('/shifts/{shift}/close', [ShiftController::class, 'close']);
@@ -48,7 +53,10 @@ Route::prefix('pos')
                     Route::post('/orders', [OrderController::class, 'store']);
                     Route::get('/orders/{order}', [OrderController::class, 'show']);
                     Route::patch('/orders/{order}', [OrderController::class, 'update']);
+                    Route::put('/orders/{order}/customer', [OrderCustomerController::class, 'update']);
+                    Route::delete('/orders/{order}/customer', [OrderCustomerController::class, 'destroy']);
                     Route::post('/orders/{order}/items', OrderItemController::class);
+                    Route::post('/orders/{order}/item-removals', OrderItemRemovalController::class);
                     Route::post('/orders/{order}/payments', CreatePaymentController::class);
                     Route::post('/orders/{order}/complete', CompleteOrderController::class);
                     Route::post('/orders/{order}/receipt', [CustomerReceiptController::class, 'prepare']);
@@ -56,6 +64,9 @@ Route::prefix('pos')
                     Route::post('/orders/{order}/send-kitchen', [KitchenPrintController::class, 'prepare']);
                     Route::post('/orders/{order}/send-kitchen/confirm', [KitchenPrintController::class, 'confirm']);
                     Route::post('/orders/{order}/send-kitchen/reprint', [KitchenPrintController::class, 'reprint']);
+                    Route::post('/orders/{order}/send-kitchen-removals', [KitchenRemovalPrintController::class, 'prepare']);
+                    Route::post('/orders/{order}/send-kitchen-removals/confirm', [KitchenRemovalPrintController::class, 'confirm']);
+                    Route::post('/orders/{order}/send-kitchen-removals/reprint', [KitchenRemovalPrintController::class, 'reprint']);
                     Route::post('/orders/{order}/cancel', CancelOrderController::class);
                 });
             });

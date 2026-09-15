@@ -33,6 +33,15 @@ class CompleteOrder
                 ]);
             }
 
+            if ($order->itemRemovals()
+                ->where('kitchen_print_required', true)
+                ->whereNull('kitchen_printed_at')
+                ->exists()) {
+                throw ValidationException::withMessages([
+                    'order' => 'Buyurtmani yopishdan oldin mahsulot ayirish chekini oshxonaga chiqaring.',
+                ]);
+            }
+
             $order->closer()->associate($user);
             $order->forceFill([
                 'status' => OrderStatus::Completed,

@@ -1930,7 +1930,124 @@ Acceptance criteria:
 - Inactive and inaccessible devices remain impossible to activate.
 
 ---
+# Phase 41 — Optional Customer Attachment Across POS Order Types
 
+Status: DONE
+
+Depends on:
+
+- Phase 9
+- Phase 10
+- Phase 12
+- Phase 13
+- Phase 16
+- Phase 37
+
+Goal:
+
+Allow cashiers to optionally attach a customer to TAKEAWAY and DINE_IN orders without slowing down the normal POS flow, while preserving the existing DELIVERY flow.
+
+Architecture decisions:
+
+- Customer remains organization-scoped as defined in Phase 9; it is reusable across the organization's accessible stores and does not receive a `store_id`.
+- The order remains tenant- and active-store-scoped.
+- `customer_name` and `customer_phone` are stored on the order as historical snapshots.
+- One reusable `CustomerPicker.vue` owns lookup, create, selected-summary, change, and remove states.
+- Customer lookup happens only after an explicit action inside the picker, never during product selection.
+
+Business rules:
+
+- DELIVERY keeps its required phone/address behavior.
+- TAKEAWAY supports an optional compact customer picker on the main cart page.
+- DINE_IN has no customer fields on its ordering screen; an optional picker is shown on the payment page.
+- A phone match reuses the existing organization customer; a missing phone can create one with an optional name.
+- Customer changes are allowed only on an OPEN order in the active store.
+- Removing a customer from an order never deletes the customer record.
+- Receipts use order snapshots; kitchen tickets remain independent of customer data.
+
+Tasks:
+
+- [x] Add order-level customer name and phone snapshots with migration backfill.
+- [x] Snapshot customer data when an order is created or a customer is attached.
+- [x] Add POS customer lookup/create and open-order attach/replace/remove endpoints.
+- [x] Enforce tenant customer isolation and active-store order isolation.
+- [x] Normalize Uzbek phone numbers and prevent duplicate normalized phones per organization.
+- [x] Create a reusable compact customer picker with Uzbek copy and touch-friendly controls.
+- [x] Add optional TAKEAWAY customer selection to the main POS cart.
+- [x] Add optional DINE_IN customer selection to the payment page.
+- [x] Preserve the no-customer and DELIVERY flows.
+- [x] Print customer snapshots only when a customer is attached.
+- [x] Add backend and frontend regression coverage.
+
+Acceptance criteria:
+
+- TAKEAWAY and DINE_IN continue to work without a customer or extra mandatory clicks.
+- TAKEAWAY can select or create a customer from the cart.
+- DINE_IN can select, replace, or remove a customer before completion from the payment page.
+- DELIVERY still requires its existing customer phone and address fields.
+- Equivalent Uzbek phone formats reuse one organization customer.
+- Cross-tenant customer attachment and cross-store order mutation are blocked.
+- The same organization's customer can be reused in another accessible store.
+- Later customer profile edits do not change historical order or receipt data.
+- Customer removal does not delete the customer.
+- Kitchen printing does not depend on customer data.
+
+Validation:
+
+- Backend coverage includes optional/no-customer creation, existing/new customer flows, attach/replace/remove, completed-order rejection, DELIVERY regression, normalization, isolation, and snapshot integrity.
+- Frontend coverage includes phone normalization, explicit lookup/create requests, selected customer state, and no-customer reset behavior.
+- Type checking, production build, Laravel Pint, and the full Pest suite must pass.
+
+---
+# Phase 42 — Open Order Item Removal
+
+Status: DONE
+
+Depends on:
+
+- Phase 12
+- Phase 13
+- Phase 15
+- Phase 16
+- Phase 29
+
+Goal:
+
+Allow POS users to reduce or fully remove products from an OPEN order without treating the operation as a refund or mutating finalized kitchen history.
+
+Architecture decisions:
+
+- Original order items remain immutable; idempotent ULID removal records carry quantity, price, cost, actor, store, and kitchen notification state.
+- Unprinted kitchen items are rendered at their remaining quantity.
+- Printed item removals use a separate `MAHSULOT BEKOR QILINDI` document routed through `KITCHEN_TICKET`.
+- Order totals, receipts, admin details, costs, gross profit, and top products use remaining quantities.
+
+Tasks:
+
+- [x] Add the tenant/store-scoped order item removal model and migration.
+- [x] Add transactional, idempotent removal with shift, order, quantity, payment, and permission guards.
+- [x] Add kitchen removal prepare, confirm, retry, and reprint APIs.
+- [x] Preserve pending removals after print failure and block completion until required kitchen notices are printed.
+- [x] Add remaining quantities to POS order responses and removal controls to the Orders page.
+- [x] Update customer receipt, admin detail, and sales report calculations.
+- [x] Add backend and frontend regression coverage.
+
+Acceptance criteria:
+
+- Unprinted products can be partially or fully removed and print only at their remaining quantity.
+- Printed products produce a separate kitchen cancellation ticket.
+- Retrying the same removal identifier does not subtract twice.
+- Removing beyond the remaining quantity or below already paid value is blocked.
+- Removing the final item from an unpaid order automatically cancels the empty order; a paid order cannot be emptied.
+- Cross-tenant, wrong-store, closed-order, missing-shift, and unauthorized mutations are blocked.
+- Print failure does not rollback the removal and exposes a retry action.
+- Customer receipts and reports contain only net sold quantities and values.
+
+Validation:
+
+- Pest, Vitest, Vue type checking, production build, and Laravel Pint must pass.
+
+---
 # Suggested Commit Boundaries
 
 Use small meaningful commits where practical.

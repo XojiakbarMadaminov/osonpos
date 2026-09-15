@@ -34,7 +34,12 @@ class OrderController extends Controller
             ->with('table:id,name,number')
             ->withSum('payments', 'amount')
             ->withCount([
-                'items as unprinted_items_count' => fn ($query) => $query->whereNull('kitchen_printed_at'),
+                'items as unprinted_items_count' => fn ($query) => $query
+                    ->whereNull('kitchen_printed_at')
+                    ->whereRaw('order_items.quantity > COALESCE((SELECT SUM(order_item_removals.quantity) FROM order_item_removals WHERE order_item_removals.order_item_id = order_items.id), 0)'),
+                'itemRemovals as pending_item_removals_count' => fn ($query) => $query
+                    ->where('kitchen_print_required', true)
+                    ->whereNull('kitchen_printed_at'),
             ])
             ->latest('opened_at')
             ->paginate(50);
@@ -47,10 +52,15 @@ class OrderController extends Controller
         Gate::authorize('view', $order);
 
         return new OrderResource(
-            $order->load(['items', 'deliveryDetail', 'table'])
+            $order->load(['items.removals', 'deliveryDetail', 'table'])
                 ->loadSum('payments', 'amount')
                 ->loadCount([
-                    'items as unprinted_items_count' => fn ($query) => $query->whereNull('kitchen_printed_at'),
+                    'items as unprinted_items_count' => fn ($query) => $query
+                        ->whereNull('kitchen_printed_at')
+                        ->whereRaw('order_items.quantity > COALESCE((SELECT SUM(order_item_removals.quantity) FROM order_item_removals WHERE order_item_removals.order_item_id = order_items.id), 0)'),
+                    'itemRemovals as pending_item_removals_count' => fn ($query) => $query
+                        ->where('kitchen_print_required', true)
+                        ->whereNull('kitchen_printed_at'),
                 ]),
         );
     }

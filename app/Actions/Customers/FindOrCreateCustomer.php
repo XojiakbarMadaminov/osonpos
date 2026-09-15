@@ -5,6 +5,7 @@ namespace App\Actions\Customers;
 use App\Models\Customer;
 use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class FindOrCreateCustomer
 {
@@ -40,6 +41,20 @@ class FindOrCreateCustomer
 
     public function normalizePhone(string $phone): string
     {
-        return preg_replace('/[^0-9+]/', '', trim($phone));
+        $digits = preg_replace('/\D/', '', trim($phone)) ?? '';
+
+        if (strlen($digits) === 9) {
+            $digits = '998'.$digits;
+        } elseif (strlen($digits) === 10 && str_starts_with($digits, '0')) {
+            $digits = '998'.substr($digits, 1);
+        }
+
+        if (strlen($digits) !== 12 || ! str_starts_with($digits, '998')) {
+            throw ValidationException::withMessages([
+                'phone' => 'O‘zbekiston telefon raqamini to‘g‘ri kiriting.',
+            ]);
+        }
+
+        return '+'.$digits;
     }
 }

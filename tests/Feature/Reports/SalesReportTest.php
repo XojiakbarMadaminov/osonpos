@@ -12,6 +12,7 @@ use App\Enums\PaymentMethod;
 use App\Models\Expense;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderItemRemoval;
 use App\Models\Organization;
 use App\Models\Payment;
 use App\Models\Store;
@@ -113,6 +114,40 @@ it('ranks top products by sold quantity', function () {
         'quantity' => 3,
         'revenue' => 30000,
     ]);
+});
+
+it('subtracts removed quantities from product revenue cost and profit', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $user = User::factory()->create();
+    $order = completedSale($organization, $store, $user, 20000, PaymentMethod::Cash, OrderType::Takeaway, 'Lavash', 3, 6000);
+    $item = $order->items()->sole();
+    $item->forceFill(['unit_price' => 10000, 'total' => 30000])->save();
+    OrderItemRemoval::factory()
+        ->for($organization)
+        ->for($store)
+        ->for($order)
+        ->for($item, 'orderItem')
+        ->for($user, 'creator')
+        ->create([
+            'quantity' => 1,
+            'unit_price' => 10000,
+            'unit_cost' => 6000,
+            'total' => 10000,
+        ]);
+
+    $report = app(SalesReport::class)->generate(
+        $organization,
+        CarbonImmutable::now()->subDay(),
+        CarbonImmutable::now()->addDay(),
+        [$store->id],
+    );
+
+    expect($report['top_products'][0])->toMatchArray([
+        'name' => 'Lavash',
+        'quantity' => 2,
+        'revenue' => 20000,
+    ])->and($report['estimated_gross_profit'])->toBe(8000);
 });
 
 it('applies store filters without mixing tenant data', function () {

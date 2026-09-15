@@ -32,6 +32,28 @@ export interface KitchenTicket {
     is_reprint: boolean;
 }
 
+export interface KitchenRemovalTicket {
+    order_id: string;
+    display_number: string;
+    printer: { id: number; system_name: string; paper_width: number };
+    removal_ids: string[];
+    lines: string[];
+    is_reprint: boolean;
+}
+
+export interface OrderItemSummary {
+    id: string;
+    product_id: number | null;
+    product_name: string;
+    original_quantity: number;
+    removed_quantity: number;
+    quantity: number;
+    unit_price: number;
+    total: number;
+    note: string | null;
+    kitchen_printed: boolean;
+}
+
 export interface CustomerReceipt {
     order_id: string;
     printer: { id: number; system_name: string; paper_width: number };
@@ -61,12 +83,16 @@ export interface CreatedOrder {
     payment_status: string;
     table_id: number | null;
     table: { id: number; name: string; number: string } | null;
+    customer_id: string | null;
+    customer: CustomerSummary | null;
     subtotal: number;
     delivery_fee: number;
     total: number;
     paid_amount: number;
     balance_due: number;
     unprinted_items_count: number;
+    pending_item_removals_count: number;
+    items?: OrderItemSummary[];
 }
 
 export class ApiService {
@@ -152,6 +178,32 @@ export class ApiService {
         return payload.data;
     }
 
+    async createCustomer(phone: string, name?: string): Promise<CustomerSummary> {
+        const response = await this.jsonRequest('/api/pos/customers', 'POST', {
+            phone,
+            name: name || null,
+        });
+        const payload = (await response.json()) as { data: CustomerSummary };
+
+        return payload.data;
+    }
+
+    async setOrderCustomer(orderId: string, customerId: string): Promise<CreatedOrder> {
+        const response = await this.jsonRequest(`/api/pos/orders/${orderId}/customer`, 'PUT', {
+            customer_id: customerId,
+        });
+        const payload = (await response.json()) as { data: CreatedOrder };
+
+        return payload.data;
+    }
+
+    async removeOrderCustomer(orderId: string): Promise<CreatedOrder> {
+        const response = await this.jsonRequest(`/api/pos/orders/${orderId}/customer`, 'DELETE');
+        const payload = (await response.json()) as { data: CreatedOrder };
+
+        return payload.data;
+    }
+
     async bindPrinter(printerId: number, systemName: string): Promise<void> {
         const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
         const response = await fetch(`/api/pos/printers/${printerId}/binding`, {
@@ -182,6 +234,27 @@ export class ApiService {
     async confirmKitchenTicket(orderId: string, itemIds: string[]): Promise<void> {
         await this.jsonRequest(`/api/pos/orders/${orderId}/send-kitchen/confirm`, 'POST', {
             item_ids: itemIds,
+        });
+    }
+
+    async removeOrderItems(orderId: string, items: Array<{ id: string; order_item_id: string; quantity: number }>): Promise<CreatedOrder> {
+        const response = await this.jsonRequest(`/api/pos/orders/${orderId}/item-removals`, 'POST', { items });
+        const payload = (await response.json()) as { data: CreatedOrder };
+
+        return payload.data;
+    }
+
+    async prepareKitchenRemovalTicket(orderId: string, reprint = false): Promise<KitchenRemovalTicket> {
+        const suffix = reprint ? '/reprint' : '';
+        const response = await this.jsonRequest(`/api/pos/orders/${orderId}/send-kitchen-removals${suffix}`, 'POST');
+        const payload = (await response.json()) as { data: KitchenRemovalTicket };
+
+        return payload.data;
+    }
+
+    async confirmKitchenRemovalTicket(orderId: string, removalIds: string[]): Promise<void> {
+        await this.jsonRequest(`/api/pos/orders/${orderId}/send-kitchen-removals/confirm`, 'POST', {
+            removal_ids: removalIds,
         });
     }
 
@@ -224,6 +297,7 @@ export class ApiService {
         clientId?: string;
         type: OrderType;
         tableId?: number | null;
+        customerId?: string | null;
         customerPhone?: string;
         customerName?: string;
         deliveryAddress?: string;
@@ -232,6 +306,7 @@ export class ApiService {
         const body: Record<string, unknown> = { type: input.type };
         if (input.clientId) body.id = input.clientId;
         if (input.tableId) body.table_id = input.tableId;
+        if (input.customerId) body.customer_id = input.customerId;
         if (input.type === 'DELIVERY') {
             body.customer = { phone: input.customerPhone, name: input.customerName || null };
             body.delivery = { address: input.deliveryAddress, fee: input.deliveryFee ?? 0 };

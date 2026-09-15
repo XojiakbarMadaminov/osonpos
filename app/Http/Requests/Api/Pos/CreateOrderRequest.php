@@ -26,6 +26,7 @@ class CreateOrderRequest extends FormRequest
                 Rule::requiredIf(fn (): bool => $this->input('type') === OrderType::Delivery->value && ! $this->filled('customer_id')),
                 'string',
                 'max:30',
+                'regex:/^\+?[0-9 ()-]{7,30}$/',
             ],
             'customer.name' => ['nullable', 'string', 'max:255'],
             'note' => ['nullable', 'string', 'max:2000'],
@@ -33,6 +34,14 @@ class CreateOrderRequest extends FormRequest
             'delivery.address' => ['nullable', 'string', 'max:2000', 'required_if:type,DELIVERY'],
             'delivery.fee' => ['nullable', 'integer', 'min:0', 'required_if:type,DELIVERY'],
             'delivery.note' => ['nullable', 'string', 'max:2000'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'customer.phone.required' => 'Yetkazib berish uchun mijoz telefonini kiriting.',
+            'customer.phone.regex' => 'Telefon raqamini to‘g‘ri kiriting.',
         ];
     }
 }

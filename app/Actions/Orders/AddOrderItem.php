@@ -20,6 +20,7 @@ class AddOrderItem
         private readonly TenantContext $tenantContext,
         private readonly StoreContext $storeContext,
         private readonly CurrentShift $currentShift,
+        private readonly RecalculateOrderTotals $recalculateTotals,
     ) {}
 
     public function execute(Order $order, User $user, AddOrderItemData $data): OrderItem
@@ -68,11 +69,7 @@ class AddOrderItem
                 'total' => $product->price * $data->quantity,
             ])->save();
 
-            $subtotal = (int) $order->items()->sum('total');
-            $order->forceFill([
-                'subtotal' => $subtotal,
-                'total' => $subtotal + $order->delivery_fee,
-            ])->save();
+            $this->recalculateTotals->execute($order);
 
             return $item;
         });

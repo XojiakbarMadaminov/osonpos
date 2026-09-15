@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['type', 'table_id', 'customer_id', 'note'])]
+#[Fillable(['type', 'table_id', 'customer_id', 'customer_name', 'customer_phone', 'note'])]
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
@@ -85,6 +85,11 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function itemRemovals(): HasMany
+    {
+        return $this->hasMany(OrderItemRemoval::class);
     }
 
     public function deliveryDetail(): HasOne

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
+import CustomerPicker from '../components/customers/CustomerPicker.vue';
+import type { CustomerSummary } from '../services/api';
 import { apiService } from '../services/api';
 import { printerService } from '../services/printer';
 import { ReceiptPrintService } from '../services/receipt-print';
@@ -58,6 +60,22 @@ async function pay(): Promise<void> {
     }
 }
 
+async function setCustomer(customer: CustomerSummary | null): Promise<void> {
+    if (!order.current) return;
+    busy.value = true;
+    message.value = '';
+    try {
+        order.openExisting(customer
+            ? await apiService.setOrderCustomer(order.current.id, customer.id)
+            : await apiService.removeOrderCustomer(order.current.id));
+        amount.value = order.current?.balance_due ?? 0;
+    } catch (exception) {
+        message.value = exception instanceof Error ? exception.message : 'Mijozni biriktirib bo‘lmadi.';
+    } finally {
+        busy.value = false;
+    }
+}
+
 onMounted(() => shift.load(true));
 </script>
 
@@ -76,6 +94,13 @@ onMounted(() => shift.load(true));
                 <button v-for="item in paymentMethods" :key="item.value" class="min-h-12 rounded-lg border text-xs" :class="method === item.value ? 'border-amber-400 text-amber-300' : 'border-slate-700'" type="button" @click="method = item.value">{{ item.label }}</button>
             </div>
             <input v-if="order.current.balance_due > 0" v-model.number="amount" class="min-h-14 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 text-xl" min="1" type="number">
+            <CustomerPicker
+                v-if="order.current.type === 'DINE_IN'"
+                add-label="+ Mijoz biriktirish"
+                :disabled="busy"
+                :model-value="order.selectedCustomer"
+                @update:model-value="setCustomer"
+            />
             <button class="min-h-14 w-full rounded-xl bg-amber-400 font-bold text-slate-950 disabled:opacity-50" :disabled="busy || !canPay" type="button" @click="pay">{{ busy ? 'Amalga oshirilmoqda…' : order.current.balance_due > 0 ? 'To‘lovni olish va yopish' : 'Buyurtmani yopish' }}</button>
             <p v-if="message" class="text-sm text-slate-300">{{ message }}</p>
             <button class="min-h-12 w-full rounded-lg border border-slate-700" type="button" @click="emit('navigate', 'pos')">POS’ga qaytish</button>

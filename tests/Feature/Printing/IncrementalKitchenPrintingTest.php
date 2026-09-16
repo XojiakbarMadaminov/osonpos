@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Device;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\OrderItemRemoval;
 use App\Models\Organization;
 use App\Models\Printer;
 use App\Models\PrintRoute;
@@ -134,6 +135,34 @@ it('marks reprint payloads and leaves kitchen timestamps unchanged', function ()
         ->assertJsonPath('data.is_reprint', true);
 
     expect($item->refresh()->kitchen_printed_at->equalTo($persistedPrintedAt))->toBeTrue();
+});
+
+it('prints remaining quantities after removals on a kitchen reprint', function () {
+    [$organization, $store, $manager, , $order, $session] = kitchenContext(OrganizationRole::Manager);
+    $cheeseburger = kitchenItem($organization, $store, $order, $manager, 'Chizburger');
+    $cheeseburger->forceFill([
+        'quantity' => 2,
+        'total' => $cheeseburger->unit_price * 2,
+        'kitchen_printed_at' => now(),
+    ])->save();
+    OrderItemRemoval::factory()
+        ->for($cheeseburger, 'orderItem')
+        ->for($manager, 'creator')
+        ->create([
+            'quantity' => 1,
+            'unit_price' => $cheeseburger->unit_price,
+            'total' => $cheeseburger->unit_price,
+        ]);
+    kitchenItem($organization, $store, $order, $manager, 'Cola');
+
+    $ticket = $this->actingAs($manager)->withSession($session)
+        ->postJson("/api/pos/orders/{$order->id}/send-kitchen/reprint")
+        ->assertOk()
+        ->assertJsonPath('data.is_reprint', true);
+
+    expect($ticket->json('data.lines'))->toContain('1 x CHIZBURGER')
+        ->and($ticket->json('data.lines'))->not->toContain('2 x CHIZBURGER')
+        ->and($ticket->json('data.lines'))->toContain('1 x COLA');
 });
 
 it('enforces reprint permission and order ownership', function () {

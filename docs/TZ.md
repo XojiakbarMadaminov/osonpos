@@ -1537,6 +1537,31 @@ Conceptual interface:
 - findPrinters()
 - testPrinter()
 
+## 39.1. Production silent printing deployment
+
+Production'da QZ Tray privileged chaqiruvlari Laravel serverdagi private key bilan
+SHA-512 orqali imzolanadi. Private key browser, Vue build, public katalog yoki
+terminal installeriga kiritilmaydi.
+
+Bepul deployment varianti OsonPOS boshqaradigan bitta custom root certificate va
+undan chiqarilgan bitta signing certificate'dan foydalanadi. Ushbu certificate
+chain barcha organizationlarga umumiy; device credential, printer binding va
+print route'lar esa organization/store/device bo‘yicha izolyatsiyada qoladi.
+
+Windows terminal uchun yaratiladigan yagona installer:
+
+- QZ Tray'ning belgilangan versiyasini rasmiy manbadan yuklaydi;
+- SHA-256 checksum va Windows Authenticode imzosini tekshiradi;
+- QZ Tray'ni silent rejimda o‘rnatadi;
+- faqat public custom root va signing certificate'ni trust/whitelist qiladi;
+- private signing key yoki device activation code'ni o‘z ichiga olmaydi;
+- yakunda `/pos/device-setup` sahifasini ochadi.
+
+Har xil printer modellari alohida ishlab chiqaruvchi drayverini talab qilishi
+sabab printer drayveri universal QZ installer scope'iga kirmaydi. Device
+activation va physical printer mapping backend authorization qoidalarini saqlash
+uchun POS ichida bajariladi.
+
 ---
 
 # 40. POS Interface

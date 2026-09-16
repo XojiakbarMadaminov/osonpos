@@ -28,14 +28,13 @@ class PrepareKitchenTicket
             ->withSum('removals', 'quantity')
             ->orderBy('created_at')
             ->get()
-            ->when(! $reprint, fn ($items) => $items
-                ->filter(fn ($item): bool => $item->remainingQuantity() > 0)
-                ->each(function ($item): void {
-                    $remainingQuantity = $item->remainingQuantity();
-                    $item->quantity = $remainingQuantity;
-                    $item->total = $remainingQuantity * $item->unit_price;
-                })
-                ->values());
+            ->filter(fn ($item): bool => $item->remainingQuantity() > 0)
+            ->each(function ($item): void {
+                $remainingQuantity = $item->remainingQuantity();
+                $item->quantity = $remainingQuantity;
+                $item->total = $remainingQuantity * $item->unit_price;
+            })
+            ->values();
 
         if ($items->isEmpty()) {
             throw ValidationException::withMessages([

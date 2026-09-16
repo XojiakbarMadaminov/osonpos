@@ -22,7 +22,10 @@ class CreateDefaultOrganizationRoles
     {
         $permissions = collect(OrganizationPermission::cases())
             ->mapWithKeys(fn (OrganizationPermission $permission): array => [
-                $permission->value => Permission::findOrCreate($permission->value, 'web'),
+                $permission->value => Permission::query()->firstOrCreate([
+                    'name' => $permission->value,
+                    'guard_name' => 'web',
+                ]),
             ]);
 
         $roles = $this->authorization->runInTenant($organization, function () use ($organization, $permissions): Collection {

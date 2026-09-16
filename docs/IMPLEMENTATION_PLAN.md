@@ -997,6 +997,10 @@ npm install qz-tray
 * [x] Keep QZ private signing keys server-side only.
 * [x] Do not expose private signing keys to Vue, browser JavaScript, or public assets.
 * [x] Add a backend signing endpoint/service when production silent printing is enabled.
+* [x] Add a free custom-root certificate generator for production signed printing.
+* [x] Generate one distributable Windows installer that silently installs verified QZ Tray, configures the custom trust root and creates a system-wide certificate whitelist.
+* [x] Keep device activation and physical printer mapping in the authorized POS setup flow.
+* [x] Document certificate custody, production environment configuration and organization onboarding.
 
 Suggested frontend structure:
 

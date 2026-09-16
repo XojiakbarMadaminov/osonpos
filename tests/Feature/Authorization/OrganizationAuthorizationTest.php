@@ -9,9 +9,11 @@ use App\Enums\OrganizationRole;
 use App\Models\Organization;
 use App\Models\Store;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function () {
     Route::middleware(['web', 'auth', 'context.tenant'])
@@ -45,6 +47,32 @@ it('creates the default organization roles and permission matrix', function () {
         ->toBeTrue()
         ->and($roles[OrganizationRole::Cashier->value]->hasPermissionTo(OrganizationPermission::RolesManage->value))
         ->toBeFalse();
+});
+
+it('reuses database permissions when the Spatie permission cache is stale', function () {
+    $permissionRegistrar = app(PermissionRegistrar::class);
+    $permissionRegistrar->forgetCachedPermissions();
+    $permissionRegistrar->getPermissions();
+
+    $now = now();
+    DB::table(config('permission.table_names.permissions'))->insert(
+        collect(OrganizationPermission::cases())
+            ->map(fn (OrganizationPermission $permission): array => [
+                'name' => $permission->value,
+                'guard_name' => 'web',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ])
+            ->all(),
+    );
+
+    $organization = Organization::factory()->create();
+    $roles = app(CreateDefaultOrganizationRoles::class)->execute($organization);
+
+    expect($roles[OrganizationRole::Owner->value]->permissions()->count())
+        ->toBe(count(OrganizationPermission::cases()))
+        ->and(DB::table(config('permission.table_names.permissions'))->count())
+        ->toBe(count(OrganizationPermission::cases()));
 });
 
 it('assigns the owner membership and organization-scoped role', function () {

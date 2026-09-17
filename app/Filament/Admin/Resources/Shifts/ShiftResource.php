@@ -51,16 +51,18 @@ class ShiftResource extends Resource
         return $table
             ->columns([
                 TextColumn::make('status')->badge()->sortable(),
-                TextColumn::make('store.name')->sortable(),
+                TextColumn::make('store.name')->sortable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('user.name')->label('Kassir')->searchable()->sortable(),
-                TextColumn::make('device.name')->label('Qurilma')->sortable(),
-                TextColumn::make('opening_cash')->money('UZS', divideBy: 1, decimalPlaces: 0)->sortable(),
+                TextColumn::make('opening_cash')->label('Kassa (Ochilish)')->money('UZS', divideBy: 1, decimalPlaces: 0)->sortable(),
                 TextColumn::make('cash_payments_total')->label('Naqd savdo')->money('UZS', divideBy: 1, decimalPlaces: 0),
-                TextColumn::make('expected_cash')->state(fn (Shift $record): int => $record->expectedCash())->money('UZS', divideBy: 1, decimalPlaces: 0),
-                TextColumn::make('closing_cash')->money('UZS', divideBy: 1, decimalPlaces: 0)->placeholder('Ochiq'),
-                TextColumn::make('cash_difference')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1, decimalPlaces: 0)->placeholder('Ochiq'),
-                TextColumn::make('opened_at')->dateTime()->sortable(),
-                TextColumn::make('closed_at')->dateTime()->placeholder('Ochiq')->sortable(),
+                TextColumn::make('card_payments_total')->label('Karta savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Card))->money('UZS', divideBy: 1, decimalPlaces: 0),
+                TextColumn::make('payments_total')->label('Umumiy savdo')->money('UZS', divideBy: 1, decimalPlaces: 0),
+                TextColumn::make('expected_total')->label('Kutilayotgan umumiy')->state(fn (Shift $record): int => $record->opening_cash + $record->paymentTotal(PaymentMethod::Cash) + $record->paymentTotal(PaymentMethod::Card))->money('UZS', divideBy: 1, decimalPlaces: 0),
+                TextColumn::make('expected_cash')->label('Kutil. naqd')->state(fn (Shift $record): int => $record->expectedCash())->money('UZS', divideBy: 1, decimalPlaces: 0)->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('closing_cash')->label('Kassa (Yopilish)')->money('UZS', divideBy: 1, decimalPlaces: 0)->placeholder('Ochiq'),
+                TextColumn::make('cash_difference')->label('Naqd farq')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1, decimalPlaces: 0)->placeholder('Ochiq')->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('opened_at')->label('Ochilgan')->dateTime()->sortable(),
+                TextColumn::make('closed_at')->label('Yopilgan')->dateTime()->placeholder('Ochiq')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 DatePeriodFilter::make('opened_at'),
@@ -83,22 +85,55 @@ class ShiftResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            TextEntry::make('status')->badge(),
-            TextEntry::make('store.name')->label('Filial'),
-            TextEntry::make('user.name')->label('Kassir'),
-            TextEntry::make('device.name')->label('Qurilma'),
-            TextEntry::make('opening_cash')->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('cash_payments_total')->label('Naqd savdo')->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('card_payments_total')->label('Karta orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Card))->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('click_payments_total')->label('Click orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Click))->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('payme_payments_total')->label('Payme orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Payme))->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('other_payments_total')->label('Boshqa to‘lovlar orqali savdo')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Other))->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('payments_total')->label('Barcha to‘lovlar')->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('expected_cash')->state(fn (Shift $record): int => $record->expectedCash())->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('closing_cash')->money('UZS', divideBy: 1, decimalPlaces: 0)->placeholder('Ochiq'),
-            TextEntry::make('cash_difference')->state(fn (Shift $record): ?int => $record->cashDifference())->money('UZS', divideBy: 1, decimalPlaces: 0)->placeholder('Ochiq'),
-            TextEntry::make('opened_at')->dateTime(),
-            TextEntry::make('closed_at')->dateTime()->placeholder('Ochiq'),
+            \Filament\Schemas\Components\Grid::make(3)->schema([
+                \Filament\Schemas\Components\Group::make()->schema([
+                    \Filament\Schemas\Components\Section::make('Asosiy ma\'lumotlar')
+                        ->schema([
+                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                                TextEntry::make('status')->label('Holati')->badge(),
+                                TextEntry::make('store.name')->label('Filial')->icon('heroicon-m-building-storefront'),
+                                TextEntry::make('user.name')->label('Kassir')->icon('heroicon-m-user'),
+                                TextEntry::make('device.name')->label('Qurilma')->icon('heroicon-m-computer-desktop'),
+                                TextEntry::make('opened_at')->label('Ochilgan vaqt')->dateTime(),
+                                TextEntry::make('closed_at')->label('Yopilgan vaqt')->dateTime()->placeholder('Ochiq'),
+                            ]),
+                        ]),
+                    \Filament\Schemas\Components\Section::make('Savdo turlari bo\'yicha')
+                        ->schema([
+                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                                TextEntry::make('cash_payments_total')->label('Naqd')->state(fn (Shift $record): int => $record->cashPaymentsTotal())->money('UZS', divideBy: 1, decimalPlaces: 0),
+                                TextEntry::make('card_payments_total')->label('Karta (Terminal)')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Card))->money('UZS', divideBy: 1, decimalPlaces: 0),
+                                TextEntry::make('payments_total')->label('Barcha to‘lovlar')->money('UZS', divideBy: 1, decimalPlaces: 0)
+                                    ->size(\Filament\Support\Enums\TextSize::Large)
+                                    ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                    ->columnSpanFull(),
+                            ]),
+                        ]),
+                ])->columnSpan(['default' => 3, 'md' => 2]),
+
+                \Filament\Schemas\Components\Group::make()->schema([
+                    \Filament\Schemas\Components\Section::make('Smena moliya xulosasi')
+                        ->schema([
+                            TextEntry::make('opening_cash')->label('Ochilishdagi naqd pul')->money('UZS', divideBy: 1, decimalPlaces: 0),
+                            TextEntry::make('payments_total')->label('Umumiy savdo (+)')
+                                ->color('success')
+                                ->money('UZS', divideBy: 1, decimalPlaces: 0),
+                            TextEntry::make('expected_total')->label('Kutilayotgan umumiy summa')
+                                ->state(fn (Shift $record): int => $record->opening_cash + $record->paymentTotal(PaymentMethod::Cash) + $record->paymentTotal(PaymentMethod::Card))
+                                ->size(\Filament\Support\Enums\TextSize::Large)
+                                ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                ->money('UZS', divideBy: 1, decimalPlaces: 0),
+                            TextEntry::make('closing_cash')->label('Yopilishdagi haqiqiy naqd pul')
+                                ->money('UZS', divideBy: 1, decimalPlaces: 0)
+                                ->placeholder('Smena ochiq'),
+                            TextEntry::make('cash_difference')->label('Naqd pul tafovuti')
+                                ->state(fn (Shift $record): ?int => $record->cashDifference())
+                                ->color(fn ($state) => $state === null ? null : ($state < 0 ? 'danger' : ($state > 0 ? 'success' : 'gray')))
+                                ->money('UZS', divideBy: 1, decimalPlaces: 0)
+                                ->placeholder('Smena ochiq'),
+                        ]),
+                ])->columnSpan(['default' => 3, 'md' => 1]),
+            ])->columnSpanFull(),
         ]);
     }
 

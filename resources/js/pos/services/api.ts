@@ -61,6 +61,16 @@ export interface CustomerReceipt {
     is_reprint: boolean;
 }
 
+export interface ActiveShift {
+    id: string;
+    opened_at: string;
+    opening_cash: number;
+    cash_payments_total: number;
+    payments_total: number;
+    expected_cash: number;
+    payment_totals: Record<string, number>;
+}
+
 export interface ShiftSummary {
     id: string;
     status: 'OPEN' | 'CLOSED';

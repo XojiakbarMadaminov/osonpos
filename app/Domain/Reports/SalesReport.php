@@ -60,6 +60,7 @@ class SalesReport
 
         $paymentBreakdown = (clone $payments)
             ->selectRaw('payments.method, SUM(payments.amount) AS total')
+            ->where('payments.method', '!=', PaymentMethod::Click->value)
             ->groupBy('payments.method')
             ->orderBy('payments.method')
             ->get()

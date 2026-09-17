@@ -144,16 +144,41 @@ class ExpenseResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            TextEntry::make('status')->label('Holati')->badge(),
-            TextEntry::make('store.name')->label('Filial'),
-            TextEntry::make('type')->label('Chiqim turi')->badge(),
-            TextEntry::make('amount')->label('Summa')->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('incurred_on')->label('Chiqim sanasi')->date(),
-            TextEntry::make('creator.name')->label('Kiritgan foydalanuvchi'),
-            TextEntry::make('description')->label('Sababi')->placeholder('—')->columnSpanFull(),
-            TextEntry::make('cancelled_at')->label('Bekor qilingan vaqt')->dateTime()->placeholder('—'),
-            TextEntry::make('canceller.name')->label('Bekor qilgan foydalanuvchi')->placeholder('—'),
-            TextEntry::make('cancellation_reason')->label('Bekor qilish sababi')->placeholder('—')->columnSpanFull(),
+            \Filament\Schemas\Components\Grid::make(3)->schema([
+                \Filament\Schemas\Components\Group::make()->schema([
+                    \Filament\Schemas\Components\Section::make('Chiqim tafsilotlari')
+                        ->schema([
+                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                                TextEntry::make('status')->label('Holati')->badge(),
+                                TextEntry::make('type')->label('Chiqim turi')->badge(),
+                                TextEntry::make('store.name')->label('Filial')->icon('heroicon-m-building-storefront'),
+                                TextEntry::make('creator.name')->label('Kiritgan foydalanuvchi')->icon('heroicon-m-user'),
+                                TextEntry::make('incurred_on')->label('Sana')->date(),
+                                TextEntry::make('description')->label('Sababi')->placeholder('—')->columnSpanFull(),
+                            ]),
+                        ]),
+                    \Filament\Schemas\Components\Section::make('Bekor qilinganligi haqida ma\'lumot')
+                        ->schema([
+                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                                TextEntry::make('canceller.name')->label('Bekor qilgan foydalanuvchi')->icon('heroicon-m-user')->placeholder('—'),
+                                TextEntry::make('cancelled_at')->label('Bekor qilingan vaqt')->dateTime()->placeholder('—'),
+                                TextEntry::make('cancellation_reason')->label('Bekor qilish sababi')->placeholder('—')->columnSpanFull(),
+                            ])
+                        ])
+                        ->visible(fn (Expense $record): bool => $record->status === ExpenseStatus::Cancelled),
+                ])->columnSpan(['default' => 3, 'md' => 2]),
+
+                \Filament\Schemas\Components\Group::make()->schema([
+                    \Filament\Schemas\Components\Section::make('Moliya')
+                        ->schema([
+                            TextEntry::make('amount')->label('Summa')
+                                ->size(\Filament\Support\Enums\TextSize::Large)
+                                ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                ->money('UZS', divideBy: 1, decimalPlaces: 0)
+                                ->color(fn (Expense $record) => $record->status === ExpenseStatus::Cancelled ? 'gray' : 'danger'),
+                        ]),
+                ])->columnSpan(['default' => 3, 'md' => 1]),
+            ])->columnSpanFull(),
         ]);
     }
 

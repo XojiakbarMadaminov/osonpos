@@ -80,22 +80,25 @@ onBeforeUnmount(() => {
                 <a class="mt-4 block text-amber-300 underline" href="/pos/device-setup">Qurilmani sozlash</a>
             </div>
             <template v-else-if="context.bootstrap">
-                <header class="flex shrink-0 flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-5">
-                    <div>
-                        <p class="text-sm font-semibold uppercase tracking-[0.25em] text-amber-400">OsonPOS</p>
-                        <h1 class="mt-2 text-xl font-semibold">{{ context.bootstrap.organization.name }} · {{ context.bootstrap.store.name }}</h1>
-                        <p class="mt-1 text-sm text-slate-400">{{ context.bootstrap.user.name }} · {{ context.bootstrap.device.name }}</p>
+                <header class="mb-4 flex shrink-0 flex-wrap items-center gap-4 border-b border-slate-800 pb-4 md:gap-6">
+                    <div class="flex items-center gap-4 md:border-r md:border-slate-800 md:pr-6">
+                        <h1 class="text-xl font-bold uppercase tracking-widest text-amber-400">OSONPOS</h1>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <span class="rounded-full px-3 py-1 text-sm" :class="online ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'">{{ online ? 'Onlayn' : 'Oflayn' }}</span>
+
+                    <nav class="flex shrink-0 gap-2 overflow-x-auto" aria-label="POS menyusi">
+                        <button v-for="item in navigation" :key="item.id" class="flex h-10 items-center whitespace-nowrap rounded-lg border px-4 text-sm font-medium transition-colors disabled:opacity-60" :class="page === item.id ? 'border-amber-400 bg-amber-400/10 text-amber-300' : 'border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-slate-100'" :disabled="refreshingContext" type="button" @click="navigate(item.id)">
+                            {{ item.label }}
+                        </button>
+                    </nav>
+
+                    <div class="ml-auto flex items-center gap-4">
+                        <div class="hidden text-right leading-snug lg:block">
+                            <p class="text-sm"><span class="font-semibold text-slate-200">{{ context.bootstrap.organization.name }}</span> <span class="text-slate-400">· {{ context.bootstrap.store.name }}</span></p>
+                            <p class="text-xs text-slate-400">{{ context.bootstrap.user.name }} <span class="opacity-70">({{ context.bootstrap.device.name }})</span></p>
+                        </div>
+                        <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold" :class="online ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'">{{ online ? 'Onlayn' : 'Oflayn' }}</span>
                     </div>
                 </header>
-
-                <nav class="my-5 flex shrink-0 flex-wrap gap-3" aria-label="POS menyusi">
-                    <button v-for="item in navigation" :key="item.id" class="min-h-12 rounded-lg border px-5 font-medium disabled:opacity-60" :class="page === item.id ? 'border-amber-400 text-amber-300' : 'border-slate-700'" :disabled="refreshingContext" type="button" @click="navigate(item.id)">
-                        {{ item.label }}
-                    </button>
-                </nav>
                 <p v-if="navigationError" class="mb-5 rounded-lg border border-red-800 bg-red-500/10 p-3 text-sm text-red-200">{{ navigationError }}</p>
 
                 <PosPage v-if="page === 'pos'" class="lg:min-h-0 lg:flex-1" :bootstrap="context.bootstrap" @navigate="navigate" />

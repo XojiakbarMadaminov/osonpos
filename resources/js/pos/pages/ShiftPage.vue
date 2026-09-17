@@ -11,10 +11,14 @@ const actionLabel = computed(() => shift.current ? 'Smenani yopish' : 'Smenani o
 const closingDifference = computed(() => shift.current ? cash.value - shift.current.expected_cash : null);
 
 function formatDate(value: string): string {
-    return new Intl.DateTimeFormat('uz-UZ', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(value));
+    const date = new Date(value);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${day}-${month}-${year} ${hours}:${minutes}`;
 }
 
 function paymentMethodLabel(method: string): string {
@@ -52,7 +56,7 @@ onMounted(() => shift.load());
             </span>
         </div>
 
-        <div v-if="shift.current" class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div v-if="shift.current" class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
                 <p class="text-sm text-slate-400">Boshlang‘ich naqd pul</p>
                 <p class="mt-2 text-2xl font-semibold">{{ formatMoney(shift.current.opening_cash) }} UZS</p>
@@ -61,20 +65,17 @@ onMounted(() => shift.load());
                 <p class="text-sm text-slate-400">Ochilgan vaqt</p>
                 <p class="mt-2 text-lg font-semibold">{{ formatDate(shift.current.opened_at) }}</p>
             </div>
-            <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-                <p class="text-sm text-slate-400">Naqd to‘lovlar</p>
-                <p class="mt-2 text-2xl font-semibold">{{ formatMoney(shift.current.cash_payments_total) }} UZS</p>
+            <div class="rounded-xl border border-slate-800 bg-emerald-950/20 p-5">
+                <p class="text-sm text-emerald-400/80">Umumiy tushum (Barcha to‘lovlar)</p>
+                <p class="mt-2 text-2xl font-semibold text-emerald-400">{{ formatMoney(shift.current.payments_total) }} UZS</p>
             </div>
             <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
                 <p class="text-sm text-slate-400">Kutilayotgan naqd pul</p>
-                <p class="mt-2 text-2xl font-semibold text-amber-300">{{ formatMoney(shift.current.expected_cash) }} UZS</p>
+                <p class="mt-2 text-2xl font-semibold">{{ formatMoney(shift.current.expected_cash) }} UZS</p>
             </div>
-        </div>
-
-        <div v-if="shift.current" class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <div v-for="(total, method) in shift.current.payment_totals" :key="method" class="rounded-lg border border-slate-800 bg-slate-900 p-3">
-                <p class="text-xs text-slate-400">{{ paymentMethodLabel(method) }}</p>
-                <p class="mt-1 font-medium">{{ formatMoney(total) }} UZS</p>
+            <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+                <p class="text-sm text-slate-400">Kutilayotgan kartadagi pul</p>
+                <p class="mt-2 text-2xl font-semibold">{{ formatMoney(shift.current.payment_totals?.['CARD'] ?? 0) }} UZS</p>
             </div>
         </div>
 

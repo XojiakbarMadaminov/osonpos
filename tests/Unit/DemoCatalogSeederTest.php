@@ -8,8 +8,10 @@ test('demo catalog contains ten categories with ten products each', function () 
     foreach (DemoCatalogSeeder::CATALOG as $products) {
         expect($products)->toHaveCount(10);
 
-        foreach ($products as $price) {
-            expect($price)->toBeInt()->toBeGreaterThan(0);
+        foreach ($products as $productData) {
+            expect($productData)->toBeArray()->toHaveKeys(['price', 'cost_price']);
+            expect($productData['price'])->toBeInt()->toBeGreaterThan(0);
+            expect($productData['cost_price'])->toBeInt()->toBeGreaterThan(0);
         }
     }
 

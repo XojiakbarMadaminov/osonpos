@@ -88,4 +88,9 @@ class Store extends Model
     {
         return $this->hasMany(Expense::class);
     }
+
+    public function dailyTelegramReports(): HasMany
+    {
+        return $this->hasMany(DailyTelegramReport::class);
+    }
 }

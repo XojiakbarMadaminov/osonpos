@@ -77,6 +77,7 @@ class Payment extends Model
         return [
             'method' => PaymentMethod::class,
             'amount' => 'integer',
+            'telegram_notified_at' => 'immutable_datetime',
         ];
     }
 }

@@ -11,7 +11,7 @@ class SubscriptionAccess
     public function activeSubscription(Organization $organization): ?Subscription
     {
         return $organization->subscriptions()
-            ->with('plan.features')
+            ->with(['plan.features', 'features'])
             ->whereIn('status', [SubscriptionStatus::Trial, SubscriptionStatus::Active])
             ->where('starts_at', '<=', now())
             ->where('ends_at', '>', now())
@@ -26,7 +26,10 @@ class SubscriptionAccess
 
     public function hasFeature(Organization $organization, string $featureCode): bool
     {
-        return $this->activeSubscription($organization)?->plan->features
-            ->contains('code', $featureCode) === true;
+        $subscription = $this->activeSubscription($organization);
+
+        return $subscription !== null
+            && ($subscription->plan->features->contains('code', $featureCode)
+                || $subscription->features->contains('code', $featureCode));
     }
 }

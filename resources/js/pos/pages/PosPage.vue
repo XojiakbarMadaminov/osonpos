@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import CustomerPicker from '../components/customers/CustomerPicker.vue';
-import type { CustomerSummary } from '../services/api';
 import { apiService } from '../services/api';
 import { KitchenPrintService } from '../services/kitchen-print';
 import { printerService } from '../services/printer';
@@ -119,25 +117,6 @@ async function saveOrder(): Promise<void> {
     }
 }
 
-async function setTakeawayCustomer(customer: CustomerSummary | null): Promise<void> {
-    error.value = '';
-    if (!order.current) {
-        order.selectedCustomer = customer;
-        return;
-    }
-
-    busy.value = true;
-    try {
-        order.openExisting(customer
-            ? await apiService.setOrderCustomer(order.current.id, customer.id)
-            : await apiService.removeOrderCustomer(order.current.id));
-    } catch (exception) {
-        error.value = exception instanceof Error ? exception.message : 'Mijozni biriktirib bo‘lmadi.';
-    } finally {
-        busy.value = false;
-    }
-}
-
 onMounted(() => shift.load(true));
 </script>
 
@@ -169,13 +148,6 @@ onMounted(() => shift.load(true));
                 <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'TAKEAWAY' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'TAKEAWAY'" :disabled="isAddingToOrder || !canTakeOrder" type="button" @click="chooseType('TAKEAWAY')">Olib ketish</button>
                 <button class="min-h-12 rounded-lg border text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60" :class="order.type === 'DELIVERY' ? 'border-amber-400 bg-amber-400 text-slate-950' : 'border-slate-700 bg-slate-950 text-slate-100 hover:border-slate-500'" :aria-pressed="order.type === 'DELIVERY'" :disabled="isAddingToOrder || !canTakeOrder" type="button" @click="chooseType('DELIVERY')">Yetkazish</button>
             </div>
-            <CustomerPicker
-                v-if="order.type === 'TAKEAWAY'"
-                class="mt-4"
-                :disabled="busy"
-                :model-value="order.selectedCustomer"
-                @update:model-value="setTakeawayCustomer"
-            />
             <div class="mt-4 space-y-3">
                 <div v-for="(item, index) in cart.items" :key="`${item.productId}-${index}`" class="rounded-xl border border-slate-700/80 bg-slate-800 p-3 shadow-sm">
                     <div class="flex items-start justify-between gap-3">

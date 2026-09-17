@@ -20,6 +20,12 @@ class SubscriptionForm
                 Select::make('plan_id')
                     ->relationship('plan', 'name')
                     ->required(),
+                Select::make('features')
+                    ->label('Qo‘shimcha imkoniyatlar')
+                    ->helperText('Faqat shu tashkilot obunasiga qo‘shiladi; tarifdagi imkoniyatlar o‘zgarmaydi.')
+                    ->relationship('features', 'name')
+                    ->multiple()
+                    ->preload(),
                 Select::make('status')
                     ->options(SubscriptionStatus::class)
                     ->required(),

@@ -315,10 +315,10 @@ it('blocks a foreign tenant customer but permits an organization customer from a
 });
 
 it('shows only orders from the current store-local business date', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-15 04:30:00', 'Asia/Tashkent'));
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create(['timezone' => 'America/New_York']);
     [$user, , $session] = orderUser($organization, $store);
-    $this->travelTo(CarbonImmutable::parse('2026-09-15 04:30:00', 'Asia/Tashkent'));
 
     $today = Order::factory()->for($organization)->for($store)->for($user, 'creator')->create([
         'display_number' => '#0001',
@@ -339,11 +339,11 @@ it('shows only orders from the current store-local business date', function () {
 });
 
 it('restarts display numbers on each store-local business date', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-09-15 04:30:00', 'Asia/Tashkent'));
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create(['timezone' => 'America/New_York']);
     [$user, , $session] = orderUser($organization, $store);
 
-    $this->travelTo(CarbonImmutable::parse('2026-09-15 04:30:00', 'Asia/Tashkent'));
     $firstDay = $this->actingAs($user)->withSession($session)->postJson('/api/pos/orders', [
         'type' => OrderType::Takeaway->value,
     ])->assertCreated();

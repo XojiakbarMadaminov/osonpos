@@ -95,6 +95,49 @@ it('supports mixed payment records using integer UZS amounts', function () {
         ->and($order->refresh()->payment_status)->toBe(PaymentStatus::Paid);
 });
 
+it('creates cash and card mixed payments atomically and idempotently', function () {
+    [, , $user, $order, $session] = paymentContext(80000);
+    $cashPaymentId = (string) Str::ulid();
+    $cardPaymentId = (string) Str::ulid();
+    $payload = [
+        'cash_payment_id' => $cashPaymentId,
+        'cash_amount' => 30000,
+        'card_payment_id' => $cardPaymentId,
+        'card_amount' => 50000,
+    ];
+
+    $this->actingAs($user)->withSession($session)
+        ->postJson("/api/pos/orders/{$order->id}/mixed-payments", $payload)
+        ->assertCreated()
+        ->assertJsonPath('data.cash_payment_id', $cashPaymentId)
+        ->assertJsonPath('data.card_payment_id', $cardPaymentId);
+    $this->actingAs($user)->withSession($session)
+        ->postJson("/api/pos/orders/{$order->id}/mixed-payments", $payload)
+        ->assertOk();
+
+    expect(Payment::query()->count())->toBe(2)
+        ->and(Payment::query()->where('method', PaymentMethod::Cash)->value('amount'))->toBe(30000)
+        ->and(Payment::query()->where('method', PaymentMethod::Card)->value('amount'))->toBe(50000)
+        ->and($order->refresh()->payment_status)->toBe(PaymentStatus::Paid);
+});
+
+it('rolls back both mixed payment parts when their sum is invalid', function () {
+    [, , $user, $order, $session] = paymentContext(80000);
+
+    $this->actingAs($user)->withSession($session)
+        ->postJson("/api/pos/orders/{$order->id}/mixed-payments", [
+            'cash_payment_id' => (string) Str::ulid(),
+            'cash_amount' => 20000,
+            'card_payment_id' => (string) Str::ulid(),
+            'card_amount' => 50000,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('payment');
+
+    expect(Payment::query()->count())->toBe(0)
+        ->and($order->refresh()->payment_status)->toBe(PaymentStatus::Unpaid);
+});
+
 it('prevents a duplicate payment replay from double charging totals', function () {
     [, , $user, $order, $session] = paymentContext();
     $id = (string) Str::ulid();

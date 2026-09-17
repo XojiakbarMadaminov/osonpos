@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\Pos\ActivateDeviceController;
 use App\Http\Controllers\Api\Pos\BootstrapController;
 use App\Http\Controllers\Api\Pos\CancelOrderController;
 use App\Http\Controllers\Api\Pos\CompleteOrderController;
+use App\Http\Controllers\Api\Pos\CreateMixedPaymentController;
 use App\Http\Controllers\Api\Pos\CreatePaymentController;
 use App\Http\Controllers\Api\Pos\CurrentDeviceController;
 use App\Http\Controllers\Api\Pos\CustomerController;
@@ -58,6 +59,7 @@ Route::prefix('pos')
                     Route::post('/orders/{order}/items', OrderItemController::class);
                     Route::post('/orders/{order}/item-removals', OrderItemRemovalController::class);
                     Route::post('/orders/{order}/payments', CreatePaymentController::class);
+                    Route::post('/orders/{order}/mixed-payments', CreateMixedPaymentController::class);
                     Route::post('/orders/{order}/complete', CompleteOrderController::class);
                     Route::post('/orders/{order}/receipt', [CustomerReceiptController::class, 'prepare']);
                     Route::post('/orders/{order}/receipt/reprint', [CustomerReceiptController::class, 'reprint']);

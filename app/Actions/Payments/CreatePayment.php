@@ -3,6 +3,7 @@
 namespace App\Actions\Payments;
 
 use App\Domain\Shift\CurrentShift;
+use App\Domain\Telegram\PaymentTelegramNotifier;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Order;
@@ -23,6 +24,7 @@ class CreatePayment
         private readonly DeviceContext $deviceContext,
         private readonly RecalculatePaymentStatus $recalculate,
         private readonly CurrentShift $currentShift,
+        private readonly PaymentTelegramNotifier $telegramNotifier,
     ) {}
 
     public function execute(
@@ -32,7 +34,8 @@ class CreatePayment
         int $amount,
         ?string $id = null,
     ): Payment {
-        return DB::transaction(function () use ($order, $user, $method, $amount, $id): Payment {
+        $created = false;
+        $payment = DB::transaction(function () use ($order, $user, $method, $amount, $id, &$created): Payment {
             $order = Order::query()->lockForUpdate()->findOrFail($order->getKey());
             $this->ensureCurrentOpenOrder($order);
             $shift = $this->currentShift->for($user);
@@ -61,11 +64,18 @@ class CreatePayment
             $payment->shift()->associate($shift);
             $payment->creator()->associate($user);
             $payment->save();
+            $created = true;
 
             $this->recalculate->execute($order);
 
             return $payment;
         });
+
+        if ($created) {
+            $this->telegramNotifier->queue($payment);
+        }
+
+        return $payment;
     }
 
     private function ensureCurrentOpenOrder(Order $order): void

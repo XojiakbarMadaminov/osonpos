@@ -87,6 +87,7 @@ it('calculates revenue average check and grouped breakdowns', function () {
         ->and($report['estimated_gross_profit'])->toBe(50000)
         ->and($report['expense_total'])->toBe(35000)
         ->and($report['order_count'])->toBe(2)
+        ->and($report['item_count'])->toBe(6)
         ->and($report['average_check'])->toBe(50000)
         ->and($report['payment_breakdown'])->toContain(['label' => PaymentMethod::Cash->getLabel(), 'total' => 60000])
         ->and($report['payment_breakdown'])->toContain(['label' => PaymentMethod::Card->getLabel(), 'total' => 40000])

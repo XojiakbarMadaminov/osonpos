@@ -354,6 +354,21 @@ export class ApiService {
         await this.jsonRequest(`/api/pos/orders/${orderId}/payments`, 'POST', { id: clientId, method, amount });
     }
 
+    async createMixedPayment(
+        orderId: string,
+        cashPaymentId: string,
+        cashAmount: number,
+        cardPaymentId: string,
+        cardAmount: number,
+    ): Promise<void> {
+        await this.jsonRequest(`/api/pos/orders/${orderId}/mixed-payments`, 'POST', {
+            cash_payment_id: cashPaymentId,
+            cash_amount: cashAmount,
+            card_payment_id: cardPaymentId,
+            card_amount: cardAmount,
+        });
+    }
+
     private async jsonRequest(url: string, method: string, body?: object): Promise<Response> {
         const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
         const response = await fetch(url, {

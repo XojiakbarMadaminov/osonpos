@@ -91,7 +91,7 @@ class SalesReport
             ->where('orders.status', OrderStatus::Completed->value)
             ->whereBetween('orders.opened_at', [$from, $to]);
         $productCostSummary = (clone $soldItems)
-            ->selectRaw('COALESCE(SUM((order_items.quantity - COALESCE(removed_items.removed_quantity, 0)) * order_items.unit_cost), 0) AS total')
+            ->selectRaw('COALESCE(SUM((order_items.quantity - COALESCE(removed_items.removed_quantity, 0)) * order_items.unit_cost), 0) AS total, COALESCE(SUM(order_items.quantity - COALESCE(removed_items.removed_quantity, 0)), 0) AS item_count')
             ->first();
         $productCostTotal = (int) $productCostSummary->total;
 
@@ -114,6 +114,7 @@ class SalesReport
             'estimated_gross_profit' => $revenue - $productCostTotal,
             'expense_total' => $expenseTotal,
             'order_count' => $orderCount,
+            'item_count' => (int) $productCostSummary->item_count,
             'average_check' => $orderCount > 0 ? intdiv($revenue, $orderCount) : 0,
             'payment_breakdown' => $paymentBreakdown,
             'order_type_breakdown' => $orderTypes,

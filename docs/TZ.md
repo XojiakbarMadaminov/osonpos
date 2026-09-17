@@ -190,7 +190,7 @@ Quyidagi modullar v1'ga kiritilmaydi:
 - Promo codes
 - Complex discounts
 - QR menu
-- Telegram bot
+- Telegram orqali buyurtma qabul qiluvchi bot
 - Online ordering website
 - Accounting
 - Payroll
@@ -555,6 +555,17 @@ plan_id
 feature_id
 ```
 
+## subscription_features
+
+Tarifdagi bazaviy feature'larga qo‘shimcha ravishda platform administratori feature'ni faqat bitta organization obunasiga ulashi yoki undan olib tashlashi mumkin.
+
+```text
+subscription_id
+feature_id
+```
+
+Organization uchun feature faol hisoblanadi, agar u faol obunaning tarifida yoki `subscription_features` qo‘shimcha ro‘yxatida mavjud bo‘lsa.
+
 ---
 
 # 12. MVP Subscription Rules
@@ -757,7 +768,7 @@ Admin yon menyusi vazifasiga qarab quyidagi tartibda guruhlanadi:
 
 - Savdo — Hisobotlar, Buyurtmalar, Mijozlar, Chiqimlar, Smenalar
 - Katalog — Kategoriyalar, Mahsulotlar
-- Filial boshqaruvi — Filiallar, Stollar, Qurilmalar, Printerlar, Chop etish yo‘nalishlari
+- Filial boshqaruvi — Filiallar, Stollar, Qurilmalar, Printerlar, Chop etish yo‘nalishlari; feature yoqilganda Telegram sozlamasi
 - Xodimlar va ruxsatlar — Foydalanuvchilar, Rollar
 
 Guruhlash faqat navigatsiya ko‘rinishini tartiblaydi; permission va subscription feature tekshiruvlarini o‘zgartirmaydi.
@@ -1128,9 +1139,9 @@ COMPLETED
 
 KDS MVP'da mavjud emas.
 
-Takeaway mijozsiz odatdagi tezkor oqimda yaratiladi. Mijoz kerak bo‘lsa, kassir asosiy savat sahifasidagi ixcham `+ Mijoz qo‘shish` amalini ochadi. Telefon bo‘yicha qidirish faqat shu picker ichida va kassir qidirish amalini bosganda bajariladi.
+Takeaway mijozsiz odatdagi tezkor oqimda yaratiladi. Asosiy POS savat sahifasida mijoz formasi ko‘rsatilmaydi. Mijoz kerak bo‘lsa, kassir to‘lov sahifasida uni ixtiyoriy biriktiradi, almashtiradi yoki olib tashlaydi. Telefon bo‘yicha qidirish faqat shu picker ichida va kassir qidirish amalini bosganda bajariladi.
 
-Dine-in buyurtma yaratishda mijoz formasi ko‘rsatilmaydi. Mijozni to‘lov sahifasida ixtiyoriy biriktirish, almashtirish yoki olib tashlash mumkin. Bu amallar faqat joriy filialdagi `OPEN` buyurtmada bajariladi.
+Dine-in va takeaway buyurtma yaratishda mijoz formasi ko‘rsatilmaydi. Mijozni to‘lov sahifasida ixtiyoriy biriktirish, almashtirish yoki olib tashlash mumkin. Bu amallar faqat joriy filialdagi `OPEN` buyurtmada bajariladi.
 
 Customer organization miqyosidagi entity: bir tashkilotning mijozini uning boshqa ruxsat berilgan filialidagi buyurtmada ishlatish mumkin. Boshqa tashkilot mijozini biriktirish va boshqa faol filial buyurtmasini o‘zgartirish bloklanadi.
 
@@ -1214,6 +1225,16 @@ Initial methods:
 - PAYME
 - OTHER
 
+Ichki enum va tarixiy ma'lumotlarda ushbu qiymatlar barqaror qoladi. MVP POS to‘lov UI faqat quyidagi amallarni ko‘rsatadi:
+
+- Naqd (`CASH`)
+- Karta (`CARD`)
+- Naqd + Karta — bitta atomik aralash to‘lov amali
+
+Aralash to‘lov tanlanganda naqd va karta uchun ikkita integer UZS input ko‘rsatiladi. Kassir bir inputni o‘zgartirsa, ikkinchisi orderning qolgan summasiga avtomatik tenglashtiriladi. Ikkala summa musbat bo‘lishi va ularning yig‘indisi order qoldig‘iga aynan teng bo‘lishi shart. Ikkala payment ULID bilan bitta DB transaction ichida idempotent saqlanadi.
+
+Aralash to‘lov Telegram'ga ikkita alohida xabar sifatida emas, bitta `Naqd + Karta` sotuv xabari sifatida yuboriladi. Xabarda naqd va karta summalari alohida ko‘rsatiladi.
+
 Order'da bir nechta payment record bo‘lishi mumkin.
 
 Architecture split/mixed payment'ga tayyor.
@@ -1241,6 +1262,22 @@ paid >= total
 ```
 
 Status payment transaction bilan bir DB transaction ichida yangilanishi kerak.
+
+## Telegram orqali to‘lov xabarlari
+
+`telegram_payment_notifications` subscription feature'i yoqilgan organization har bir yangi payment muvaffaqiyatli saqlanganda SaaS'ga tegishli yagona Telegram bot orqali o‘zi sozlagan guruhga xabar oladi.
+
+- Bot tokeni server konfiguratsiyasida `TELEGRAM_BOT_TOKEN` orqali saqlanadi va organization foydalanuvchilariga ko‘rsatilmaydi.
+- Har bir organization uchun bitta `telegram_settings` yozuvi va alohida `group_chat_id` saqlanadi.
+- Sozlama `/admin` panelidagi `Filial boshqaruvi → Telegram sozlamasi` bo‘limida boshqariladi.
+- Sahifa faqat faol feature va `telegram_settings.manage` permission birga mavjud bo‘lsa ko‘rinadi va ochiladi.
+- Har bir yangi payment uchun alohida xabar yuboriladi; idempotent payment replay yangi xabar yaratmaydi.
+- Xabar yuborish queue orqali payment transaction yakunlangandan keyin bajariladi.
+- Telegram yoki queue xatosi saqlangan payment va order payment statusini rollback qilmaydi.
+- Xabarda sotuv raqami, filial, mijoz, kassir, buyurtma turi, to‘lov turi, qolgan mahsulotlar kesimi, jami mahsulot soni, buyurtma summasi, jami to‘langan summa va filial vaqt zonasidagi sana o‘zbekcha ko‘rsatiladi.
+- Har bir faol filial uchun filial vaqt zonasida soat `00:05` da avvalgi to‘liq calendar kun bo‘yicha alohida kunlik hisobot yuboriladi.
+- Kunlik hisobot sotuvlar, bekor qilingan buyurtmalar, mahsulotlar soni, savdo, chiqimlar, taxminiy yalpi foyda, o‘rtacha chek, to‘lov va buyurtma turlari taqsimoti, top-5 mahsulot hamda smena holatini ko‘rsatadi.
+- `(store_id, business_date)` yagona yozuvi va unique queue job bir filialning bir kunlik hisobotini qayta yuborilishidan himoya qiladi.
 
 ---
 

@@ -49,6 +49,16 @@ class Organization extends Model
         return $this->hasOne(Subscription::class)->latestOfMany();
     }
 
+    public function telegramSetting(): HasOne
+    {
+        return $this->hasOne(TelegramSetting::class);
+    }
+
+    public function dailyTelegramReports(): HasMany
+    {
+        return $this->hasMany(DailyTelegramReport::class);
+    }
+
     public function categories(): HasMany
     {
         return $this->hasMany(Category::class);

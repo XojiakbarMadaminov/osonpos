@@ -55,7 +55,7 @@ it('reuses database permissions when the Spatie permission cache is stale', func
     $permissionRegistrar->getPermissions();
 
     $now = now();
-    DB::table(config('permission.table_names.permissions'))->insert(
+    DB::table(config('permission.table_names.permissions'))->insertOrIgnore(
         collect(OrganizationPermission::cases())
             ->map(fn (OrganizationPermission $permission): array => [
                 'name' => $permission->value,

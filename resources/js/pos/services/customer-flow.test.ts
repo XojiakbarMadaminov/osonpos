@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiService, type CreatedOrder } from './api';
+import { canManageCustomerAtPayment } from './customer-flow';
 
 const order: CreatedOrder = {
     id: '01ORDER',
@@ -27,6 +28,12 @@ function service(): ApiService {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('customer POS API flow', () => {
+    it('offers optional customer management at payment for dine-in and takeaway only', () => {
+        expect(canManageCustomerAtPayment('DINE_IN')).toBe(true);
+        expect(canManageCustomerAtPayment('TAKEAWAY')).toBe(true);
+        expect(canManageCustomerAtPayment('DELIVERY')).toBe(false);
+    });
+
     it('looks up a customer only when explicitly requested', async () => {
         const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: order.customer })));
         vi.stubGlobal('fetch', fetch);

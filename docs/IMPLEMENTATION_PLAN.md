@@ -1962,8 +1962,7 @@ Architecture decisions:
 Business rules:
 
 - DELIVERY keeps its required phone/address behavior.
-- TAKEAWAY supports an optional compact customer picker on the main cart page.
-- DINE_IN has no customer fields on its ordering screen; an optional picker is shown on the payment page.
+- TAKEAWAY and DINE_IN have no customer fields on their ordering screens; an optional picker is shown on the payment page.
 - A phone match reuses the existing organization customer; a missing phone can create one with an optional name.
 - Customer changes are allowed only on an OPEN order in the active store.
 - Removing a customer from an order never deletes the customer record.
@@ -1977,8 +1976,7 @@ Tasks:
 - [x] Enforce tenant customer isolation and active-store order isolation.
 - [x] Normalize Uzbek phone numbers and prevent duplicate normalized phones per organization.
 - [x] Create a reusable compact customer picker with Uzbek copy and touch-friendly controls.
-- [x] Add optional TAKEAWAY customer selection to the main POS cart.
-- [x] Add optional DINE_IN customer selection to the payment page.
+- [x] Add optional TAKEAWAY and DINE_IN customer selection to the payment page.
 - [x] Preserve the no-customer and DELIVERY flows.
 - [x] Print customer snapshots only when a customer is attached.
 - [x] Add backend and frontend regression coverage.
@@ -1986,8 +1984,7 @@ Tasks:
 Acceptance criteria:
 
 - TAKEAWAY and DINE_IN continue to work without a customer or extra mandatory clicks.
-- TAKEAWAY can select or create a customer from the cart.
-- DINE_IN can select, replace, or remove a customer before completion from the payment page.
+- TAKEAWAY and DINE_IN can select, replace, or remove a customer before completion from the payment page.
 - DELIVERY still requires its existing customer phone and address fields.
 - Equivalent Uzbek phone formats reuse one organization customer.
 - Cross-tenant customer attachment and cross-store order mutation are blocked.
@@ -2050,6 +2047,162 @@ Acceptance criteria:
 Validation:
 
 - Pest, Vitest, Vue type checking, production build, and Laravel Pint must pass.
+
+---
+# Phase 43 — Telegram Payment Notifications
+
+Status: DONE
+
+Depends on:
+
+- Phase 3
+- Phase 13
+- Phase 16
+- Phase 21
+
+Goal:
+
+Let a platform administrator enable a single SaaS Telegram bot for selected organization subscriptions and let each organization choose its own destination group.
+
+Architecture decisions:
+
+- Plan features remain the base feature set; `subscription_features` holds organization-specific add-on features.
+- The Telegram bot token is global server configuration, while the destination group ID is tenant-owned data.
+- Payment notification delivery is queued after payment persistence and never participates in the payment transaction.
+
+Tasks:
+
+- [x] Add subscription-specific feature assignment to the platform subscription form.
+- [x] Add the `telegram_payment_notifications` feature and `telegram_settings.manage` permission.
+- [x] Add a tenant-owned Telegram group setting page under `Filial boshqaruvi`.
+- [x] Hide and block the page unless both feature and permission checks pass.
+- [x] Queue one Uzbek Telegram message for every newly created payment.
+- [x] Prevent idempotent payment replay from queuing a duplicate message.
+- [x] Keep saved payments intact when Telegram delivery or queue dispatch fails.
+- [x] Add feature, tenant, authorization, dispatch, and delivery regression coverage.
+
+Acceptance criteria:
+
+- A platform administrator can attach or detach the feature on one subscription without changing its plan or other organizations.
+- Each enabled organization can save only its own group ID.
+- Every new payment produces a localized message with store, order, amount, method, totals, and cashier details.
+- Disabled-feature, missing-setting, and duplicate-payment cases do not send messages.
+- Telegram failures never rollback financial data.
+
+Validation:
+
+- Relevant Pest coverage, full Pest suite, and Laravel Pint must pass.
+
+---
+# Phase 44 — Daily Telegram Store Reports
+
+Status: DONE
+
+Depends on:
+
+- Phase 14
+- Phase 17
+- Phase 22
+- Phase 28
+- Phase 43
+
+Goal:
+
+Send the previous complete calendar day's sales report for every enabled store at 00:05 in that store's timezone.
+
+Architecture decisions:
+
+- The scheduler checks store-local time every minute, while report delivery remains queued.
+- A tenant/store/date record and unique job prevent duplicate daily delivery.
+- Daily calculations reuse the tenant-safe sales report domain service.
+
+Tasks:
+
+- [x] Add idempotent daily report delivery records.
+- [x] Schedule store-local report dispatch for 00:05.
+- [x] Build the approved Uzbek per-store report format.
+- [x] Include sales, expenses, profit estimate, payment/order breakdowns, top products, and shift state.
+- [x] Preserve feature, tenant, and Telegram group boundaries.
+- [x] Add timezone, idempotency, feature, content, and delivery tests.
+
+Acceptance criteria:
+
+- Each active enabled store receives one report for the previous complete local day.
+- Different store timezones dispatch at their own 00:05.
+- The same store/date report cannot be queued twice.
+- Disabled organizations and organizations without Telegram settings receive nothing.
+- Delivery failure remains retryable and does not affect transaction data.
+
+Validation:
+
+- Relevant Pest coverage, full Pest suite, and Laravel Pint must pass.
+
+---
+# Phase 45 — Takeaway Customer Selection at Payment
+
+Status: DONE
+
+Depends on:
+
+- Phase 16
+- Phase 41
+
+Goal:
+
+Keep the takeaway cart focused on products and move its optional customer selection to the payment step.
+
+Tasks:
+
+- [x] Remove the takeaway customer picker and mutation handler from the POS cart.
+- [x] Show the reusable customer picker for both dine-in and takeaway payments.
+- [x] Preserve delivery's dedicated required customer flow.
+- [x] Add frontend regression coverage for payment-step eligibility.
+
+Acceptance criteria:
+
+- The takeaway POS cart has no customer controls.
+- An open takeaway order can add, replace, or remove its optional customer from the payment page.
+- Dine-in behavior remains available at payment and delivery behavior is unchanged.
+
+Validation:
+
+- Vitest, Vue type checking, production build, Laravel Pint, and the full Pest suite must pass.
+
+---
+# Phase 46 — Cash and Card Mixed Payment UI
+
+Status: DONE
+
+Depends on:
+
+- Phase 12
+- Phase 16
+
+Goal:
+
+Replace unused POS payment buttons with a safe cash-plus-card payment flow.
+
+Tasks:
+
+- [x] Show only Cash, Card, and Cash + Card in the POS payment UI.
+- [x] Auto-complement the second mixed amount from the order balance.
+- [x] Require both mixed parts to be positive and equal the remaining balance together.
+- [x] Save both payment records atomically with client ULID idempotency.
+- [x] Send one combined Telegram notification with separate cash and card amounts.
+- [x] Preserve stable internal payment enums and historical records.
+- [x] Add backend and frontend regression coverage.
+
+Acceptance criteria:
+
+- For an 80,000 UZS balance, entering 50,000 card sets cash to 30,000 and vice versa.
+- Cash and Card continue to support their existing single-payment flow.
+- Mixed payment creates exactly one CASH and one CARD record or creates neither.
+- Replaying the same mixed request cannot duplicate either payment.
+- Click, Payme, and Other are not displayed as POS payment choices.
+
+Validation:
+
+- Vitest, Vue type checking, production build, relevant/full Pest, and Laravel Pint must pass.
 
 ---
 # Suggested Commit Boundaries

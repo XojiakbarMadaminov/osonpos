@@ -15,6 +15,7 @@ class PlanSeeder extends Seeder
             'tables' => 'Table service',
             'delivery' => 'Delivery orders',
             'multi_store' => 'Multiple stores',
+            'telegram_payment_notifications' => 'Telegram orqali to‘lov xabarlari',
         ])->mapWithKeys(fn (string $name, string $code): array => [
             $code => Feature::query()->firstOrCreate(['code' => $code], ['name' => $name]),
         ]);

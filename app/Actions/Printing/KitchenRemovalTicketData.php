@@ -28,7 +28,7 @@ readonly class KitchenRemovalTicketData
         $time = now($this->order->store->timezone)->format('d.m.Y H:i');
         $lines = [
             $format->center('MAHSULOT BEKOR QILINDI'),
-            $format->center($this->order->display_number),
+            "\x1B\x21\x38" . str_repeat(' ', max(0, intdiv(intdiv($format->width, 2) - mb_strwidth($this->order->display_number), 2))) . $this->order->display_number . "\x1B\x21\x00",
             $format->separator('='),
             $format->columns('TURI', $type),
         ];

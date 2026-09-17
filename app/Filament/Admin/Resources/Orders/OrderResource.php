@@ -59,38 +59,104 @@ class OrderResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            TextEntry::make('display_number'),
-            TextEntry::make('store.name'),
-            TextEntry::make('type')->badge(),
-            TextEntry::make('status')->badge(),
-            TextEntry::make('payment_status')->badge(),
-            TextEntry::make('customer_name')->label('Mijoz')->placeholder('Biriktirilmagan'),
-            TextEntry::make('customer_phone')->label('Mijoz telefoni')->placeholder('—'),
-            TextEntry::make('subtotal')->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('delivery_fee')->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('total')->money('UZS', divideBy: 1, decimalPlaces: 0),
-            TextEntry::make('creator.name'),
-            TextEntry::make('opened_at')->dateTime(),
-            TextEntry::make('closed_at')->dateTime(),
-            TextEntry::make('note')->columnSpanFull(),
-            RepeatableEntry::make('items')
-                ->label('Mahsulotlar')
+            \Filament\Schemas\Components\Grid::make(3)->schema([
+                \Filament\Schemas\Components\Group::make()->schema([
+                    \Filament\Schemas\Components\Section::make('Asosiy ma\'lumotlar')
+                        ->schema([
+                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                                TextEntry::make('display_number')
+                                    ->label('Buyurtma raqami')
+                                    ->size(\Filament\Support\Enums\TextSize::Large)
+                                    ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                    ->copyable(),
+                                TextEntry::make('opened_at')->label('Ochilgan vaqt')->dateTime(),
+                                TextEntry::make('type')->label('Turi')->badge(),
+                                TextEntry::make('status')->label('Holati')->badge(),
+                            ]),
+                        ]),
+
+                    \Filament\Schemas\Components\Section::make('Mijoz va Filial')
+                        ->schema([
+                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                                TextEntry::make('store.name')
+                                    ->label('Filial')
+                                    ->icon('heroicon-m-building-storefront'),
+                                TextEntry::make('creator.name')
+                                    ->label('Kassir')
+                                    ->icon('heroicon-m-user'),
+                                TextEntry::make('customer_name')
+                                    ->label('Mijoz')
+                                    ->placeholder('Biriktirilmagan')
+                                    ->icon('heroicon-m-users'),
+                                TextEntry::make('customer_phone')
+                                    ->label('Mijoz telefoni')
+                                    ->placeholder('—')
+                                    ->icon('heroicon-m-phone'),
+                                TextEntry::make('deliveryDetail.address')
+                                    ->label('Yetkazish manzili')
+                                    ->icon('heroicon-m-map-pin')
+                                    ->visible(fn ($record) => $record->type === \App\Enums\OrderType::Delivery)
+                                    ->columnSpanFull(),
+                            ]),
+                        ]),
+                ])->columnSpan(['default' => 3, 'md' => 2]),
+
+                \Filament\Schemas\Components\Group::make()->schema([
+                    \Filament\Schemas\Components\Section::make('Moliyaviy xulosa')
+                        ->schema([
+                            TextEntry::make('payment_status')
+                                ->label('To\'lov holati')
+                                ->badge(),
+                            TextEntry::make('subtotal')
+                                ->label('Oraliq jami')
+                                ->money('UZS', divideBy: 1, decimalPlaces: 0),
+                            TextEntry::make('delivery_fee')
+                                ->label('Yetkazib berish haqi')
+                                ->money('UZS', divideBy: 1, decimalPlaces: 0),
+                            TextEntry::make('total')
+                                ->label('Jami summa')
+                                ->size(\Filament\Support\Enums\TextSize::Large)
+                                ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                ->color('success')
+                                ->money('UZS', divideBy: 1, decimalPlaces: 0),
+                            TextEntry::make('closed_at')->label('Yopilgan vaqt')->dateTime()->placeholder('—'),
+                        ]),
+                ])->columnSpan(['default' => 3, 'md' => 1]),
+            ])->columnSpanFull(),
+
+            \Filament\Schemas\Components\Section::make('Mahsulotlar')
+                ->columnSpanFull()
                 ->schema([
-                    TextEntry::make('product_name')->label('Mahsulot'),
-                    TextEntry::make('quantity')
-                        ->label('Dastlabki miqdor'),
-                    TextEntry::make('removed_quantity')
-                        ->label('Ayirilgan')
-                        ->state(fn ($record): int => $record->removedQuantity()),
-                    TextEntry::make('remaining_quantity')
-                        ->label('Qolgan miqdor')
-                        ->state(fn ($record): int => $record->remainingQuantity()),
-                    TextEntry::make('remaining_total')
-                        ->label('Qolgan summa')
-                        ->state(fn ($record): int => $record->remainingTotal())
-                        ->money('UZS', divideBy: 1, decimalPlaces: 0),
+                    RepeatableEntry::make('items')
+                        ->hiddenLabel()
+                        ->schema([
+                            TextEntry::make('product_name')->label('Nomi')->weight(\Filament\Support\Enums\FontWeight::SemiBold),
+                            TextEntry::make('quantity')
+                                ->label('Dastlabki miqdor'),
+                            TextEntry::make('removed_quantity')
+                                ->label('Ayirilgan')
+                                ->color('danger')
+                                ->state(fn ($record): int => $record->removedQuantity()),
+                            TextEntry::make('remaining_quantity')
+                                ->label('Qolgan miqdor')
+                                ->badge()
+                                ->color('info')
+                                ->state(fn ($record): int => $record->remainingQuantity()),
+                            TextEntry::make('remaining_total')
+                                ->label('Jami')
+                                ->state(fn ($record): int => $record->remainingTotal())
+                                ->money('UZS', divideBy: 1, decimalPlaces: 0)
+                                ->weight(\Filament\Support\Enums\FontWeight::Bold),
+                        ])
+                        ->columns(5)
+                        ->columnSpanFull(),
+                ]),
+
+            \Filament\Schemas\Components\Section::make('Izoh')
+                ->schema([
+                    TextEntry::make('note')->hiddenLabel(),
                 ])
-                ->columns(5)
+                ->visible(fn ($record) => filled($record->note))
                 ->columnSpanFull(),
         ]);
     }
@@ -98,7 +164,7 @@ class OrderResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->with(['store', 'creator', 'items.removals'])
+            ->with(['store', 'creator', 'deliveryDetail', 'items.removals'])
             ->forTenant(app(TenantContext::class)->requireCurrent())
             ->forStore(app(StoreContext::class)->requireCurrent());
     }

@@ -27,7 +27,7 @@ class SalesReport
             ->where('status', OrderStatus::Completed->value)
             ->whereBetween('opened_at', [$from, $to]);
 
-        $summary = (clone $orders)->selectRaw('COUNT(*) AS order_count, COALESCE(SUM(total), 0) AS revenue')->first();
+        $summary = (clone $orders)->selectRaw('COUNT(*) AS order_count, COALESCE(SUM(total), 0) AS revenue, COALESCE(SUM(discount_amount), 0) AS discount_total, COALESCE(SUM(CASE WHEN discount_amount > 0 THEN 1 ELSE 0 END), 0) AS discounted_order_count')->first();
         $orderCount = (int) $summary->order_count;
         $revenue = (int) $summary->revenue;
 
@@ -115,6 +115,8 @@ class SalesReport
             'estimated_gross_profit' => $revenue - $productCostTotal,
             'expense_total' => $expenseTotal,
             'order_count' => $orderCount,
+            'discount_total' => (int) $summary->discount_total,
+            'discounted_order_count' => (int) $summary->discounted_order_count,
             'item_count' => (int) $productCostSummary->item_count,
             'average_check' => $orderCount > 0 ? intdiv($revenue, $orderCount) : 0,
             'payment_breakdown' => $paymentBreakdown,

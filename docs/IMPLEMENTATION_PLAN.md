@@ -2205,6 +2205,145 @@ Validation:
 - Vitest, Vue type checking, production build, relevant/full Pest, and Laravel Pint must pass.
 
 ---
+# Phase 47 — Dine-in Table Transfer
+
+Status: DONE
+
+Depends on:
+
+- Phase 6
+- Phase 10
+- Phase 16
+
+Goal:
+
+Move an open dine-in order from its current table to another free table without printing or reprinting any document.
+
+Tasks:
+
+- [x] Add a transactional, tenant-safe table transfer action and POS endpoint.
+- [x] Allow only active tables in the current store and reject occupied destinations.
+- [x] Add Uzbek table transfer controls to the Tables and Orders pages.
+- [x] Refresh derived table occupancy after a successful transfer.
+- [x] Preserve all kitchen print state without producing a new ticket.
+- [x] Add tenant/store, state, occupancy, permission, and print-state regression coverage.
+
+Acceptance criteria:
+
+- An authorized user can move an open dine-in order to a free active table in the same store.
+- The source table becomes free and the destination becomes occupied through active-order-derived occupancy.
+- Occupied, inactive, cross-store, non-dine-in, and closed-order transfers are rejected.
+- A transfer does not print or reprint kitchen or customer documents.
+
+Validation:
+
+- Relevant/full Pest, Vitest, Vue type checking, production build, and Laravel Pint must pass.
+
+---
+# Phase 48 — Order Discounts at Payment
+
+Status: DONE
+
+Depends on:
+
+- Phase 10
+- Phase 12
+- Phase 16
+- Phase 43
+
+Goal:
+
+Let the cashier apply an optional percentage or fixed UZS discount from the payment screen and expose the saved discount consistently in every order-facing output.
+
+Architecture decisions:
+
+- The order stores the discount type, entered value, and calculated integer UZS amount as financial history.
+- Discounts apply to product subtotal only; delivery fees are not discounted.
+- Backend calculations and validation remain authoritative.
+
+Tasks:
+
+- [x] Add persisted percentage and fixed discount fields to orders.
+- [x] Add a transactional open-order discount endpoint with shift, permission, tenant, store, payment, and value guards.
+- [x] Add a touch-friendly Foiz/Summa toggle, input, validation, and live total preview above the payment action.
+- [x] Recalculate payment state and item-change totals safely when a discount exists.
+- [x] Show discounts in POS orders, admin order history, Telegram payment notifications, and customer receipts.
+- [x] Add backend and frontend regression coverage.
+
+Acceptance criteria:
+
+- Percentage discounts accept whole values from 1 through 100.
+- Fixed discounts use integer UZS and cannot exceed the product subtotal.
+- Delivery fees remain outside the discount calculation.
+- A discount cannot reduce total below payments already received.
+- Saved type, entered value, calculated amount, and final total are consistent across POS, admin, Telegram, and receipts.
+
+Validation:
+
+- Relevant/full Pest, Vitest, Vue type checking, production build, migration checks, and Laravel Pint must pass.
+
+---
+# Phase 49 — Discount KPIs in Admin Reports
+
+Status: DONE
+
+Depends on:
+
+- Phase 17
+- Phase 48
+
+Goal:
+
+Show the filtered total discount amount and number of discounted completed orders beside the average check on the admin reports page.
+
+Tasks:
+
+- [x] Aggregate discount amount and discounted order count through the tenant/store/date-safe sales report query.
+- [x] Add Uzbek KPI cards after the average check card.
+- [x] Add report-domain and admin-page regression coverage.
+
+Acceptance criteria:
+
+- Only completed orders inside the selected organization, allowed stores, and date period contribute.
+- The total is the sum of saved `discount_amount` values.
+- The count includes each completed order with a positive discount exactly once.
+
+Validation:
+
+- Relevant/full Pest and Laravel Pint must pass.
+
+---
+# Phase 50 — Simplified Single-method Payment UI
+
+Status: DONE
+
+Depends on:
+
+- Phase 46
+- Phase 48
+
+Goal:
+
+Remove the redundant amount input for single-method payments and use the visible final payable total as the full cash or card payment amount.
+
+Tasks:
+
+- [x] Remove the single cash/card amount input above customer selection.
+- [x] Charge the full remaining amount for Cash or Card.
+- [x] Preserve the two amount inputs and validation for Cash + Card.
+- [x] Preserve zero-balance completion after a full discount.
+
+Acceptance criteria:
+
+- Cash and Card show no separate amount input.
+- Their payment request uses the full post-discount balance.
+- Cash + Card continues to support explicit split amounts.
+
+Validation:
+
+- Vitest, Vue type checking, production build, relevant/full Pest, and Laravel Pint must pass.
+
+---
 # Suggested Commit Boundaries
 
 Use small meaningful commits where practical.

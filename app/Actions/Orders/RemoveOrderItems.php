@@ -51,8 +51,6 @@ class RemoveOrderItems
                 ]);
             }
 
-            $newRemovedTotal = 0;
-
             foreach ($lines as $index => $line) {
                 $item = $items->get($line['order_item_id']);
                 $existing = OrderItemRemoval::query()->whereKey($line['id'])->first();
@@ -96,17 +94,17 @@ class RemoveOrderItems
                 ])->save();
 
                 $item->setAttribute('removals_sum_quantity', $alreadyRemoved + $quantity);
-                $newRemovedTotal += $removal->total;
             }
 
             $paidAmount = (int) $order->payments()->sum('amount');
-            if ($order->total - $newRemovedTotal < $paidAmount) {
+            $order = $this->recalculateTotals->execute($order);
+
+            if ($order->total < $paidAmount) {
                 throw ValidationException::withMessages([
                     'items' => 'Mahsulot ayirilganda buyurtma jami to‘langan summadan kamayib ketadi.',
                 ]);
             }
 
-            $order = $this->recalculateTotals->execute($order);
             $this->recalculatePaymentStatus->execute($order);
 
             $remainingQuantity = (int) $order->items()->sum('quantity')

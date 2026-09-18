@@ -84,6 +84,13 @@ readonly class CustomerReceiptData
             $lines->push($format->columns('YETKAZIB BERISH', $format->money($this->order->delivery_fee)));
         }
 
+        if ($this->order->discount_amount > 0) {
+            $discountLabel = $this->order->discount_type?->value === 'PERCENTAGE'
+                ? "CHEGIRMA ({$this->order->discount_value}%)"
+                : 'CHEGIRMA';
+            $lines->push($format->columns($discountLabel, '-'.$format->money($this->order->discount_amount)));
+        }
+
         $lines->push(
             $format->separator('='),
             $format->columns('JAMI UZS', $format->money($this->order->total)),

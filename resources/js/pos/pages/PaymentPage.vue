@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import CustomerPicker from '../components/customers/CustomerPicker.vue';
 import type { CustomerSummary } from '../services/api';
 import { apiService } from '../services/api';
 import { canManageCustomerAtPayment } from '../services/customer-flow';
+import { calculateDiscountAmount, discountValidationMessage, normalizeDiscountValue, type DiscountType } from '../services/discount';
 import {
     complementaryPaymentAmount,
     normalizedPaymentAmount,
@@ -26,39 +27,53 @@ const paymentMethods = [
     { value: 'CARD' as const, label: 'Karta' },
     { value: 'MIXED' as const, label: 'Naqd + Karta' },
 ] satisfies Array<{ value: PosPaymentMode; label: string }>;
-const amount = ref(order.current?.balance_due ?? 0);
 const cashAmount = ref(order.current?.balance_due ?? 0);
 const cardAmount = ref(0);
 const cashPaymentId = ref(generateUlid());
 const cardPaymentId = ref(generateUlid());
+const discountType = ref<DiscountType>(order.current?.discount_type ?? 'PERCENTAGE');
+const discountValue = ref(order.current?.discount_value ?? 0);
 const busy = ref(false);
 const message = ref('');
+const discountError = computed(() => order.current
+    ? discountValidationMessage(order.current.subtotal, discountType.value, discountValue.value)
+    : '');
+const previewDiscountAmount = computed(() => order.current
+    ? calculateDiscountAmount(order.current.subtotal, discountType.value, discountValue.value)
+    : 0);
+const previewTotal = computed(() => order.current
+    ? order.current.subtotal - previewDiscountAmount.value + order.current.delivery_fee
+    : 0);
+const previewBalance = computed(() => Math.max(0, previewTotal.value - (order.current?.paid_amount ?? 0)));
 const canPay = computed(() => shift.loaded
     && shift.current !== null
     && order.current !== null
-    && (order.current.balance_due === 0
+    && discountError.value === ''
+    && (previewBalance.value === 0
         || (method.value === 'MIXED'
-            ? validMixedPayment(order.current.balance_due, cashAmount.value, cardAmount.value)
-            : amount.value > 0 && amount.value <= order.current.balance_due)));
+            ? validMixedPayment(previewBalance.value, cashAmount.value, cardAmount.value)
+            : previewBalance.value > 0)));
 
-function chooseMethod(nextMethod: PosPaymentMode): void {
-    method.value = nextMethod;
-    const balance = order.current?.balance_due ?? 0;
-    amount.value = balance;
+function resetPaymentAmounts(balance: number): void {
     cashAmount.value = balance;
     cardAmount.value = 0;
     cashPaymentId.value = generateUlid();
     cardPaymentId.value = generateUlid();
 }
 
+function chooseMethod(nextMethod: PosPaymentMode): void {
+    method.value = nextMethod;
+    resetPaymentAmounts(previewBalance.value);
+}
+
 function updateCashAmount(value: string): void {
-    const balance = order.current?.balance_due ?? 0;
+    const balance = previewBalance.value;
     cashAmount.value = normalizedPaymentAmount(balance, Number(value));
     cardAmount.value = complementaryPaymentAmount(balance, cashAmount.value);
 }
 
 function updateCardAmount(value: string): void {
-    const balance = order.current?.balance_due ?? 0;
+    const balance = previewBalance.value;
     cardAmount.value = normalizedPaymentAmount(balance, Number(value));
     cashAmount.value = complementaryPaymentAmount(balance, cardAmount.value);
 }
@@ -72,6 +87,11 @@ async function pay(): Promise<void> {
     busy.value = true;
     message.value = '';
     try {
+        const normalizedDiscount = normalizeDiscountValue(discountValue.value);
+        const updatedOrder = normalizedDiscount > 0
+            ? await apiService.setOrderDiscount(order.current.id, discountType.value, normalizedDiscount)
+            : await apiService.removeOrderDiscount(order.current.id);
+        order.openExisting(updatedOrder);
         const balanceDue = order.current.balance_due;
         if (balanceDue > 0) {
             if (method.value === 'MIXED') {
@@ -83,22 +103,18 @@ async function pay(): Promise<void> {
                     cardAmount.value,
                 );
             } else {
-                await apiService.createPayment(order.current.id, method.value, amount.value);
+                await apiService.createPayment(order.current.id, method.value, balanceDue);
             }
         }
-        if (method.value === 'MIXED' || amount.value >= balanceDue) {
-            const receipt = new ReceiptPrintService(apiService, printerService);
-            await apiService.completeOrder(order.current.id);
-            try {
-                await receipt.printCompleted(order.current.id);
-            } catch {
-                // The saved payment and completed order must not depend on printing.
-            }
-            order.reset();
-            emit('navigate', 'orders');
-        } else {
-            message.value = 'Qisman to‘lov saqlandi.';
+        const receipt = new ReceiptPrintService(apiService, printerService);
+        await apiService.completeOrder(order.current.id);
+        try {
+            await receipt.printCompleted(order.current.id);
+        } catch {
+            // The saved payment and completed order must not depend on printing.
         }
+        order.reset();
+        emit('navigate', 'orders');
     } catch (exception) {
         message.value = exception instanceof Error
             ? exception.message
@@ -106,6 +122,10 @@ async function pay(): Promise<void> {
     } finally {
         busy.value = false;
     }
+}
+
+function updateDiscountValue(value: string): void {
+    discountValue.value = normalizeDiscountValue(value);
 }
 
 async function setCustomer(customer: CustomerSummary | null): Promise<void> {
@@ -116,9 +136,7 @@ async function setCustomer(customer: CustomerSummary | null): Promise<void> {
         order.openExisting(customer
             ? await apiService.setOrderCustomer(order.current.id, customer.id)
             : await apiService.removeOrderCustomer(order.current.id));
-        amount.value = order.current?.balance_due ?? 0;
-        cashAmount.value = order.current?.balance_due ?? 0;
-        cardAmount.value = 0;
+        resetPaymentAmounts(previewBalance.value);
     } catch (exception) {
         message.value = exception instanceof Error ? exception.message : 'Mijozni biriktirib bo‘lmadi.';
     } finally {
@@ -127,12 +145,14 @@ async function setCustomer(customer: CustomerSummary | null): Promise<void> {
 }
 
 onMounted(() => shift.load(true));
+
+watch(previewBalance, (balance) => resetPaymentAmounts(balance));
 </script>
 
 <template>
     <section class="mx-auto max-w-xl rounded-xl border border-slate-800 bg-slate-900 p-6">
         <h2 class="text-xl font-semibold">To‘lov</h2>
-        <p v-if="order.current" class="mt-2 text-slate-400">{{ order.current.display_number }} · {{ formatMoney(order.current.total) }} UZS</p>
+        <p v-if="order.current" class="mt-2 text-slate-400">{{ order.current.display_number }} · {{ formatMoney(previewTotal) }} UZS</p>
         <p v-else class="mt-4 text-slate-400">Avval buyurtmani tanlang yoki yarating.</p>
         <div v-if="order.current" class="mt-6 space-y-5">
             <div v-if="shift.loaded && !shift.current" class="rounded-lg border border-amber-700 bg-amber-500/10 p-4 text-sm text-amber-200">
@@ -143,17 +163,16 @@ onMounted(() => shift.load(true));
             <div class="grid grid-cols-3 gap-2">
                 <button v-for="item in paymentMethods" :key="item.value" class="min-h-12 rounded-lg border text-xs" :class="method === item.value ? 'border-amber-400 text-amber-300' : 'border-slate-700'" type="button" @click="chooseMethod(item.value)">{{ item.label }}</button>
             </div>
-            <div v-if="order.current.balance_due > 0 && method === 'MIXED'" class="grid gap-3 sm:grid-cols-2">
+            <div v-if="previewBalance > 0 && method === 'MIXED'" class="grid gap-3 sm:grid-cols-2">
                 <label class="space-y-2 text-sm text-slate-300">
                     <span>Naqd summa</span>
-                    <input :value="cashAmount" class="min-h-14 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 text-xl text-slate-100" min="0" :max="order.current.balance_due" step="1" type="number" @input="updateCashAmount(($event.target as HTMLInputElement).value)">
+                    <input :value="cashAmount" class="min-h-14 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 text-xl text-slate-100" min="0" :max="previewBalance" step="1" type="number" @input="updateCashAmount(($event.target as HTMLInputElement).value)">
                 </label>
                 <label class="space-y-2 text-sm text-slate-300">
                     <span>Karta summasi</span>
-                    <input :value="cardAmount" class="min-h-14 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 text-xl text-slate-100" min="0" :max="order.current.balance_due" step="1" type="number" @input="updateCardAmount(($event.target as HTMLInputElement).value)">
+                    <input :value="cardAmount" class="min-h-14 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 text-xl text-slate-100" min="0" :max="previewBalance" step="1" type="number" @input="updateCardAmount(($event.target as HTMLInputElement).value)">
                 </label>
             </div>
-            <input v-else-if="order.current.balance_due > 0" v-model.number="amount" class="min-h-14 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 text-xl" min="1" :max="order.current.balance_due" step="1" type="number">
             <CustomerPicker
                 v-if="canManageCustomerAtPayment(order.current.type)"
                 add-label="+ Mijoz biriktirish"
@@ -161,7 +180,31 @@ onMounted(() => shift.load(true));
                 :model-value="order.selectedCustomer"
                 @update:model-value="setCustomer"
             />
-            <button class="min-h-14 w-full rounded-xl bg-amber-400 font-bold text-slate-950 disabled:opacity-50" :disabled="busy || !canPay" type="button" @click="pay">{{ busy ? 'Amalga oshirilmoqda…' : order.current.balance_due > 0 ? 'To‘lovni olish va yopish' : 'Buyurtmani yopish' }}</button>
+            <div class="rounded-xl border border-slate-700 bg-slate-950/60 p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <p class="font-semibold text-slate-100">Chegirma</p>
+                        <p class="text-xs text-slate-400">Ixtiyoriy</p>
+                    </div>
+                    <div class="grid grid-cols-2 rounded-lg bg-slate-900 p-1 text-sm">
+                        <button class="min-h-9 rounded-md px-3" :class="discountType === 'PERCENTAGE' ? 'bg-amber-400 font-semibold text-slate-950' : 'text-slate-300'" :disabled="busy" type="button" @click="discountType = 'PERCENTAGE'">Foiz</button>
+                        <button class="min-h-9 rounded-md px-3" :class="discountType === 'FIXED' ? 'bg-amber-400 font-semibold text-slate-950' : 'text-slate-300'" :disabled="busy" type="button" @click="discountType = 'FIXED'">Summa</button>
+                    </div>
+                </div>
+                <label class="relative mt-3 block">
+                    <span class="sr-only">Chegirma qiymati</span>
+                    <input :value="discountValue || ''" class="min-h-12 w-full rounded-lg border border-slate-700 bg-slate-950 px-4 pr-16 text-lg text-slate-100 focus:border-amber-400 focus:outline-none" min="0" :max="discountType === 'PERCENTAGE' ? 100 : order.current.subtotal" step="1" type="number" placeholder="0" :disabled="busy" @input="updateDiscountValue(($event.target as HTMLInputElement).value)">
+                    <span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-semibold text-slate-400">{{ discountType === 'PERCENTAGE' ? '%' : 'UZS' }}</span>
+                </label>
+                <p v-if="discountError" class="mt-2 text-sm text-red-300">{{ discountError }}</p>
+                <div v-else class="mt-3 space-y-1.5 border-t border-slate-800 pt-3 text-sm">
+                    <div class="flex justify-between text-slate-400"><span>Oraliq jami</span><span>{{ formatMoney(order.current.subtotal) }} UZS</span></div>
+                    <div v-if="order.current.delivery_fee > 0" class="flex justify-between text-slate-400"><span>Yetkazib berish</span><span>{{ formatMoney(order.current.delivery_fee) }} UZS</span></div>
+                    <div class="flex justify-between text-emerald-400"><span>Chegirma</span><span>− {{ formatMoney(previewDiscountAmount) }} UZS</span></div>
+                    <div class="flex justify-between pt-1 text-base font-bold text-slate-100"><span>To‘lanadi</span><span>{{ formatMoney(previewTotal) }} UZS</span></div>
+                </div>
+            </div>
+            <button class="min-h-14 w-full rounded-xl bg-amber-400 font-bold text-slate-950 disabled:opacity-50" :disabled="busy || !canPay" type="button" @click="pay">{{ busy ? 'Amalga oshirilmoqda…' : previewBalance > 0 ? 'To‘lovni olish va yopish' : 'Buyurtmani yopish' }}</button>
             <p v-if="message" class="text-sm text-slate-300">{{ message }}</p>
             <button class="min-h-12 w-full rounded-lg border border-slate-700" type="button" @click="emit('navigate', 'pos')">POS’ga qaytish</button>
         </div>

@@ -12,6 +12,7 @@ class RecalculatePaymentStatus
         $paidAmount = (int) $order->payments()->sum('amount');
         $remainingAmount = max(0, $order->total - $paidAmount);
         $status = match (true) {
+            $order->total === 0 => PaymentStatus::Paid,
             $paidAmount === 0 => PaymentStatus::Unpaid,
             $paidAmount < $order->total => PaymentStatus::PartiallyPaid,
             default => PaymentStatus::Paid,

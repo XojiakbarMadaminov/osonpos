@@ -2,6 +2,7 @@
 
 namespace App\Actions\Orders;
 
+use App\Actions\Payments\RecalculatePaymentStatus;
 use App\Domain\Shift\CurrentShift;
 use App\Enums\OrderStatus;
 use App\Models\Order;
@@ -21,6 +22,7 @@ class AddOrderItem
         private readonly StoreContext $storeContext,
         private readonly CurrentShift $currentShift,
         private readonly RecalculateOrderTotals $recalculateTotals,
+        private readonly RecalculatePaymentStatus $recalculatePaymentStatus,
     ) {}
 
     public function execute(Order $order, User $user, AddOrderItemData $data): OrderItem
@@ -70,6 +72,7 @@ class AddOrderItem
             ])->save();
 
             $this->recalculateTotals->execute($order);
+            $this->recalculatePaymentStatus->execute($order);
 
             return $item;
         });

@@ -4,6 +4,7 @@ use App\Actions\Organizations\AssignOrganizationOwner;
 use App\Actions\Organizations\CreateDefaultOrganizationRoles;
 use App\Domain\Authorization\OrganizationAuthorization;
 use App\Domain\Subscription\SubscriptionAccess;
+use App\Enums\DiscountType;
 use App\Enums\OrganizationRole;
 use App\Enums\PaymentMethod;
 use App\Filament\Admin\Pages\TelegramSettings;
@@ -222,7 +223,10 @@ it('sends an Uzbek payment message to the organization group and marks delivery'
         'display_number' => '#0042',
         'customer_name' => 'Muhammadjon Olcha',
         'subtotal' => 100000,
-        'total' => 100000,
+        'discount_type' => DiscountType::Percentage,
+        'discount_value' => 10,
+        'discount_amount' => 10000,
+        'total' => 90000,
     ]);
     OrderItem::factory()->for($organization)->for($store)->for($order)->for($cashier, 'creator')->create([
         'product_name' => 'Sinov lavash',
@@ -246,12 +250,14 @@ it('sends an Uzbek payment message to the organization group and marks delivery'
         && str_contains($request['text'], '🏪 Do‘kon: Chilonzor')
         && str_contains($request['text'], '👤 Mijoz: Muhammadjon Olcha')
         && str_contains($request['text'], '🧑‍💼 Kassir: Ali Kassir')
-        && str_contains($request['text'], '💰 Summasi: 100 000 so‘m')
+        && str_contains($request['text'], '💰 Summasi: 90 000 so‘m')
+        && str_contains($request['text'], '🏷 Chegirma: 10% (−10 000 so‘m)')
+        && str_contains($request['text'], '💰 Chegirmadan oldin: 100 000 so‘m')
         && str_contains($request['text'], '🍽 Buyurtma turi: Olib ketish')
         && str_contains($request['text'], '💳 To‘lov turi: Karta')
         && str_contains($request['text'], "Sinov lavash\n2 x 50 000 = 100 000 so‘m")
         && str_contains($request['text'], 'Jami mahsulotlar: 2 dona')
-        && str_contains($request['text'], 'JAMI SUMMA: 100 000 so‘m')
+        && str_contains($request['text'], 'JAMI SUMMA: 90 000 so‘m')
         && str_contains($request['text'], '💵 To‘langan: 40 000 so‘m')
         && str_contains($request['text'], '⏰ Sana:'));
     expect($payment->refresh()->telegram_notified_at)->not->toBeNull();

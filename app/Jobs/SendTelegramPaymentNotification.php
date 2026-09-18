@@ -116,6 +116,14 @@ class SendTelegramPaymentNotification implements ShouldQueue
                 '💳 Karta: '.$formatMoney($mixedPayment->amount),
             ]
             : ["💳 To‘lov turi: {$payment->method->getLabel()}"];
+        $discountLines = $payment->order->discount_amount > 0
+            ? [
+                '🏷 Chegirma: '.($payment->order->discount_type?->value === 'PERCENTAGE'
+                    ? "{$payment->order->discount_value}% (−{$formatMoney($payment->order->discount_amount)})"
+                    : '−'.$formatMoney($payment->order->discount_amount)),
+                '💰 Chegirmadan oldin: '.$formatMoney($payment->order->subtotal + $payment->order->delivery_fee),
+            ]
+            : [];
 
         return implode("\n", [
             '🧾 Yangi sotuv!',
@@ -124,6 +132,7 @@ class SendTelegramPaymentNotification implements ShouldQueue
             "👤 Mijoz: {$customer}",
             "🧑‍💼 Kassir: {$payment->creator->name}",
             '💰 Summasi: '.$formatMoney($payment->order->total),
+            ...$discountLines,
             "🍽 Buyurtma turi: {$payment->order->type->getLabel()}",
             ...$paymentLines,
             '📦 Mahsulotlar:',

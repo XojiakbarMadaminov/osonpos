@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue';
 import OrderItemRemovalModal from '../components/orders/OrderItemRemovalModal.vue';
 import OrderItemsViewModal from '../components/orders/OrderItemsViewModal.vue';
+import OrderTableMoveModal from '../components/orders/OrderTableMoveModal.vue';
 import { apiService, type CreatedOrder } from '../services/api';
 import { KitchenPrintService } from '../services/kitchen-print';
 import { KitchenRemovalPrintService } from '../services/kitchen-removal-print';
@@ -10,6 +11,7 @@ import { printerService } from '../services/printer';
 import { ReceiptPrintService } from '../services/receipt-print';
 import { useAuthStore } from '../stores/auth';
 import { useCartStore } from '../stores/cart';
+import { useContextStore } from '../stores/context';
 import { useOrderStore } from '../stores/order';
 import { formatMoney } from '../utils/money';
 import { generateUlid } from '../utils/ulid';
@@ -21,8 +23,11 @@ const busyOrderId = ref('');
 const selectedStatus = ref<OrderStatusFilter>('OPEN');
 const removalOrder = ref<CreatedOrder | null>(null);
 const viewOrder = ref<CreatedOrder | null>(null);
+const movingOrder = ref<CreatedOrder | null>(null);
+const moveError = ref('');
 const auth = useAuthStore();
 const cart = useCartStore();
+const context = useContextStore();
 const orderStore = useOrderStore();
 const filteredOrders = computed(() => filterOrdersByStatus(orders.value, selectedStatus.value));
 
@@ -57,6 +62,37 @@ async function openView(order: CreatedOrder): Promise<void> {
         viewOrder.value = await apiService.order(order.id);
     } catch (exception) {
         error.value = exception instanceof Error ? exception.message : 'Buyurtma tafsilotlarini yuklab bo‘lmadi.';
+    } finally {
+        busyOrderId.value = '';
+    }
+}
+
+async function openMove(order: CreatedOrder): Promise<void> {
+    busyOrderId.value = order.id;
+    error.value = '';
+    moveError.value = '';
+    try {
+        context.hydrate(await apiService.bootstrap());
+        movingOrder.value = order;
+    } catch (exception) {
+        error.value = exception instanceof Error ? exception.message : 'Bo‘sh stollarni yuklab bo‘lmadi.';
+    } finally {
+        busyOrderId.value = '';
+    }
+}
+
+async function moveTable(tableId: number): Promise<void> {
+    if (!movingOrder.value) return;
+    const orderId = movingOrder.value.id;
+    busyOrderId.value = orderId;
+    moveError.value = '';
+    try {
+        const updated = await apiService.moveOrderTable(orderId, tableId);
+        replaceOrder(updated);
+        context.hydrate(await apiService.bootstrap());
+        movingOrder.value = null;
+    } catch (exception) {
+        moveError.value = exception instanceof Error ? exception.message : 'Buyurtmani boshqa stolga ko‘chirib bo‘lmadi.';
     } finally {
         busyOrderId.value = '';
     }
@@ -166,10 +202,15 @@ onMounted(async () => {
                     <span v-if="order.type === 'DINE_IN'" class="ml-2 rounded-md bg-amber-400/15 px-2 py-1 font-medium text-amber-300">Stol {{ order.table?.number ?? order.table_id }}</span>
                 </p>
                 <p class="mt-4 text-lg font-semibold">{{ formatMoney(order.total) }} UZS</p>
+                <p v-if="order.discount_amount > 0" class="mt-1 text-sm font-medium text-emerald-400">
+                    Chegirma: −{{ formatMoney(order.discount_amount) }} UZS
+                    <span v-if="order.discount_type === 'PERCENTAGE'">({{ order.discount_value }}%)</span>
+                </p>
                 <div class="mt-4 grid grid-cols-2 gap-2">
                     <!-- Actions for OPEN orders -->
                     <button v-if="order.status === 'OPEN'" class="min-h-11 rounded-lg bg-amber-400 text-sm font-semibold text-slate-950" type="button" @click="addProducts(order)">Mahsulot qo‘shish</button>
                     <button v-if="order.status === 'OPEN'" class="min-h-11 rounded-lg border border-red-400 text-sm font-semibold text-red-300" :disabled="busyOrderId === order.id" type="button" @click="openRemoval(order)">Mahsulot ayirish</button>
+                    <button v-if="order.status === 'OPEN' && order.type === 'DINE_IN' && auth.can('orders.update')" class="col-span-2 min-h-11 rounded-lg border border-amber-400 text-sm font-semibold text-amber-300" :disabled="busyOrderId === order.id" type="button" @click="openMove(order)">Stolni ko‘chirish</button>
                     <button v-if="order.status === 'OPEN' && auth.can('payments.create')" class="col-span-2 min-h-11 rounded-lg bg-emerald-500 text-sm font-semibold text-slate-950" type="button" @click="openPayment(order)">{{ order.balance_due > 0 ? 'To‘lov / yopish' : 'Buyurtmani yopish' }}</button>
                     <button v-if="order.pending_item_removals_count > 0" class="col-span-2 min-h-11 rounded-lg border border-red-400 text-sm text-red-300" :disabled="busyOrderId === order.id" type="button" @click="printKitchenRemovals(order)">Ayirilganlarni chop etish ({{ order.pending_item_removals_count }})</button>
                     <button v-if="order.status === 'OPEN' && order.unprinted_items_count > 0" class="min-h-11 rounded-lg border border-slate-700 text-sm" :class="{ 'col-span-2': !auth.can('orders.reprint') || order.payment_status === 'PAID' }" :disabled="busyOrderId === order.id" type="button" @click="printKitchen(order)">Chiqmaganlari ({{ order.unprinted_items_count }})</button>
@@ -194,6 +235,15 @@ onMounted(async () => {
             v-if="viewOrder"
             :order="viewOrder"
             @close="viewOrder = null"
+        />
+        <OrderTableMoveModal
+            v-if="movingOrder && context.bootstrap"
+            :order="movingOrder"
+            :tables="context.bootstrap.tables"
+            :busy="busyOrderId === movingOrder.id"
+            :error="moveError"
+            @close="movingOrder = null"
+            @submit="moveTable"
         />
     </section>
 </template>

@@ -21,7 +21,12 @@ use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
@@ -85,11 +90,11 @@ class ShiftResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            \Filament\Schemas\Components\Grid::make(3)->schema([
-                \Filament\Schemas\Components\Group::make()->schema([
-                    \Filament\Schemas\Components\Section::make('Asosiy ma\'lumotlar')
+            Grid::make(3)->schema([
+                Group::make()->schema([
+                    Section::make('Asosiy ma\'lumotlar')
                         ->schema([
-                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                            Grid::make(2)->schema([
                                 TextEntry::make('status')->label('Holati')->badge(),
                                 TextEntry::make('store.name')->label('Filial')->icon('heroicon-m-building-storefront'),
                                 TextEntry::make('user.name')->label('Kassir')->icon('heroicon-m-user'),
@@ -98,21 +103,21 @@ class ShiftResource extends Resource
                                 TextEntry::make('closed_at')->label('Yopilgan vaqt')->dateTime()->placeholder('Ochiq'),
                             ]),
                         ]),
-                    \Filament\Schemas\Components\Section::make('Savdo turlari bo\'yicha')
+                    Section::make('Savdo turlari bo\'yicha')
                         ->schema([
-                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                            Grid::make(2)->schema([
                                 TextEntry::make('cash_payments_total')->label('Naqd')->state(fn (Shift $record): int => $record->cashPaymentsTotal())->money('UZS', divideBy: 1, decimalPlaces: 0),
                                 TextEntry::make('card_payments_total')->label('Karta (Terminal)')->state(fn (Shift $record): int => $record->paymentTotal(PaymentMethod::Card))->money('UZS', divideBy: 1, decimalPlaces: 0),
                                 TextEntry::make('payments_total')->label('Barcha to‘lovlar')->money('UZS', divideBy: 1, decimalPlaces: 0)
-                                    ->size(\Filament\Support\Enums\TextSize::Large)
-                                    ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                    ->size(TextSize::Large)
+                                    ->weight(FontWeight::Bold)
                                     ->columnSpanFull(),
                             ]),
                         ]),
                 ])->columnSpan(['default' => 3, 'md' => 2]),
 
-                \Filament\Schemas\Components\Group::make()->schema([
-                    \Filament\Schemas\Components\Section::make('Smena moliya xulosasi')
+                Group::make()->schema([
+                    Section::make('Smena moliya xulosasi')
                         ->schema([
                             TextEntry::make('opening_cash')->label('Ochilishdagi naqd pul')->money('UZS', divideBy: 1, decimalPlaces: 0),
                             TextEntry::make('payments_total')->label('Umumiy savdo (+)')
@@ -120,8 +125,8 @@ class ShiftResource extends Resource
                                 ->money('UZS', divideBy: 1, decimalPlaces: 0),
                             TextEntry::make('expected_total')->label('Kutilayotgan umumiy summa')
                                 ->state(fn (Shift $record): int => $record->opening_cash + $record->paymentTotal(PaymentMethod::Cash) + $record->paymentTotal(PaymentMethod::Card))
-                                ->size(\Filament\Support\Enums\TextSize::Large)
-                                ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                ->size(TextSize::Large)
+                                ->weight(FontWeight::Bold)
                                 ->money('UZS', divideBy: 1, decimalPlaces: 0),
                             TextEntry::make('closing_cash')->label('Yopilishdagi haqiqiy naqd pul')
                                 ->money('UZS', divideBy: 1, decimalPlaces: 0)

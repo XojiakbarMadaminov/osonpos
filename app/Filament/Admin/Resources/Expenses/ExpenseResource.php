@@ -23,7 +23,12 @@ use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
@@ -144,11 +149,11 @@ class ExpenseResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            \Filament\Schemas\Components\Grid::make(3)->schema([
-                \Filament\Schemas\Components\Group::make()->schema([
-                    \Filament\Schemas\Components\Section::make('Chiqim tafsilotlari')
+            Grid::make(3)->schema([
+                Group::make()->schema([
+                    Section::make('Chiqim tafsilotlari')
                         ->schema([
-                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                            Grid::make(2)->schema([
                                 TextEntry::make('status')->label('Holati')->badge(),
                                 TextEntry::make('type')->label('Chiqim turi')->badge(),
                                 TextEntry::make('store.name')->label('Filial')->icon('heroicon-m-building-storefront'),
@@ -157,23 +162,23 @@ class ExpenseResource extends Resource
                                 TextEntry::make('description')->label('Sababi')->placeholder('—')->columnSpanFull(),
                             ]),
                         ]),
-                    \Filament\Schemas\Components\Section::make('Bekor qilinganligi haqida ma\'lumot')
+                    Section::make('Bekor qilinganligi haqida ma\'lumot')
                         ->schema([
-                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                            Grid::make(2)->schema([
                                 TextEntry::make('canceller.name')->label('Bekor qilgan foydalanuvchi')->icon('heroicon-m-user')->placeholder('—'),
                                 TextEntry::make('cancelled_at')->label('Bekor qilingan vaqt')->dateTime()->placeholder('—'),
                                 TextEntry::make('cancellation_reason')->label('Bekor qilish sababi')->placeholder('—')->columnSpanFull(),
-                            ])
+                            ]),
                         ])
                         ->visible(fn (Expense $record): bool => $record->status === ExpenseStatus::Cancelled),
                 ])->columnSpan(['default' => 3, 'md' => 2]),
 
-                \Filament\Schemas\Components\Group::make()->schema([
-                    \Filament\Schemas\Components\Section::make('Moliya')
+                Group::make()->schema([
+                    Section::make('Moliya')
                         ->schema([
                             TextEntry::make('amount')->label('Summa')
-                                ->size(\Filament\Support\Enums\TextSize::Large)
-                                ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                ->size(TextSize::Large)
+                                ->weight(FontWeight::Bold)
                                 ->money('UZS', divideBy: 1, decimalPlaces: 0)
                                 ->color(fn (Expense $record) => $record->status === ExpenseStatus::Cancelled ? 'gray' : 'danger'),
                         ]),

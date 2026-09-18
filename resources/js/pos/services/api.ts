@@ -1,5 +1,6 @@
 import type { CartItem } from '../stores/cart';
 import type { OrderType, PosBootstrap } from '../types/bootstrap';
+import type { DiscountType } from './discount';
 import { deviceIdentityService, type DeviceIdentityService } from './device-identity';
 
 export interface RegisteredDevice {
@@ -97,6 +98,9 @@ export interface CreatedOrder {
     customer: CustomerSummary | null;
     subtotal: number;
     delivery_fee: number;
+    discount_type: DiscountType | null;
+    discount_value: number | null;
+    discount_amount: number;
     total: number;
     paid_amount: number;
     balance_due: number;
@@ -209,6 +213,32 @@ export class ApiService {
 
     async removeOrderCustomer(orderId: string): Promise<CreatedOrder> {
         const response = await this.jsonRequest(`/api/pos/orders/${orderId}/customer`, 'DELETE');
+        const payload = (await response.json()) as { data: CreatedOrder };
+
+        return payload.data;
+    }
+
+    async setOrderDiscount(orderId: string, discountType: DiscountType, discountValue: number): Promise<CreatedOrder> {
+        const response = await this.jsonRequest(`/api/pos/orders/${orderId}/discount`, 'PUT', {
+            discount_type: discountType,
+            discount_value: discountValue,
+        });
+        const payload = (await response.json()) as { data: CreatedOrder };
+
+        return payload.data;
+    }
+
+    async removeOrderDiscount(orderId: string): Promise<CreatedOrder> {
+        const response = await this.jsonRequest(`/api/pos/orders/${orderId}/discount`, 'DELETE');
+        const payload = (await response.json()) as { data: CreatedOrder };
+
+        return payload.data;
+    }
+
+    async moveOrderTable(orderId: string, tableId: number): Promise<CreatedOrder> {
+        const response = await this.jsonRequest(`/api/pos/orders/${orderId}/table`, 'PATCH', {
+            table_id: tableId,
+        });
         const payload = (await response.json()) as { data: CreatedOrder };
 
         return payload.data;

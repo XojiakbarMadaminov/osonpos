@@ -979,6 +979,9 @@ status
 payment_status
 subtotal
 delivery_fee
+discount_type nullable
+discount_value nullable
+discount_amount default 0
 total
 note nullable
 created_by
@@ -994,6 +997,8 @@ Money `float` sifatida saqlanmasin.
 UZS uchun integer amount ishlatiladi.
 
 Barcha user-facing pul qiymatlari kasr qismisiz va mingliklar bo‘sh joy bilan ajratilgan holda ko‘rsatiladi: `40 000`, `1 000 000`. `.00` yoki `,00` chiqarilmaydi. Bu qoida admin, platform, POS, hisobot va chop hujjatlariga bir xil qo‘llanadi.
+
+To‘lov sahifasida ochiq buyurtmaga ixtiyoriy `PERCENTAGE` yoki `FIXED` chegirma qo‘llanadi. Foiz butun `1–100`, summa esa integer UZS bo‘ladi. Chegirma faqat mahsulotlar `subtotal` qiymatiga qo‘llanadi, delivery fee kamaymaydi. `discount_value` kassir kiritgan qiymatni, `discount_amount` esa buyurtma uchun hisoblangan tarixiy UZS summani saqlaydi. Chegirmadan keyingi `total` mavjud paymentlar yig‘indisidan kam bo‘lishi mumkin emas.
 
 `customer_name` va `customer_phone` buyurtma yaratilganda yoki ochiq buyurtmaga mijoz biriktirilganda snapshot sifatida saqlanadi. Mijoz profili keyin o‘zgarsa ham tarixiy buyurtma va mijoz cheki o‘zgarmaydi. Mijozni ochiq buyurtmadan olib tashlash customer yozuvini o‘chirmaydi.
 
@@ -1231,6 +1236,8 @@ Ichki enum va tarixiy ma'lumotlarda ushbu qiymatlar barqaror qoladi. MVP POS to�
 - Karta (`CARD`)
 - Naqd + Karta — bitta atomik aralash to‘lov amali
 
+Naqd yoki Karta tanlanganda POS alohida payment amount input ko‘rsatmaydi va buyurtmaning `remaining` summasini to‘liq qabul qiladi. Kassir to‘lanadigan yakuniy summani chegirma xulosasidagi `To‘lanadi` qiymatida ko‘radi. Summani bo‘lib kiritish faqat `Naqd + Karta` rejimida mavjud.
+
 Aralash to‘lov tanlanganda naqd va karta uchun ikkita integer UZS input ko‘rsatiladi. Kassir bir inputni o‘zgartirsa, ikkinchisi orderning qolgan summasiga avtomatik tenglashtiriladi. Ikkala summa musbat bo‘lishi va ularning yig‘indisi order qoldig‘iga aynan teng bo‘lishi shart. Ikkala payment ULID bilan bitta DB transaction ichida idempotent saqlanadi.
 
 Aralash to‘lov Telegram'ga ikkita alohida xabar sifatida emas, bitta `Naqd + Karta` sotuv xabari sifatida yuboriladi. Xabarda naqd va karta summalari alohida ko‘rsatiladi.
@@ -1247,6 +1254,16 @@ Architecture split/mixed payment'ga tayyor.
 paid_amount = SUM(payments.amount)
 remaining = order.total - paid_amount
 ```
+
+Chegirma mavjud bo‘lsa:
+
+```text
+percentage_discount = FLOOR(subtotal * discount_value / 100)
+fixed_discount = discount_value
+total = subtotal - discount_amount + delivery_fee
+```
+
+Chegirma turi, qiymati va summasi POS buyurtmalarida, admin buyurtma tafsilotida, Telegram payment notification hamda mijoz chekida ko‘rsatiladi.
 
 Payment status:
 
@@ -1274,9 +1291,9 @@ Status payment transaction bilan bir DB transaction ichida yangilanishi kerak.
 - Har bir yangi payment uchun alohida xabar yuboriladi; idempotent payment replay yangi xabar yaratmaydi.
 - Xabar yuborish queue orqali payment transaction yakunlangandan keyin bajariladi.
 - Telegram yoki queue xatosi saqlangan payment va order payment statusini rollback qilmaydi.
-- Xabarda sotuv raqami, filial, mijoz, kassir, buyurtma turi, to‘lov turi, qolgan mahsulotlar kesimi, jami mahsulot soni, buyurtma summasi, jami to‘langan summa va filial vaqt zonasidagi sana o‘zbekcha ko‘rsatiladi.
+- Xabarda sotuv raqami, filial, mijoz, kassir, buyurtma turi, to‘lov turi, chegirma mavjud bo‘lsa uning turi va summasi, qolgan mahsulotlar kesimi, jami mahsulot soni, buyurtma summasi, jami to‘langan summa va filial vaqt zonasidagi sana o‘zbekcha ko‘rsatiladi.
 - Har bir faol filial uchun filial vaqt zonasida soat `00:05` da avvalgi to‘liq calendar kun bo‘yicha alohida kunlik hisobot yuboriladi.
-- Kunlik hisobot sotuvlar, bekor qilingan buyurtmalar, mahsulotlar soni, savdo, chiqimlar, taxminiy yalpi foyda, o‘rtacha chek, to‘lov va buyurtma turlari taqsimoti, top-5 mahsulot hamda smena holatini ko‘rsatadi.
+- Kunlik hisobot sotuvlar, bekor qilingan buyurtmalar, mahsulotlar soni, savdo, chiqimlar, taxminiy yalpi foyda, o‘rtacha chek, umumiy chegirma summasi, chegirmali buyurtmalar soni, to‘lov va buyurtma turlari taqsimoti, top-5 mahsulot hamda smena holatini ko‘rsatadi.
 - `(store_id, business_date)` yagona yozuvi va unique queue job bir filialning bir kunlik hisobotini qayta yuborilishidan himoya qiladi.
 
 ---

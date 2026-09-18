@@ -117,6 +117,39 @@ it('ranks top products by sold quantity', function () {
     ]);
 });
 
+it('sums discounts and counts discounted completed orders inside report boundaries', function () {
+    $organization = Organization::factory()->create();
+    $firstStore = Store::factory()->for($organization)->create();
+    $secondStore = Store::factory()->for($organization)->create();
+    $foreignOrganization = Organization::factory()->create();
+    $foreignStore = Store::factory()->for($foreignOrganization)->create();
+    $user = User::factory()->create();
+    $discounted = completedSale($organization, $firstStore, $user, 90000, PaymentMethod::Cash, OrderType::DineIn, 'Chegirmali', 1);
+    $discounted->forceFill([
+        'subtotal' => 100000,
+        'discount_type' => 'PERCENTAGE',
+        'discount_value' => 10,
+        'discount_amount' => 10000,
+    ])->save();
+    completedSale($organization, $firstStore, $user, 30000, PaymentMethod::Card, OrderType::Takeaway, 'Oddiy', 1);
+    completedSale($organization, $secondStore, $user, 45000, PaymentMethod::Cash, OrderType::Takeaway, 'Boshqa filial', 1)
+        ->forceFill(['discount_type' => 'FIXED', 'discount_value' => 5000, 'discount_amount' => 5000])
+        ->save();
+    completedSale($foreignOrganization, $foreignStore, $user, 800000, PaymentMethod::Cash, OrderType::Takeaway, 'Begona', 1)
+        ->forceFill(['discount_type' => 'FIXED', 'discount_value' => 200000, 'discount_amount' => 200000])
+        ->save();
+
+    $report = app(SalesReport::class)->generate(
+        $organization,
+        CarbonImmutable::now()->subDay(),
+        CarbonImmutable::now()->addDay(),
+        [$firstStore->id],
+    );
+
+    expect($report['discount_total'])->toBe(10000)
+        ->and($report['discounted_order_count'])->toBe(1);
+});
+
 it('subtracts removed quantities from product revenue cost and profit', function () {
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create();
@@ -217,17 +250,26 @@ it('allows a manager with reports permission to open bounded reports', function 
         $organization,
         fn (User $user) => $user->assignRole(OrganizationRole::Manager->value),
     );
-    completedSale($organization, $store, $manager, 100000, PaymentMethod::Cash, OrderType::Takeaway, 'Format mahsuloti', 1);
+    $order = completedSale($organization, $store, $manager, 90000, PaymentMethod::Cash, OrderType::Takeaway, 'Format mahsuloti', 1);
+    $order->forceFill([
+        'subtotal' => 100000,
+        'discount_type' => 'PERCENTAGE',
+        'discount_value' => 10,
+        'discount_amount' => 10000,
+    ])->save();
 
     $this->actingAs($manager)
         ->withSession(['current_organization_id' => $organization->id, 'current_store_id' => $store->id])
         ->get('/admin/reports')
         ->assertOk()
-        ->assertSee('100 000 UZS')
-        ->assertDontSee('100,000')
+        ->assertSee('90 000 UZS')
+        ->assertSee('10 000 UZS')
+        ->assertDontSee('90,000')
         ->assertDontSee('Sotilgan mahsulotlar tannarxi')
         ->assertSee('Taxminiy yalpi foyda')
         ->assertSee('O‘rtacha chek')
+        ->assertSee('Umumiy chegirma')
+        ->assertSee('Chegirmali buyurtmalar')
         ->assertSee('Chiqimlar')
         ->assertSee('Chiqim turlari bo‘yicha');
 });

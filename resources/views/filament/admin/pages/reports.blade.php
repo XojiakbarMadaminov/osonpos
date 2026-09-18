@@ -23,6 +23,8 @@
             <x-filament::section heading="Chiqimlar"><div class="text-2xl font-semibold">{{ $formatNumber($report['expense_total']) }} UZS</div></x-filament::section>
             <x-filament::section heading="Buyurtmalar"><div class="text-2xl font-semibold">{{ $formatNumber($report['order_count']) }}</div></x-filament::section>
             <x-filament::section heading="O‘rtacha chek"><div class="text-2xl font-semibold">{{ $formatNumber($report['average_check']) }} UZS</div></x-filament::section>
+            <x-filament::section heading="Umumiy chegirma"><div class="text-2xl font-semibold">{{ $formatNumber($report['discount_total']) }} UZS</div></x-filament::section>
+            <x-filament::section heading="Chegirmali buyurtmalar"><div class="text-2xl font-semibold">{{ $formatNumber($report['discounted_order_count']) }}</div></x-filament::section>
         </div>
 
         <div class="grid gap-6 lg:grid-cols-3">

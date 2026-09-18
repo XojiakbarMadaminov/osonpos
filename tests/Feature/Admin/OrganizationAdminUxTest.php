@@ -5,6 +5,7 @@ use App\Actions\Organizations\CreateDefaultOrganizationRoles;
 use App\Actions\Organizations\SaveOrganizationUser;
 use App\Domain\Authorization\OrganizationAuthorization;
 use App\Enums\AdminNavigationGroup;
+use App\Enums\DiscountType;
 use App\Enums\OrganizationRole;
 use App\Filament\Admin\Pages\Reports;
 use App\Filament\Admin\Resources\Categories\CategoryResource;
@@ -133,7 +134,10 @@ it('shows original removed and remaining product quantities in order details', f
     $owner = adminOwner($organization, $store);
     $order = Order::factory()->for($organization)->for($store)->for($owner, 'creator')->create([
         'subtotal' => 20000,
-        'total' => 20000,
+        'discount_type' => DiscountType::Percentage,
+        'discount_value' => 10,
+        'discount_amount' => 2000,
+        'total' => 18000,
     ]);
     $item = OrderItem::factory()->for($organization)->for($store)->for($order)->for($owner, 'creator')->create([
         'product_name' => 'Sinov lavash',
@@ -154,7 +158,10 @@ it('shows original removed and remaining product quantities in order details', f
         ->assertSee('Sinov lavash')
         ->assertSee('Dastlabki miqdor')
         ->assertSee('Ayirilgan')
-        ->assertSee('Qolgan miqdor');
+        ->assertSee('Qolgan miqdor')
+        ->assertSee('Chegirma turi')
+        ->assertSee('Foiz (10%)')
+        ->assertSee('Chegirma');
 });
 
 it('limits store-owned admin listings to stores assigned to a manager', function () {

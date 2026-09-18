@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domain\Organization\Concerns\BelongsToTenant;
 use App\Domain\Store\Concerns\BelongsToStore;
+use App\Enums\DiscountType;
 use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Enums\PaymentStatus;
@@ -108,6 +109,9 @@ class Order extends Model
             'type' => OrderType::class,
             'status' => OrderStatus::class,
             'payment_status' => PaymentStatus::class,
+            'discount_type' => DiscountType::class,
+            'discount_value' => 'integer',
+            'discount_amount' => 'integer',
             'subtotal' => 'integer',
             'delivery_fee' => 'integer',
             'total' => 'integer',

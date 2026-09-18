@@ -3,6 +3,8 @@
 namespace App\Filament\Admin\Resources\Orders;
 
 use App\Enums\AdminNavigationGroup;
+use App\Enums\DiscountType;
+use App\Enums\OrderType;
 use App\Filament\Admin\Resources\Orders\Pages\ListOrders;
 use App\Filament\Admin\Resources\Orders\Pages\ViewOrder;
 use App\Filament\Admin\Support\DatePeriodFilter;
@@ -14,7 +16,12 @@ use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;
@@ -45,6 +52,10 @@ class OrderResource extends Resource
                 TextColumn::make('type')->badge(),
                 TextColumn::make('status')->badge(),
                 TextColumn::make('payment_status')->badge(),
+                TextColumn::make('discount_amount')
+                    ->label('Chegirma')
+                    ->money('UZS', divideBy: 1, decimalPlaces: 0)
+                    ->toggleable(),
                 TextColumn::make('total')->money('UZS', divideBy: 1, decimalPlaces: 0)->sortable(),
                 TextColumn::make('opened_at')->dateTime()->sortable(),
             ])
@@ -59,15 +70,15 @@ class OrderResource extends Resource
     public static function infolist(Schema $schema): Schema
     {
         return $schema->components([
-            \Filament\Schemas\Components\Grid::make(3)->schema([
-                \Filament\Schemas\Components\Group::make()->schema([
-                    \Filament\Schemas\Components\Section::make('Asosiy ma\'lumotlar')
+            Grid::make(3)->schema([
+                Group::make()->schema([
+                    Section::make('Asosiy ma\'lumotlar')
                         ->schema([
-                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                            Grid::make(2)->schema([
                                 TextEntry::make('display_number')
                                     ->label('Buyurtma raqami')
-                                    ->size(\Filament\Support\Enums\TextSize::Large)
-                                    ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                    ->size(TextSize::Large)
+                                    ->weight(FontWeight::Bold)
                                     ->copyable(),
                                 TextEntry::make('opened_at')->label('Ochilgan vaqt')->dateTime(),
                                 TextEntry::make('type')->label('Turi')->badge(),
@@ -75,9 +86,9 @@ class OrderResource extends Resource
                             ]),
                         ]),
 
-                    \Filament\Schemas\Components\Section::make('Mijoz va Filial')
+                    Section::make('Mijoz va Filial')
                         ->schema([
-                            \Filament\Schemas\Components\Grid::make(2)->schema([
+                            Grid::make(2)->schema([
                                 TextEntry::make('store.name')
                                     ->label('Filial')
                                     ->icon('heroicon-m-building-storefront'),
@@ -95,14 +106,14 @@ class OrderResource extends Resource
                                 TextEntry::make('deliveryDetail.address')
                                     ->label('Yetkazish manzili')
                                     ->icon('heroicon-m-map-pin')
-                                    ->visible(fn ($record) => $record->type === \App\Enums\OrderType::Delivery)
+                                    ->visible(fn ($record) => $record->type === OrderType::Delivery)
                                     ->columnSpanFull(),
                             ]),
                         ]),
                 ])->columnSpan(['default' => 3, 'md' => 2]),
 
-                \Filament\Schemas\Components\Group::make()->schema([
-                    \Filament\Schemas\Components\Section::make('Moliyaviy xulosa')
+                Group::make()->schema([
+                    Section::make('Moliyaviy xulosa')
                         ->schema([
                             TextEntry::make('payment_status')
                                 ->label('To\'lov holati')
@@ -113,10 +124,23 @@ class OrderResource extends Resource
                             TextEntry::make('delivery_fee')
                                 ->label('Yetkazib berish haqi')
                                 ->money('UZS', divideBy: 1, decimalPlaces: 0),
+                            TextEntry::make('discount_type')
+                                ->label('Chegirma turi')
+                                ->formatStateUsing(fn (?DiscountType $state, Order $record): string => match ($state) {
+                                    DiscountType::Percentage => "Foiz ({$record->discount_value}%)",
+                                    DiscountType::Fixed => 'Summa',
+                                    null => '—',
+                                })
+                                ->visible(fn (Order $record): bool => $record->discount_amount > 0),
+                            TextEntry::make('discount_amount')
+                                ->label('Chegirma')
+                                ->color('success')
+                                ->money('UZS', divideBy: 1, decimalPlaces: 0)
+                                ->visible(fn (Order $record): bool => $record->discount_amount > 0),
                             TextEntry::make('total')
                                 ->label('Jami summa')
-                                ->size(\Filament\Support\Enums\TextSize::Large)
-                                ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                ->size(TextSize::Large)
+                                ->weight(FontWeight::Bold)
                                 ->color('success')
                                 ->money('UZS', divideBy: 1, decimalPlaces: 0),
                             TextEntry::make('closed_at')->label('Yopilgan vaqt')->dateTime()->placeholder('—'),
@@ -124,13 +148,13 @@ class OrderResource extends Resource
                 ])->columnSpan(['default' => 3, 'md' => 1]),
             ])->columnSpanFull(),
 
-            \Filament\Schemas\Components\Section::make('Mahsulotlar')
+            Section::make('Mahsulotlar')
                 ->columnSpanFull()
                 ->schema([
                     RepeatableEntry::make('items')
                         ->hiddenLabel()
                         ->schema([
-                            TextEntry::make('product_name')->label('Nomi')->weight(\Filament\Support\Enums\FontWeight::SemiBold),
+                            TextEntry::make('product_name')->label('Nomi')->weight(FontWeight::SemiBold),
                             TextEntry::make('quantity')
                                 ->label('Dastlabki miqdor'),
                             TextEntry::make('removed_quantity')
@@ -146,13 +170,13 @@ class OrderResource extends Resource
                                 ->label('Jami')
                                 ->state(fn ($record): int => $record->remainingTotal())
                                 ->money('UZS', divideBy: 1, decimalPlaces: 0)
-                                ->weight(\Filament\Support\Enums\FontWeight::Bold),
+                                ->weight(FontWeight::Bold),
                         ])
                         ->columns(5)
                         ->columnSpanFull(),
                 ]),
 
-            \Filament\Schemas\Components\Section::make('Izoh')
+            Section::make('Izoh')
                 ->schema([
                     TextEntry::make('note')->hiddenLabel(),
                 ])

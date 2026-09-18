@@ -15,5 +15,5 @@ test('demo catalog contains ten categories with ten products each', function () 
         }
     }
 
-    expect(collect(DemoCatalogSeeder::CATALOG)->flatten())->toHaveCount(100);
+    expect(collect(DemoCatalogSeeder::CATALOG)->flatten(1))->toHaveCount(100);
 });

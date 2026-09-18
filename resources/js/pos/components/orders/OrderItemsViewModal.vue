@@ -42,9 +42,19 @@ const emit = defineEmits<{
                 <p v-else class="text-center text-slate-400 py-8">Mahsulotlar topilmadi.</p>
             </div>
             
-            <div class="border-t border-slate-800 bg-slate-800/50 p-5 flex justify-between items-center">
-                <span class="text-slate-400">Jami hisob:</span>
-                <span class="text-xl font-bold text-emerald-400">{{ formatMoney(order.total) }} UZS</span>
+            <div class="space-y-2 border-t border-slate-800 bg-slate-800/50 p-5">
+                <div class="flex items-center justify-between text-sm text-slate-400">
+                    <span>Oraliq jami</span>
+                    <span>{{ formatMoney(order.subtotal) }} UZS</span>
+                </div>
+                <div v-if="order.discount_amount > 0" class="flex items-center justify-between text-sm text-emerald-400">
+                    <span>Chegirma <template v-if="order.discount_type === 'PERCENTAGE'">({{ order.discount_value }}%)</template></span>
+                    <span>−{{ formatMoney(order.discount_amount) }} UZS</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Jami hisob:</span>
+                    <span class="text-xl font-bold text-emerald-400">{{ formatMoney(order.total) }} UZS</span>
+                </div>
             </div>
         </section>
     </div>

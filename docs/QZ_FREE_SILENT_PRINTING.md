@@ -45,6 +45,17 @@ storage/app/private/qz/
 `--force` parametrini oddiy deployda ishlatmang. U butun certificate authority’ni
 almashtiradi va avval o‘rnatilgan barcha kassalarni qayta sozlashni talab qiladi.
 
+Installer shabloni yangilanganda sertifikatlarni almashtirmasdan faqat yakuniy
+PowerShell faylini qayta yig‘ish uchun:
+
+```bash
+bash deploy/qz/prepare-free-signing.sh \
+  --app-dir /var/www/osonpos \
+  --pos-url https://pos.example.uz/pos/device-setup \
+  --company OsonPOS \
+  --rebuild-installer
+```
+
 ## 2. Production env
 
 ```dotenv

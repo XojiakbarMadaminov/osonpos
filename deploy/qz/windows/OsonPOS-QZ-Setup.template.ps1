@@ -115,18 +115,41 @@ try {
     }
     [IO.File]::WriteAllText($propertiesPath, $properties, [Text.UTF8Encoding]::new($false))
 
-    Write-Step "OsonPOS sertifikati barcha Windows foydalanuvchilari uchun ruxsat etilmoqda"
-    $whitelistOutput = & $qzConsole --whitelist $signingPath 2>&1 | Out-String
-    Add-Content -LiteralPath $logPath -Value $whitelistOutput
-    if ($LASTEXITCODE -ne 0) {
-        throw "QZ Tray whitelist sozlamasi bajarilmadi. Exit code: $LASTEXITCODE"
-    }
-
     $userAllowedPath = Join-Path $env:APPDATA 'qz\allowed.dat'
     $systemQzDirectory = Join-Path $env:ProgramData 'qz'
     $systemAllowedPath = Join-Path $systemQzDirectory 'allowed.dat'
+    $whitelistStdout = Join-Path $workDirectory 'qz-whitelist.stdout.log'
+    $whitelistStderr = Join-Path $workDirectory 'qz-whitelist.stderr.log'
+
+    Write-Step "OsonPOS sertifikati barcha Windows foydalanuvchilari uchun ruxsat etilmoqda"
+    $whitelistProcess = Start-Process -FilePath $qzConsole `
+        -ArgumentList @('--whitelist', ('"{0}"' -f $signingPath)) `
+        -RedirectStandardOutput $whitelistStdout `
+        -RedirectStandardError $whitelistStderr `
+        -PassThru
+
+    $whitelistDeadline = [DateTime]::UtcNow.AddSeconds(20)
+    while (-not (Test-Path -LiteralPath $userAllowedPath) -and
+        -not $whitelistProcess.HasExited -and
+        [DateTime]::UtcNow -lt $whitelistDeadline) {
+        Start-Sleep -Milliseconds 500
+        $whitelistProcess.Refresh()
+    }
+
+    Start-Sleep -Seconds 2
+    if (-not $whitelistProcess.HasExited) {
+        Stop-Process -Id $whitelistProcess.Id -Force -ErrorAction SilentlyContinue
+    }
+    Stop-QzTray
+
+    $whitelistOutput = @(
+        if (Test-Path -LiteralPath $whitelistStdout) { Get-Content -LiteralPath $whitelistStdout -Raw }
+        if (Test-Path -LiteralPath $whitelistStderr) { Get-Content -LiteralPath $whitelistStderr -Raw }
+    ) -join [Environment]::NewLine
+    Add-Content -LiteralPath $logPath -Value $whitelistOutput
+
     if (-not (Test-Path -LiteralPath $userAllowedPath)) {
-        throw 'QZ Tray allowed.dat faylini yaratmadi.'
+        throw "QZ Tray ruxsat faylini 20 soniya ichida yaratmadi. Log: $logPath"
     }
 
     New-Item -ItemType Directory -Path $systemQzDirectory -Force | Out-Null

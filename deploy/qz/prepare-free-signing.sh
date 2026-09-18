@@ -10,6 +10,7 @@ APP_DIR=""
 POS_SETUP_URL=""
 COMPANY_NAME="OsonPOS"
 FORCE=0
+REBUILD_INSTALLER=0
 
 usage() {
     cat <<'EOF'
@@ -17,7 +18,7 @@ Foydalanish:
   bash deploy/qz/prepare-free-signing.sh \
     --app-dir /var/www/osonpos \
     --pos-url https://pos.example.uz/pos/device-setup \
-    [--company OsonPOS] [--force]
+    [--company OsonPOS] [--rebuild-installer | --force]
 
 Natija:
   storage/app/private/qz/digital-certificate.txt
@@ -27,6 +28,9 @@ Natija:
 
 --force mavjud sertifikatlarni almashtiradi. Bunda oldingi installer o‘rnatilgan
 qurilmalar yangi installer bilan qayta sozlanmaguncha silent print ishlamaydi.
+
+--rebuild-installer mavjud sertifikatlarni o‘zgartirmasdan faqat Windows
+installerini yangidan yig‘adi.
 EOF
 }
 
@@ -48,6 +52,10 @@ while [[ $# -gt 0 ]]; do
             FORCE=1
             shift
             ;;
+        --rebuild-installer)
+            REBUILD_INSTALLER=1
+            shift
+            ;;
         -h|--help)
             usage
             exit 0
@@ -62,6 +70,11 @@ done
 
 if [[ -z "$APP_DIR" || -z "$POS_SETUP_URL" ]]; then
     usage >&2
+    exit 2
+fi
+
+if [[ "$FORCE" -eq 1 && "$REBUILD_INSTALLER" -eq 1 ]]; then
+    echo "--force va --rebuild-installer bir vaqtda ishlatilmaydi." >&2
     exit 2
 fi
 
@@ -91,11 +104,21 @@ SIGNING_CERT_ONLY="${OUTPUT_DIR}/signing-certificate.crt"
 DIGITAL_CERT="${OUTPUT_DIR}/digital-certificate.txt"
 INSTALLER_OUTPUT="${OUTPUT_DIR}/OsonPOS-QZ-Setup.ps1"
 
-if [[ -d "$OUTPUT_DIR" && "$FORCE" -ne 1 ]] &&
+if [[ -d "$OUTPUT_DIR" && "$FORCE" -ne 1 && "$REBUILD_INSTALLER" -ne 1 ]] &&
    [[ -e "$ROOT_KEY" || -e "$ROOT_CERT" || -e "$SIGNING_KEY" || -e "$DIGITAL_CERT" ]]; then
     echo "QZ sertifikatlari allaqachon mavjud. Ularni tasodifan almashtirmaslik uchun jarayon to'xtatildi." >&2
     echo "Ataylab yangilamoqchi bo'lsangiz --force parametridan foydalaning." >&2
     exit 1
+fi
+
+
+if [[ "$REBUILD_INSTALLER" -eq 1 ]]; then
+    for required_file in "$ROOT_CERT" "$SIGNING_KEY" "$SIGNING_CERT_ONLY" "$DIGITAL_CERT"; do
+        if [[ ! -f "$required_file" ]]; then
+            echo "Installer qayta yig‘ilmadi, fayl topilmadi: $required_file" >&2
+            exit 1
+        fi
+    done
 fi
 
 mkdir -p "$OUTPUT_DIR"
@@ -152,30 +175,34 @@ subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid,issuer
 EOF
 
-echo "QZ root sertifikati yaratilmoqda..."
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out "$ROOT_KEY"
-openssl req -x509 -new -sha256 -days 3650 \
-    -key "$ROOT_KEY" \
-    -out "$ROOT_CERT" \
-    -config "${WORK_DIR}/root.cnf"
+if [[ "$REBUILD_INSTALLER" -ne 1 ]]; then
+    echo "QZ root sertifikati yaratilmoqda..."
+    openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out "$ROOT_KEY"
+    openssl req -x509 -new -sha256 -days 3650 \
+        -key "$ROOT_KEY" \
+        -out "$ROOT_CERT" \
+        -config "${WORK_DIR}/root.cnf"
 
-echo "Server-side signing sertifikati yaratilmoqda..."
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$SIGNING_KEY"
-openssl req -new -sha256 \
-    -key "$SIGNING_KEY" \
-    -out "${WORK_DIR}/signing.csr" \
-    -config "${WORK_DIR}/signing.cnf"
-openssl x509 -req -sha256 -days 1825 \
-    -in "${WORK_DIR}/signing.csr" \
-    -CA "$ROOT_CERT" \
-    -CAkey "$ROOT_KEY" \
-    -CAcreateserial \
-    -out "$SIGNING_CERT_ONLY" \
-    -extfile "${WORK_DIR}/signing.ext"
+    echo "Server-side signing sertifikati yaratilmoqda..."
+    openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$SIGNING_KEY"
+    openssl req -new -sha256 \
+        -key "$SIGNING_KEY" \
+        -out "${WORK_DIR}/signing.csr" \
+        -config "${WORK_DIR}/signing.cnf"
+    openssl x509 -req -sha256 -days 1825 \
+        -in "${WORK_DIR}/signing.csr" \
+        -CA "$ROOT_CERT" \
+        -CAkey "$ROOT_KEY" \
+        -CAcreateserial \
+        -out "$SIGNING_CERT_ONLY" \
+        -extfile "${WORK_DIR}/signing.ext"
 
-cat "$SIGNING_CERT_ONLY" "$ROOT_CERT" >"$DIGITAL_CERT"
-chmod 600 "$ROOT_KEY" "$SIGNING_KEY"
-chmod 644 "$ROOT_CERT" "$SIGNING_CERT_ONLY" "$DIGITAL_CERT"
+    cat "$SIGNING_CERT_ONLY" "$ROOT_CERT" >"$DIGITAL_CERT"
+    chmod 600 "$ROOT_KEY" "$SIGNING_KEY"
+    chmod 644 "$ROOT_CERT" "$SIGNING_CERT_ONLY" "$DIGITAL_CERT"
+else
+    echo "Mavjud sertifikatlardan Windows installer qayta yig‘ilmoqda..."
+fi
 
 root_b64="$(base64 -w 0 "$ROOT_CERT")"
 signing_b64="$(base64 -w 0 "$DIGITAL_CERT")"

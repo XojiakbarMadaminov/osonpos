@@ -786,6 +786,19 @@ Organization admin uchun alohida bo‘sh dashboard mavjud emas. `/admin` foydala
 
 `/admin/orders`, `/admin/expenses` va `/admin/shifts` jadvallari ustida yagona davr filtri bo‘ladi: Bugun, Hafta, Oy va Oraliq. Standart qiymat Bugun. Hafta joriy kalendar haftasini, Oy joriy kalendar oyini, Oraliq esa foydalanuvchi kiritgan inclusive boshlanish va tugash sanalarini qo‘llaydi. Davr filtri tenant, store access va boshqa resource filterlarini chetlab o‘tmaydi.
 
+POS `Buyurtmalar` sahifasi joriy store biznes sanasidagi buyurtmalarga qo‘shimcha ravishda
+oldingi sanalardan ochiq qolgan barcha buyurtmalarni ham ko‘rsatadi. Eski ochiq buyurtmalar
+ro‘yxat boshida turadi, shunda ular yakunlanishi yoki bekor qilinishi va qurilma smenasi
+xavfsiz yopilishi mumkin. `orders.cancel` ruxsati bor foydalanuvchi ochiq buyurtma kartasidagi
+tasdiqlash talab qiluvchi amal orqali buyurtmani bekor qila oladi.
+Joriy store biznes sanasiga tegishli bo‘lmagan ochiq buyurtma kartasida uning ochilgan sana
+va vaqti alohida ogohlantiruvchi satrda ko‘rsatiladi; bugungi ochiq buyurtmalarda bu satr chiqmaydi.
+
+POS yuqori panelida joriy kassir uchun `Chiqish` amali mavjud. Kassir faqat o‘zining joriy
+qurilmada ochiq smenasi bo‘lmaganda chiqishi mumkin. Logout foydalanuvchi sessiyasini tugatadi,
+lekin brauzerning qurilma aktivatsiyasini saqlab qoladi; keyingi kassir o‘z akkaunti bilan kirgach
+shu qurilmada qayta aktivatsiyasiz ishlaydi.
+
 `/admin/orders`, `/admin/expenses`, `/admin/shifts`, `/admin/tables`, `/admin/devices` va `/admin/printers` sahifalari faqat profil menyusida tanlangan faol filial ma’lumotlarini ko‘rsatadi. Bu jadvallarda alohida filial filtri bo‘lmaydi. Boshqa filial ma’lumotlarini ko‘rish yoki boshqarish uchun user profil menyusidan faol filialni almashtiradi. Yangi chiqim, stol, qurilma va printer ham backend tomonidan faqat faol filialga biriktiriladi.
 
 ---

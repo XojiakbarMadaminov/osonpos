@@ -31,6 +31,20 @@ const context = useContextStore();
 const orderStore = useOrderStore();
 const filteredOrders = computed(() => filterOrdersByStatus(orders.value, selectedStatus.value));
 
+function formatOpenedAt(value?: string): string {
+    if (!value) return '—';
+
+    return new Intl.DateTimeFormat('uz-UZ', {
+        timeZone: context.bootstrap?.store.timezone ?? 'Asia/Tashkent',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).format(new Date(value)).replace(',', '');
+}
+
 function addProducts(order: CreatedOrder): void {
     cart.clear();
     orderStore.openExisting(order);
@@ -101,6 +115,20 @@ async function moveTable(tableId: number): Promise<void> {
 function replaceOrder(updated: CreatedOrder): void {
     const index = orders.value.findIndex((order) => order.id === updated.id);
     if (index >= 0) orders.value[index] = updated;
+}
+
+async function cancelOrder(order: CreatedOrder): Promise<void> {
+    if (!window.confirm(`${order.display_number} buyurtmani bekor qilmoqchimisiz? Bu amalni ortga qaytarib bo‘lmaydi.`)) return;
+
+    busyOrderId.value = order.id;
+    error.value = '';
+    try {
+        replaceOrder(await apiService.cancelOrder(order.id));
+    } catch (exception) {
+        error.value = exception instanceof Error ? exception.message : 'Buyurtmani bekor qilib bo‘lmadi.';
+    } finally {
+        busyOrderId.value = '';
+    }
 }
 
 async function printKitchenRemovals(order: CreatedOrder): Promise<void> {
@@ -201,6 +229,9 @@ onMounted(async () => {
                     {{ orderTypeLabel(order.type) }}
                     <span v-if="order.type === 'DINE_IN'" class="ml-2 rounded-md bg-amber-400/15 px-2 py-1 font-medium text-amber-300">Stol {{ order.table?.number ?? order.table_id }}</span>
                 </p>
+                <p v-if="order.status === 'OPEN' && order.is_current_business_date === false" class="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-200">
+                    Ochilgan sana: {{ formatOpenedAt(order.opened_at) }}
+                </p>
                 <p class="mt-4 text-lg font-semibold">{{ formatMoney(order.total) }} UZS</p>
                 <p v-if="order.discount_amount > 0" class="mt-1 text-sm font-medium text-emerald-400">
                     Chegirma: −{{ formatMoney(order.discount_amount) }} UZS
@@ -212,6 +243,7 @@ onMounted(async () => {
                     <button v-if="order.status === 'OPEN'" class="min-h-11 rounded-lg border border-red-400 text-sm font-semibold text-red-300" :disabled="busyOrderId === order.id" type="button" @click="openRemoval(order)">Mahsulot ayirish</button>
                     <button v-if="order.status === 'OPEN' && order.type === 'DINE_IN' && auth.can('orders.update')" class="col-span-2 min-h-11 rounded-lg border border-amber-400 text-sm font-semibold text-amber-300" :disabled="busyOrderId === order.id" type="button" @click="openMove(order)">Stolni ko‘chirish</button>
                     <button v-if="order.status === 'OPEN' && auth.can('payments.create')" class="col-span-2 min-h-11 rounded-lg bg-emerald-500 text-sm font-semibold text-slate-950" type="button" @click="openPayment(order)">{{ order.balance_due > 0 ? 'To‘lov / yopish' : 'Buyurtmani yopish' }}</button>
+                    <button v-if="order.status === 'OPEN' && auth.can('orders.cancel')" class="col-span-2 min-h-11 rounded-lg border border-red-500 text-sm font-semibold text-red-300 hover:bg-red-500/10" :disabled="busyOrderId === order.id" type="button" @click="cancelOrder(order)">Buyurtmani bekor qilish</button>
                     <button v-if="order.pending_item_removals_count > 0" class="col-span-2 min-h-11 rounded-lg border border-red-400 text-sm text-red-300" :disabled="busyOrderId === order.id" type="button" @click="printKitchenRemovals(order)">Ayirilganlarni chop etish ({{ order.pending_item_removals_count }})</button>
                     <button v-if="order.status === 'OPEN' && order.unprinted_items_count > 0" class="min-h-11 rounded-lg border border-slate-700 text-sm" :class="{ 'col-span-2': !auth.can('orders.reprint') || order.payment_status === 'PAID' }" :disabled="busyOrderId === order.id" type="button" @click="printKitchen(order)">Chiqmaganlari ({{ order.unprinted_items_count }})</button>
                     

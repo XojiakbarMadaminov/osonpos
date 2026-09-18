@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources\Pos;
 
+use App\Support\StoreBusinessDate;
+use App\Support\StoreContext;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,6 +19,10 @@ class OrderResource extends JsonResource
             'type' => $this->type->value,
             'status' => $this->status->value,
             'payment_status' => $this->payment_status->value,
+            'business_date' => $this->business_date->toDateString(),
+            'opened_at' => $this->opened_at?->toIso8601String(),
+            'is_current_business_date' => $this->business_date->toDateString() === app(StoreBusinessDate::class)
+                ->current(app(StoreContext::class)->requireCurrent()),
             'table_id' => $this->table_id,
             'table' => $this->when(
                 $this->relationLoaded('table'),

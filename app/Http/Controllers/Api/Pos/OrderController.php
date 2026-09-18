@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Pos;
 use App\Actions\Orders\CreateOrder;
 use App\Actions\Orders\CreateOrderData;
 use App\Actions\Orders\UpdateOpenOrder;
+use App\Enums\OrderStatus;
 use App\Enums\OrderType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\Pos\CreateOrderRequest;
@@ -30,7 +31,11 @@ class OrderController extends Controller
         $orders = Order::query()
             ->forTenant($tenantContext->requireCurrent())
             ->forStore($store)
-            ->where('business_date', $businessDate->current($store))
+            ->where(function ($query) use ($businessDate, $store): void {
+                $query
+                    ->where('status', OrderStatus::Open)
+                    ->orWhere('business_date', $businessDate->current($store));
+            })
             ->with('table:id,name,number')
             ->withSum('payments', 'amount')
             ->withCount([
@@ -41,6 +46,7 @@ class OrderController extends Controller
                     ->where('kitchen_print_required', true)
                     ->whereNull('kitchen_printed_at'),
             ])
+            ->orderByRaw('CASE WHEN status = ? THEN 0 ELSE 1 END', [OrderStatus::Open->value])
             ->latest('opened_at')
             ->paginate(50);
 

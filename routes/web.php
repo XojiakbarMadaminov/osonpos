@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\SwitchAdminContextController;
 use App\Http\Controllers\Platform\EnterOrganizationAdminController;
 use App\Http\Controllers\Platform\LeaveOrganizationAdminController;
 use App\Http\Controllers\Pos\DeviceSetupController;
+use App\Http\Controllers\Pos\LogoutController as PosLogoutController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -30,3 +31,6 @@ Route::view('/pos', 'pos')
 Route::get('/pos/device-setup', DeviceSetupController::class)
     ->middleware(['pos.auth', 'pos.restore-device', 'context.tenant', 'context.store'])
     ->name('pos.device-setup');
+Route::post('/pos/logout', PosLogoutController::class)
+    ->middleware(['pos.auth', 'pos.restore-device', 'context.tenant', 'context.store', 'pos.device.ready'])
+    ->name('pos.logout');

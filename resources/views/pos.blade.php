@@ -8,6 +8,7 @@
         @if (isset($posSetup))
             <script>window.__OSONPOS_SETUP__ = @json($posSetup);</script>
         @endif
+        <script>window.__OSONPOS_FLASH__ = @json(['logoutError' => session('pos_logout_error')]);</script>
         @vite('resources/js/pos/app.ts')
     </head>
     <body class="bg-slate-950 text-slate-100 antialiased">

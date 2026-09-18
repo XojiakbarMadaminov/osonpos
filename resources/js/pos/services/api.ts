@@ -92,6 +92,9 @@ export interface CreatedOrder {
     type: OrderType;
     status: 'OPEN' | 'COMPLETED' | 'CANCELLED';
     payment_status: string;
+    business_date?: string;
+    opened_at?: string;
+    is_current_business_date?: boolean;
     table_id: number | null;
     table: { id: number; name: string; number: string } | null;
     customer_id: string | null;
@@ -385,6 +388,13 @@ export class ApiService {
             headers: { Accept: 'application/json', ...this.deviceIdentity.headers() },
         });
         if (!response.ok) throw new Error('Buyurtmani yuklab bo‘lmadi.');
+        const payload = (await response.json()) as { data: CreatedOrder };
+
+        return payload.data;
+    }
+
+    async cancelOrder(orderId: string): Promise<CreatedOrder> {
+        const response = await this.jsonRequest(`/api/pos/orders/${orderId}/cancel`, 'POST');
         const payload = (await response.json()) as { data: CreatedOrder };
 
         return payload.data;

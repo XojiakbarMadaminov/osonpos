@@ -314,7 +314,7 @@ it('blocks a foreign tenant customer but permits an organization customer from a
     expect($order->refresh()->customer_id)->toBe($sharedCustomer->id);
 });
 
-it('shows only orders from the current store-local business date', function () {
+it('shows current business date history and older open orders first', function () {
     $this->travelTo(CarbonImmutable::parse('2026-09-15 04:30:00', 'Asia/Tashkent'));
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create(['timezone' => 'America/New_York']);
@@ -323,18 +323,33 @@ it('shows only orders from the current store-local business date', function () {
     $today = Order::factory()->for($organization)->for($store)->for($user, 'creator')->create([
         'display_number' => '#0001',
         'business_date' => '2026-09-14',
+        'status' => OrderStatus::Completed,
+        'opened_at' => now(),
     ]);
     $yesterday = Order::factory()->for($organization)->for($store)->for($user, 'creator')->create([
         'display_number' => '#0001',
         'business_date' => '2026-09-13',
+        'status' => OrderStatus::Completed,
+        'opened_at' => now()->subDay(),
+    ]);
+    $olderOpen = Order::factory()->for($organization)->for($store)->for($user, 'creator')->create([
+        'display_number' => '#0002',
+        'business_date' => '2026-09-13',
+        'status' => OrderStatus::Open,
+        'opened_at' => now()->subDays(2),
     ]);
 
     $this->actingAs($user)
         ->withSession($session)
         ->getJson('/api/pos/orders')
         ->assertOk()
-        ->assertJsonCount(1, 'data')
-        ->assertJsonPath('data.0.id', $today->id)
+        ->assertJsonCount(2, 'data')
+        ->assertJsonPath('data.0.id', $olderOpen->id)
+        ->assertJsonPath('data.0.business_date', '2026-09-13')
+        ->assertJsonPath('data.0.is_current_business_date', false)
+        ->assertJsonPath('data.0.opened_at', $olderOpen->opened_at->toIso8601String())
+        ->assertJsonPath('data.1.id', $today->id)
+        ->assertJsonPath('data.1.is_current_business_date', true)
         ->assertJsonMissing(['id' => $yesterday->id]);
 });
 

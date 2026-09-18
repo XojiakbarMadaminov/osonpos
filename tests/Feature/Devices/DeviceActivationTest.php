@@ -10,6 +10,7 @@ use App\Models\Device;
 use App\Models\Feature;
 use App\Models\Organization;
 use App\Models\Plan;
+use App\Models\Shift;
 use App\Models\Store;
 use App\Models\Subscription;
 use App\Models\User;
@@ -260,6 +261,58 @@ it('restores the device from its browser credential after a new login session', 
         ->assertJsonPath('data.id', $device->id)
         ->assertSessionHas('current_organization_id', $organization->id)
         ->assertSessionHas('current_store_id', $store->id);
+});
+
+it('logs a cashier out of pos and lets the next cashier reuse the registered device', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $firstCashier = activationUser($organization, $store);
+    $secondCashier = activationUser($organization, $store);
+    enablePosForActivation($organization);
+    $device = Device::factory()->for($organization)->for($store)->create();
+    $credential = app(DeviceCredential::class)->issue($device);
+    $session = [
+        'current_organization_id' => $organization->id,
+        'current_store_id' => $store->id,
+    ];
+
+    $this->actingAs($firstCashier)
+        ->withSession($session)
+        ->withCookie(DeviceCredential::COOKIE_NAME, $credential)
+        ->post(route('pos.logout'))
+        ->assertRedirect(route('filament.admin.auth.login'))
+        ->assertSessionHas('url.intended', url('/pos'))
+        ->assertSessionHas('pos_logout_success');
+
+    $this->assertGuest();
+
+    $this->actingAs($secondCashier)
+        ->withCookie(DeviceCredential::COOKIE_NAME, $credential)
+        ->get('/pos')
+        ->assertOk()
+        ->assertSessionHas('current_organization_id', $organization->id)
+        ->assertSessionHas('current_store_id', $store->id);
+});
+
+it('requires the cashier to close the current device shift before pos logout', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $cashier = activationUser($organization, $store);
+    $device = Device::factory()->for($organization)->for($store)->create();
+    $credential = app(DeviceCredential::class)->issue($device);
+    Shift::factory()->for($organization)->for($store)->for($device)->for($cashier)->create();
+
+    $this->actingAs($cashier)
+        ->withSession([
+            'current_organization_id' => $organization->id,
+            'current_store_id' => $store->id,
+        ])
+        ->withCookie(DeviceCredential::COOKIE_NAME, $credential)
+        ->post(route('pos.logout'))
+        ->assertRedirect('/pos')
+        ->assertSessionHas('pos_logout_error', 'Akkauntdan chiqishdan oldin joriy smenani yoping.');
+
+    $this->assertAuthenticatedAs($cashier);
 });
 
 it('invalidates the old browser credential when the device is paired again', function () {

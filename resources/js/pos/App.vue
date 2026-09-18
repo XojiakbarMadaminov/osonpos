@@ -17,7 +17,8 @@ const context = useContextStore();
 const page = ref('pos');
 const loading = ref(!isDeviceSetup);
 const error = ref('');
-const navigationError = ref('');
+const flash = (window as Window & { __OSONPOS_FLASH__?: { logoutError?: string | null } }).__OSONPOS_FLASH__;
+const navigationError = ref(flash?.logoutError ?? '');
 const online = ref(navigator.onLine);
 const refreshingContext = ref(false);
 const navigation = computed(() => [
@@ -26,9 +27,16 @@ const navigation = computed(() => [
     { id: 'orders', label: 'Buyurtmalar', visible: auth.can('orders.view') },
     { id: 'shift', label: 'Smena', visible: auth.can('shifts.view') },
 ].filter((item) => item.visible));
+const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
 function setOnline(): void {
     online.value = navigator.onLine;
+}
+
+function confirmLogout(event: SubmitEvent): void {
+    if (!window.confirm('Akkauntdan chiqmoqchimisiz? Keyingi kassir o‘z akkaunti bilan kirishi kerak.')) {
+        event.preventDefault();
+    }
 }
 
 async function navigate(destination: string): Promise<void> {
@@ -97,6 +105,12 @@ onBeforeUnmount(() => {
                             <p class="text-xs text-slate-400">{{ context.bootstrap.user.name }} <span class="opacity-70">({{ context.bootstrap.device.name }})</span></p>
                         </div>
                         <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold" :class="online ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'">{{ online ? 'Onlayn' : 'Oflayn' }}</span>
+                        <form action="/pos/logout" method="POST" @submit="confirmLogout">
+                            <input name="_token" type="hidden" :value="csrfToken">
+                            <button class="min-h-10 rounded-lg border border-slate-700 px-3 text-sm font-medium text-slate-300 transition-colors hover:border-red-400 hover:bg-red-500/10 hover:text-red-300" type="submit">
+                                Chiqish
+                            </button>
+                        </form>
                     </div>
                 </header>
                 <p v-if="navigationError" class="mb-5 rounded-lg border border-red-800 bg-red-500/10 p-3 text-sm text-red-200">{{ navigationError }}</p>

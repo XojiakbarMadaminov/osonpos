@@ -2439,6 +2439,99 @@ Validation:
 - Relevant/full Pest and Laravel Pint must pass.
 
 ---
+# Phase 54 — Stale Open Order Visibility in POS
+
+Status: DONE
+
+Depends on:
+
+- Phase 12
+- Phase 13
+
+Goal:
+
+Ensure every open order that can block shift closure is visible and actionable in POS even when it belongs to an earlier store business date.
+
+Tasks:
+
+- [x] Include older open orders in the POS order list.
+- [x] Keep completed and cancelled history limited to the current store business date.
+- [x] Sort open orders before historical orders so pagination cannot hide them behind recent closed sales.
+- [x] Expose the existing permission-protected order cancellation action in POS with confirmation.
+- [x] Add a regression test for stale open-order visibility and ordering.
+
+Acceptance criteria:
+
+- An older open order is visible under the POS `Ochiq` tab.
+- An older completed or cancelled order remains hidden from the daily POS list.
+- A cashier can find and resolve the same open order that blocks shift closure.
+- A user with `orders.cancel` permission can cancel an unwanted open order from POS.
+
+Validation:
+
+- Order, shift, full Pest, and Laravel Pint must pass.
+
+---
+# Phase 55 — Stale Open Order Date Indicator
+
+Status: DONE
+
+Depends on:
+
+- Phase 54
+
+Goal:
+
+Make an open order from an earlier business date immediately recognizable in the POS order list.
+
+Tasks:
+
+- [x] Expose order business date, opening timestamp, and current-business-date state in the POS API.
+- [x] Show the store-local opening date and time only on stale open-order cards.
+- [x] Add API regression assertions for current and stale order date state.
+
+Acceptance criteria:
+
+- A stale open order displays `Ochilgan sana` on its card.
+- A current-business-date open order does not display the extra date warning.
+- The displayed timestamp uses the active store timezone.
+
+Validation:
+
+- Relevant/full Pest, frontend tests, type checking, production build, and Laravel Pint must pass.
+
+---
+# Phase 56 — POS Cashier Handoff Logout
+
+Status: DONE
+
+Depends on:
+
+- Phase 13
+
+Goal:
+
+Let one cashier securely end their authenticated POS session so the next cashier can sign in on the same registered device.
+
+Tasks:
+
+- [x] Add a visible POS header logout action with confirmation.
+- [x] Prevent logout while the current cashier still has an open shift on the device.
+- [x] Invalidate the user session while preserving the long-lived device credential.
+- [x] Return to the admin login with an Uzbek cashier-handoff message.
+- [x] Add logout, open-shift guard, and device-restoration tests.
+
+Acceptance criteria:
+
+- A cashier with no open shift can log out directly from POS.
+- A cashier with an open shift is told to close it before logging out.
+- The next authorized cashier can sign in and use the same device without pairing it again.
+
+Validation:
+
+- Relevant/full Pest, frontend tests, type checking, production build, and Laravel Pint must pass.
+
+---
 # Suggested Commit Boundaries
 
 Use small meaningful commits where practical.

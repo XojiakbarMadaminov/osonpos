@@ -116,13 +116,12 @@ class SendTelegramPaymentNotification implements ShouldQueue
                 '💳 Karta: '.$formatMoney($mixedPayment->amount),
             ]
             : ["💳 To‘lov turi: {$payment->method->getLabel()}"];
-        $discountLines = $payment->order->discount_amount > 0
-            ? [
-                '🏷 Chegirma: '.($payment->order->discount_type?->value === 'PERCENTAGE'
-                    ? "{$payment->order->discount_value}% (−{$formatMoney($payment->order->discount_amount)})"
-                    : '−'.$formatMoney($payment->order->discount_amount)),
-                '💰 Chegirmadan oldin: '.$formatMoney($payment->order->subtotal + $payment->order->delivery_fee),
-            ]
+        $hasDiscount = $payment->order->discount_amount > 0;
+        $originalTotal = $payment->order->subtotal + $payment->order->delivery_fee;
+        $discountSummaryLines = $hasDiscount
+            ? ['🏷 Chegirma: '.($payment->order->discount_type?->value === 'PERCENTAGE'
+                ? "{$payment->order->discount_value}% (−{$formatMoney($payment->order->discount_amount)})"
+                : '−'.$formatMoney($payment->order->discount_amount))]
             : [];
 
         return implode("\n", [
@@ -131,8 +130,6 @@ class SendTelegramPaymentNotification implements ShouldQueue
             "🏪 Do‘kon: {$payment->store->name}",
             "👤 Mijoz: {$customer}",
             "🧑‍💼 Kassir: {$payment->creator->name}",
-            '💰 Summasi: '.$formatMoney($payment->order->total),
-            ...$discountLines,
             "🍽 Buyurtma turi: {$payment->order->type->getLabel()}",
             ...$paymentLines,
             '📦 Mahsulotlar:',
@@ -142,7 +139,8 @@ class SendTelegramPaymentNotification implements ShouldQueue
             '------------------',
             '',
             'Jami mahsulotlar: '.$items->sum(fn ($item): int => $item->remainingQuantity()).' dona',
-            'JAMI SUMMA: '.$formatMoney($payment->order->total),
+            'JAMI SUMMA: '.$formatMoney($originalTotal),
+            ...$discountSummaryLines,
             '💵 To‘langan: '.$formatMoney($paidAmount),
             "⏰ Sana: {$time}",
         ]);

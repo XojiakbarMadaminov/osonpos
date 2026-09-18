@@ -2344,6 +2344,65 @@ Validation:
 - Vitest, Vue type checking, production build, relevant/full Pest, and Laravel Pint must pass.
 
 ---
+# Phase 51 — Telegram Discount Summary Placement
+
+Status: DONE
+
+Depends on:
+
+- Phase 43
+- Phase 48
+
+Goal:
+
+Place the Telegram discount detail in the financial summary after `JAMI SUMMA` and immediately before `To‘langan`.
+
+Tasks:
+
+- [x] Keep `Chegirmadan oldin` with the upper order summary.
+- [x] Move the discount type and amount line below `JAMI SUMMA`.
+- [x] Add an exact message-order regression assertion.
+
+Acceptance criteria:
+
+- Discounted notifications show `JAMI SUMMA`, then `Chegirma`, then `To‘langan` in that order.
+- Notifications without discounts remain unchanged.
+
+Validation:
+
+- Telegram notification coverage, full Pest, and Laravel Pint must pass.
+
+---
+# Phase 52 — Telegram Financial Summary Cleanup
+
+Status: DONE
+
+Depends on:
+
+- Phase 51
+
+Goal:
+
+Remove duplicate upper totals and make the bottom `JAMI SUMMA` represent the pre-discount order total.
+
+Tasks:
+
+- [x] Remove the upper `Summasi` and `Chegirmadan oldin` lines.
+- [x] Show subtotal plus delivery fee as the bottom `JAMI SUMMA`.
+- [x] Keep discount and paid lines immediately below it.
+- [x] Add exact absence and ordering regression assertions.
+
+Acceptance criteria:
+
+- Discounted messages show pre-discount `JAMI SUMMA`, then `Chegirma`, then `To‘langan`.
+- No upper duplicate amount lines are included.
+- Non-discounted messages continue to show their ordinary total in `JAMI SUMMA`.
+
+Validation:
+
+- Telegram notification coverage, full Pest, and Laravel Pint must pass.
+
+---
 # Suggested Commit Boundaries
 
 Use small meaningful commits where practical.

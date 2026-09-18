@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Domain\Authorization\AccessibleAdminStores;
+use App\Domain\Platform\PlatformOrganizationAccess;
 use App\Enums\AdminNavigationGroup;
 use App\Http\Controllers\Admin\RedirectAdminHomeController;
 use App\Http\Middleware\InitializeStoreContext;
@@ -41,6 +42,21 @@ class AdminPanelProvider extends PanelProvider
             ->authenticatedRoutes(function (): void {
                 Route::get('/', RedirectAdminHomeController::class)->name('home');
             })
+            ->renderHook(
+                PanelsRenderHook::CONTENT_BEFORE,
+                function () {
+                    $user = request()->user();
+                    $access = app(PlatformOrganizationAccess::class);
+
+                    if (! $user || ! $access->isActiveFor($user, app(TenantContext::class)->id())) {
+                        return '';
+                    }
+
+                    return view('filament.admin.components.platform-organization-banner', [
+                        'organization' => app(TenantContext::class)->requireCurrent(),
+                    ]);
+                },
+            )
             ->renderHook(
                 PanelsRenderHook::USER_MENU_PROFILE_AFTER,
                 function () {

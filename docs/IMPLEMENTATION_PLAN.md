@@ -2403,6 +2403,42 @@ Validation:
 - Telegram notification coverage, full Pest, and Laravel Pint must pass.
 
 ---
+# Phase 53 — Platform Organization Management Access
+
+Status: DONE
+
+Depends on:
+
+- Phase 19
+
+Goal:
+
+Allow a platform administrator to select any organization and enter its `/admin` panel with full management access.
+
+Tasks:
+
+- [x] Add an organization selector to the platform dashboard.
+- [x] Store the selected organization and first active store in the server session.
+- [x] Grant full admin permissions only inside the selected organization.
+- [x] Keep store switching limited to active stores in the selected organization.
+- [x] Show a persistent management-mode banner and a return-to-platform action.
+- [x] Keep POS device authorization separate.
+- [x] Do not add read-only mode or access-history storage.
+- [x] Add tenant-isolation, authorization, validation, and exit-flow tests.
+
+Acceptance criteria:
+
+- A platform administrator can manage an organization without being its member.
+- Other organizations remain inaccessible while management access is active.
+- Ordinary users cannot activate platform organization access.
+- Leaving management access clears the selected tenant and store context.
+- No view-only mode or management-access history is created.
+
+Validation:
+
+- Relevant/full Pest and Laravel Pint must pass.
+
+---
 # Suggested Commit Boundaries
 
 Use small meaningful commits where practical.

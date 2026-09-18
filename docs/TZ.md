@@ -696,6 +696,12 @@ User has access to order.store_id
 
 Platform Super Admin alohida global authorization orqali ishlaydi.
 
+Platform Super Admin `/platform` bosh sahifasidagi select orqali istalgan organization'ni tanlab,
+uning `/admin` paneliga to‘liq boshqaruv huquqi bilan kira oladi. Bu vaqtinchalik kirish faqat
+tanlangan organization va uning faol store'lari bilan cheklanadi. Admin panelda qaysi organization
+boshqarilayotgani aniq bannerda ko‘rsatiladi va `Platformaga qaytish` amali mavjud bo‘ladi.
+Ushbu oqim uchun alohida ko‘rish rejimi va kirish tarixi yuritilmaydi.
+
 ---
 
 # 16. Tenant Context
@@ -742,6 +748,9 @@ Sections:
 - Features
 - Platform Users
 - System Settings
+
+Bosh sahifada barcha organization'larni tanlash uchun select va tanlangan organization'ning
+`/admin` paneliga to‘liq boshqaruv rejimida kirish tugmasi mavjud.
 
 ## /admin
 

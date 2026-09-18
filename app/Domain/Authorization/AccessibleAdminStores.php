@@ -2,6 +2,7 @@
 
 namespace App\Domain\Authorization;
 
+use App\Domain\Platform\PlatformOrganizationAccess;
 use App\Enums\OrganizationRole;
 use App\Models\Store;
 use App\Models\User;
@@ -11,11 +12,21 @@ class AccessibleAdminStores
 {
     public function __construct(
         private readonly OrganizationAuthorization $authorization,
+        private readonly PlatformOrganizationAccess $platformAccess,
     ) {}
 
     /** @return Collection<int, Store> */
     public function forUser(User $user): Collection
     {
+        if ($this->platformAccess->isActiveFor($user)) {
+            return Store::query()
+                ->with('organization')
+                ->where('organization_id', $this->platformAccess->organizationId())
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+        }
+
         $organizations = $user->organizations()->orderBy('name')->get();
         $organizationIds = $organizations->modelKeys();
         $ownerOrganizationIds = $organizations

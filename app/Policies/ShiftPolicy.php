@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Domain\Authorization\StoreAccess;
+use App\Domain\Platform\PlatformOrganizationAccess;
 use App\Enums\OrganizationPermission;
 use App\Enums\OrganizationRole;
 use App\Models\Shift;
@@ -25,7 +26,8 @@ class ShiftPolicy
             return false;
         }
 
-        return $shift->user_id === $user->getKey()
+        return app(PlatformOrganizationAccess::class)->isActiveFor($user, $shift->organization_id)
+            || $shift->user_id === $user->getKey()
             || $user->hasAnyRole([OrganizationRole::Owner->value, OrganizationRole::Manager->value]);
     }
 
@@ -43,7 +45,8 @@ class ShiftPolicy
     public function closeAsSupervisor(User $user, Shift $shift): bool
     {
         return $this->update($user, $shift)
-            && $user->hasAnyRole([OrganizationRole::Owner->value, OrganizationRole::Manager->value]);
+            && (app(PlatformOrganizationAccess::class)->isActiveFor($user, $shift->organization_id)
+                || $user->hasAnyRole([OrganizationRole::Owner->value, OrganizationRole::Manager->value]));
     }
 
     public function delete(User $user, Shift $shift): bool

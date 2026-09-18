@@ -2,6 +2,7 @@
 
 namespace App\Domain\Authorization;
 
+use App\Domain\Platform\PlatformOrganizationAccess;
 use App\Enums\OrganizationRole;
 use App\Models\Store;
 use App\Models\User;
@@ -13,6 +14,7 @@ class StoreAccess
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly OrganizationAuthorization $authorization,
+        private readonly PlatformOrganizationAccess $platformAccess,
     ) {}
 
     public function allows(User $user, Store $store): bool
@@ -21,6 +23,10 @@ class StoreAccess
 
         if (! $organization || ! $store->belongsToTenant($organization)) {
             return false;
+        }
+
+        if ($this->platformAccess->isActiveFor($user, $organization)) {
+            return true;
         }
 
         $isOwner = $this->authorization->runForUserInTenant(
@@ -35,6 +41,11 @@ class StoreAccess
     public function accessibleStoreIds(User $user): Collection
     {
         $organization = $this->tenantContext->requireCurrent();
+
+        if ($this->platformAccess->isActiveFor($user, $organization)) {
+            return $organization->stores()->pluck('id');
+        }
+
         $isOwner = $this->authorization->runForUserInTenant(
             $user,
             $organization,

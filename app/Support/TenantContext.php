@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Domain\Platform\PlatformOrganizationAccess;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -13,6 +14,20 @@ class TenantContext
 
     public function resolveFor(User $user, int|string|null $preferredOrganizationId = null): Organization
     {
+        $platformAccess = app(PlatformOrganizationAccess::class);
+
+        if ($platformAccess->isActiveFor($user)) {
+            $organization = Organization::query()->find($platformAccess->organizationId());
+
+            if (! $organization) {
+                $platformAccess->leave();
+
+                throw new AuthorizationException('Tanlangan tashkilot aniqlanmadi.');
+            }
+
+            return $this->organization = $organization;
+        }
+
         $query = $user->organizations()->orderBy('organizations.id');
 
         $organization = $preferredOrganizationId === null

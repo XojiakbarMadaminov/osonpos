@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Shifts;
 
 use App\Actions\Shifts\CloseShift;
 use App\Domain\Authorization\OrganizationAuthorization;
+use App\Domain\Platform\PlatformOrganizationAccess;
 use App\Enums\AdminNavigationGroup;
 use App\Enums\OrganizationRole;
 use App\Enums\PaymentMethod;
@@ -146,14 +147,15 @@ class ShiftResource extends Resource
     {
         $organization = app(TenantContext::class)->requireCurrent();
         $user = request()->user();
-        $isSupervisor = app(OrganizationAuthorization::class)->runForUserInTenant(
-            $user,
-            $organization,
-            fn ($tenantUser): bool => $tenantUser->hasAnyRole([
-                OrganizationRole::Owner->value,
-                OrganizationRole::Manager->value,
-            ]),
-        );
+        $isSupervisor = app(PlatformOrganizationAccess::class)->isActiveFor($user, $organization)
+            || app(OrganizationAuthorization::class)->runForUserInTenant(
+                $user,
+                $organization,
+                fn ($tenantUser): bool => $tenantUser->hasAnyRole([
+                    OrganizationRole::Owner->value,
+                    OrganizationRole::Manager->value,
+                ]),
+            );
 
         return parent::getEloquentQuery()
             ->with(['store', 'user', 'device'])

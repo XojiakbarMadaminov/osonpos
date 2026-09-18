@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\Users;
 
 use App\Domain\Authorization\OrganizationAuthorization;
 use App\Domain\Authorization\StoreAccess;
+use App\Domain\Platform\PlatformOrganizationAccess;
 use App\Enums\AdminNavigationGroup;
 use App\Enums\OrganizationRole;
 use App\Filament\Admin\Resources\Users\Pages\CreateUser;
@@ -99,11 +100,12 @@ class UserResource extends Resource
     {
         $organization = app(TenantContext::class)->requireCurrent();
         $actor = request()->user();
-        $isOwner = app(OrganizationAuthorization::class)->runForUserInTenant(
-            $actor,
-            $organization,
-            fn (User $tenantUser): bool => $tenantUser->hasRole(OrganizationRole::Owner->value),
-        );
+        $isOwner = app(PlatformOrganizationAccess::class)->isActiveFor($actor, $organization)
+            || app(OrganizationAuthorization::class)->runForUserInTenant(
+                $actor,
+                $organization,
+                fn (User $tenantUser): bool => $tenantUser->hasRole(OrganizationRole::Owner->value),
+            );
 
         return Role::query()
             ->where('organization_id', $organization->getKey())

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Authorization;
 
+use App\Domain\Platform\PlatformOrganizationAccess;
 use App\Enums\OrganizationPermission;
 use App\Models\Organization;
 use App\Models\User;
@@ -14,6 +15,7 @@ class OrganizationAuthorization
     public function __construct(
         private readonly TenantContext $tenantContext,
         private readonly PermissionRegistrar $permissionRegistrar,
+        private readonly PlatformOrganizationAccess $platformAccess,
     ) {}
 
     public function runInTenant(Organization|int $organization, Closure $callback): mixed
@@ -42,7 +44,15 @@ class OrganizationAuthorization
     {
         $organization = $this->tenantContext->current();
 
-        if (! $organization || ! $user->organizations()->whereKey($organization->getKey())->exists()) {
+        if (! $organization) {
+            return false;
+        }
+
+        if ($this->platformAccess->isActiveFor($user, $organization)) {
+            return true;
+        }
+
+        if (! $user->organizations()->whereKey($organization->getKey())->exists()) {
             return false;
         }
 

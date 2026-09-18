@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Platform\PlatformOrganizationAccess;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -38,7 +39,8 @@ class User extends Authenticatable implements FilamentUser
     {
         return match ($panel->getId()) {
             'platform' => $this->is_platform_admin,
-            'admin' => $this->organizations()->exists(),
+            'admin' => $this->organizations()->exists()
+                || app(PlatformOrganizationAccess::class)->isActiveFor($this),
             default => false,
         };
     }

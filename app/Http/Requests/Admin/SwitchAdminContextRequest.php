@@ -2,13 +2,17 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Domain\Platform\PlatformOrganizationAccess;
 use Illuminate\Foundation\Http\FormRequest;
 
 class SwitchAdminContextRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->organizations()->exists() === true;
+        $user = $this->user();
+
+        return $user !== null && ($user->organizations()->exists()
+            || app(PlatformOrganizationAccess::class)->isActiveFor($user));
     }
 
     public function rules(): array

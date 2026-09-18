@@ -4,6 +4,7 @@ namespace App\Actions\Organizations;
 
 use App\Domain\Authorization\OrganizationAuthorization;
 use App\Domain\Authorization\StoreAccess;
+use App\Domain\Platform\PlatformOrganizationAccess;
 use App\Domain\Subscription\PlanLimits;
 use App\Enums\OrganizationRole;
 use App\Models\User;
@@ -19,6 +20,7 @@ class SaveOrganizationUser
         private readonly OrganizationAuthorization $authorization,
         private readonly StoreAccess $storeAccess,
         private readonly PlanLimits $planLimits,
+        private readonly PlatformOrganizationAccess $platformAccess,
     ) {}
 
     public function execute(User $actor, ?User $member, array $attributes, int $roleId, array $storeIds): User
@@ -41,11 +43,12 @@ class SaveOrganizationUser
             ->where('organization_id', $organization->getKey())
             ->firstOrFail();
 
-        $actorIsOwner = $this->authorization->runForUserInTenant(
-            $actor,
-            $organization,
-            fn (User $tenantUser): bool => $tenantUser->hasRole(OrganizationRole::Owner->value),
-        );
+        $actorIsOwner = $this->platformAccess->isActiveFor($actor, $organization)
+            || $this->authorization->runForUserInTenant(
+                $actor,
+                $organization,
+                fn (User $tenantUser): bool => $tenantUser->hasRole(OrganizationRole::Owner->value),
+            );
 
         if (! $actorIsOwner && ! in_array($role->name, [OrganizationRole::Cashier->value, OrganizationRole::Waiter->value], true)) {
             throw ValidationException::withMessages(['role_id' => 'Yuqori vakolatli rollarni faqat tashkilot egasi bera oladi.']);

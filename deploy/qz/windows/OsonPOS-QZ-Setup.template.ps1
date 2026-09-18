@@ -146,7 +146,9 @@ try {
         if (Test-Path -LiteralPath $whitelistStdout) { Get-Content -LiteralPath $whitelistStdout -Raw }
         if (Test-Path -LiteralPath $whitelistStderr) { Get-Content -LiteralPath $whitelistStderr -Raw }
     ) -join [Environment]::NewLine
-    Add-Content -LiteralPath $logPath -Value $whitelistOutput
+    if (-not [string]::IsNullOrWhiteSpace($whitelistOutput)) {
+        Write-Host $whitelistOutput.Trim()
+    }
 
     if (-not (Test-Path -LiteralPath $userAllowedPath)) {
         throw "QZ Tray ruxsat faylini 20 soniya ichida yaratmadi. Log: $logPath"

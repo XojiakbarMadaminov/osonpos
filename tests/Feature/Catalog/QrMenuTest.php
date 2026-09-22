@@ -71,6 +71,26 @@ it('shows only the active catalog of the scanned store without cost', function (
     $this->get($url)->assertSeeText('70 000 UZS')->assertDontSeeText('65 000 UZS');
 });
 
+it('renders category-only tabs and read-only product cards', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create(['is_qr_menu_enabled' => true]);
+    enableQrFeature($organization);
+    $first = Category::factory()->for($organization)->for($store)->create(['name' => 'Burgerlar']);
+    $second = Category::factory()->for($organization)->for($store)->create(['name' => 'Ichimliklar']);
+    Product::factory()->for($organization)->for($first)->create(['name' => 'Chizburger']);
+    Product::factory()->for($organization)->for($second)->create(['name' => 'Sharbat']);
+
+    $this->get(route('menu.show', ['token' => $store->menu_token]))
+        ->assertOk()
+        ->assertSee('role="tablist"', false)
+        ->assertSee('aria-controls="category-panel-'.$first->id.'"', false)
+        ->assertSee('aria-controls="category-panel-'.$second->id.'"', false)
+        ->assertSeeText('Chizburger')
+        ->assertSeeText('Sharbat')
+        ->assertDontSeeText('Barchasi')
+        ->assertDontSeeText('Savatga qo‘shish');
+});
+
 it('closes the public menu when any publishing condition fails', function () {
     $organization = Organization::factory()->create();
     $store = Store::factory()->for($organization)->create(['is_qr_menu_enabled' => true]);
@@ -89,6 +109,8 @@ it('closes the public menu when any publishing condition fails', function () {
     $subscription->features()->detach();
     $this->get($url)->assertNotFound();
     $subscription->features()->attach(Feature::query()->where('code', 'qr_menu')->sole());
+    $this->get($url)->assertOk();
+    expect($store->fresh()->menu_token)->toBe($store->menu_token);
     $subscription->update(['ends_at' => now()->subMinute()]);
     $this->get($url)->assertNotFound();
     $this->get('/menu/invalid-token')->assertNotFound();

@@ -2557,6 +2557,7 @@ Tasks:
 Acceptance criteria:
 
 - One QR code opens only its store's active catalog, including optional photos and descriptions.
+- Categories appear as tabs, and the product grid starts at two columns on narrow phones and grows with the viewport; no cart, weight, or discount display.
 - Inactive subscription, missing feature, inactive store, or disabled menu prevents public access.
 - Authorized admins can manage only their active store's QR menu.
 - Public output never includes product cost or ordering actions.

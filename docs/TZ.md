@@ -909,6 +909,8 @@ Har bir filialning bitta doimiy QR havolasi bo‘ladi. Ommaviy, mobilga mos sahi
 
 Mahsulot rasmi va tavsifi ixtiyoriy; mavjud mahsulotlar ularsiz ham ko‘rinadi. Rasm public diskda saqlanadi va yuklanadigan rasm hajmi 2,5 MB (2560 KB) bilan cheklanadi. Filial egasi yoki vakolatli boshqaruvchi filial QR menyusini yoqadi, o‘chiradi, havolasini nusxalaydi va SVG QR kodini yuklab oladi. Bu boshqaruv alohida `qr_menu.manage` ruxsati va filialga kirish huquqini talab qiladi.
 
+Ommaviy menyuda kategoriyalar yuqoridagi gorizontal tablarda ko‘rsatiladi. Bir tab tanlanganda faqat uning mahsulotlari ko‘rinadi; umumiy «Barchasi» tabi bo‘lmaydi. Eng kichik mobil ekranda qatorda ikki mahsulot ko‘rinadi, ekran kengayganda ustunlar soni ortadi. Og‘irlik, chegirma narxi va savatga qo‘shish tugmasi ko‘rsatilmaydi.
+
 `qr_menu` tarif imkoniyati dastlab hech bir tarifga avtomatik qo‘shilmaydi. Ommaviy sahifa faqat tashkilot faol, obunasi faol, `qr_menu` imkoniyati mavjud, filial faol va uning QR menyusi yoqilgan bo‘lsa ishlaydi. Qolgan holatlarda 404 qaytariladi. Havola vaqtincha o‘chirilganda o‘zgarmaydi.
 
 ---

@@ -200,6 +200,8 @@ Quyidagi modullar v1'ga kiritilmaydi:
 
 Architecture keyinchalik ushbu modullarni qo‘shishga to‘sqinlik qilmasligi kerak.
 
+QR menyu MVP ishga tushirilgandan keyingi alohida bosqichda qo‘shiladi; u faqat mahsulotlarni ko‘rsatadi va QR ordering yoki online ordering hisoblanmaydi.
+
 ---
 
 # 5. Technology Stack
@@ -900,6 +902,14 @@ Kategoriya va product organization ichidagi bitta store'ga tegishli.
 Har bir store o‘zining mustaqil kategoriya, product va narx katalogidan foydalanadi. Admin panel va POS faqat tanlangan faol store katalogini ko‘rsatadi. Boshqa store katalogiga to‘g‘ridan-to‘g‘ri kirish backendda bloklanadi.
 
 `cost_price` bir dona mahsulotning integer UZS’dagi tannarxi bo‘lib, faqat admin mahsulot CRUD’ida ko‘rinadi. U POS API, POS UI, mijoz cheki, oshxona chiptasi yoki hisobotda alohida summa sifatida chiqarilmaydi. Hisobot tannarxdan faqat taxminiy yalpi foydani hisoblash uchun ichki foydalanadi.
+
+## MVPdan keyingi QR menyu
+
+Har bir filialning bitta doimiy QR havolasi bo‘ladi. Ommaviy, mobilga mos sahifada faqat shu filialning faol kategoriya va mahsulotlari, nomi, ixtiyoriy tavsifi va fotosurati hamda integer UZS narxi ko‘rsatiladi. Tannarx yoki ichki katalog ma’lumotlari chiqarilmaydi. Sahifadan buyurtma va to‘lov yuborilmaydi.
+
+Mahsulot rasmi va tavsifi ixtiyoriy; mavjud mahsulotlar ularsiz ham ko‘rinadi. Rasm public diskda saqlanadi va yuklanadigan rasm hajmi 2,5 MB (2560 KB) bilan cheklanadi. Filial egasi yoki vakolatli boshqaruvchi filial QR menyusini yoqadi, o‘chiradi, havolasini nusxalaydi va SVG QR kodini yuklab oladi. Bu boshqaruv alohida `qr_menu.manage` ruxsati va filialga kirish huquqini talab qiladi.
+
+`qr_menu` tarif imkoniyati dastlab hech bir tarifga avtomatik qo‘shilmaydi. Ommaviy sahifa faqat tashkilot faol, obunasi faol, `qr_menu` imkoniyati mavjud, filial faol va uning QR menyusi yoqilgan bo‘lsa ishlaydi. Qolgan holatlarda 404 qaytariladi. Havola vaqtincha o‘chirilganda o‘zgarmaydi.
 
 ---
 

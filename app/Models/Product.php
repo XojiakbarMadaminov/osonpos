@@ -10,9 +10,10 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
-#[Fillable(['category_id', 'name', 'price', 'cost_price', 'is_active', 'sort_order'])]
+#[Fillable(['category_id', 'name', 'description', 'image_path', 'price', 'cost_price', 'is_active', 'sort_order'])]
 class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
@@ -35,6 +36,10 @@ class Product extends Model
         });
         static::saved(function (Product $product): void {
             app(CatalogRepository::class)->forget($product->organization_id, $product->store_id);
+
+            if ($product->wasChanged('image_path') && $product->getOriginal('image_path')) {
+                Storage::disk('public')->delete($product->getOriginal('image_path'));
+            }
 
             if ($product->wasChanged('store_id')) {
                 app(CatalogRepository::class)->forget($product->organization_id, (int) $product->getOriginal('store_id'));

@@ -5,6 +5,7 @@ use App\Http\Controllers\Platform\EnterOrganizationAdminController;
 use App\Http\Controllers\Platform\LeaveOrganizationAdminController;
 use App\Http\Controllers\Pos\DeviceSetupController;
 use App\Http\Controllers\Pos\LogoutController as PosLogoutController;
+use App\Http\Controllers\PublicMenuController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -12,6 +13,8 @@ Route::get('/', function () {
 });
 
 Route::redirect('/panel', '/admin');
+
+Route::get('/menu/{token}', PublicMenuController::class)->name('menu.show');
 
 Route::post('/admin/context', SwitchAdminContextController::class)
     ->middleware('auth')

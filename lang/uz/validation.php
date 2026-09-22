@@ -65,6 +65,7 @@ return [
     'string' => ':attribute matn bo‘lishi kerak.',
     'timezone' => ':attribute haqiqiy vaqt mintaqasi bo‘lishi kerak.',
     'unique' => ':attribute avval ro‘yxatdan o‘tgan.',
+    'uploaded' => ':attribute faylini yuklab bo‘lmadi. Fayl hajmini tekshirib, qayta urinib ko‘ring.',
     'ulid' => ':attribute haqiqiy ULID bo‘lishi kerak.',
     'url' => ':attribute haqiqiy URL bo‘lishi kerak.',
 
@@ -87,6 +88,7 @@ return [
         'method' => 'to‘lov turi',
         'type' => 'buyurtma turi',
         'product_id' => 'mahsulot',
+        'image_path' => 'mahsulot rasmi',
         'quantity' => 'miqdor',
         'note' => 'izoh',
         'item_ids' => 'mahsulotlar',

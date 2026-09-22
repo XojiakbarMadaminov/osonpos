@@ -31,6 +31,7 @@ enum OrganizationPermission: string
     case ExpensesView = 'expenses.view';
     case ExpensesManage = 'expenses.manage';
     case TelegramSettingsManage = 'telegram_settings.manage';
+    case QrMenuManage = 'qr_menu.manage';
 
     public static function values(): array
     {
@@ -67,6 +68,7 @@ enum OrganizationPermission: string
             self::ExpensesView => 'Chiqimlarni ko‘rish',
             self::ExpensesManage => 'Chiqimlarni boshqarish',
             self::TelegramSettingsManage => 'Telegram sozlamasini boshqarish',
+            self::QrMenuManage => 'QR menyuni boshqarish',
         };
     }
 

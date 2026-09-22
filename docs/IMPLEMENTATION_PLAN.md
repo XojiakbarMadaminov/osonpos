@@ -2532,6 +2532,41 @@ Validation:
 - Relevant/full Pest, frontend tests, type checking, production build, and Laravel Pint must pass.
 
 ---
+# Phase 57 — Store QR Menu
+
+Status: DONE
+
+Depends on:
+
+- Phase 5
+- Phase 36
+
+Goal:
+
+Provide one public, read-only QR menu per store after MVP.
+
+Tasks:
+
+- [x] Add stable store menu tokens and a per-store publish toggle.
+- [x] Add optional product description and public photo upload.
+- [x] Add the `qr_menu` subscription feature and `qr_menu.manage` permission without assigning the feature to existing plans.
+- [x] Add a mobile-friendly public menu with store-scoped active catalog data.
+- [x] Add an authorized admin page to manage visibility, copy the URL, and download an SVG QR code.
+- [x] Add tenant, store, visibility, upload, migration, and localization tests; run the full validation suite.
+
+Acceptance criteria:
+
+- One QR code opens only its store's active catalog, including optional photos and descriptions.
+- Inactive subscription, missing feature, inactive store, or disabled menu prevents public access.
+- Authorized admins can manage only their active store's QR menu.
+- Public output never includes product cost or ordering actions.
+
+Validation:
+
+- Full Pest suite, frontend tests, type checking, production build, and Laravel Pint must pass.
+
+---
+
 # Suggested Commit Boundaries
 
 Use small meaningful commits where practical.

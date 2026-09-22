@@ -18,6 +18,8 @@ test('the application and common user-facing text use Uzbek', function () {
     expect(config('app.locale'))->toBe('uz')
         ->and(__('auth.failed'))->toBe('Kiritilgan ma’lumotlar tizimdagi yozuvlarga mos kelmadi.')
         ->and(__('Name'))->toBe('Nomi')
+        ->and(__('validation.uploaded', ['attribute' => __('validation.attributes.image_path')]))
+        ->toBe('mahsulot rasmi faylini yuklab bo‘lmadi. Fayl hajmini tekshirib, qayta urinib ko‘ring.')
         ->and(OrderResource::getModelLabel())->toBe('buyurtma')
         ->and(OrderResource::getPluralModelLabel())->toBe('buyurtmalar');
 });

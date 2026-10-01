@@ -2568,6 +2568,31 @@ Validation:
 
 ---
 
+# Phase 58 — Admin and POS Workspace Switches
+
+Status: IN_PROGRESS
+
+Depends on:
+
+- Phase 16
+- Phase 17
+
+Goal:
+
+Provide visible, permission-aware switches between the admin panel and POS.
+
+Tasks:
+
+- [x] Add a POS switch beside admin top-bar search for users with `pos.access`.
+- [x] Add an admin switch beside POS session actions, opening a new tab to preserve the active cart.
+- [x] Add Uzbek labels and an admin permission visibility test.
+- [x] Run focused PHP test, frontend tests, typecheck, build, and Pint.
+- [ ] Get the full PHP test suite passing.
+
+Validation note: The focused navigation test passes (5 assertions). The full PHP suite currently has 259 passing tests and 10 unrelated failures/errors caused by missing QR code dependency and Redis, QZ test configuration, and existing date/domain expectations.
+
+---
+
 # Suggested Commit Boundaries
 
 Use small meaningful commits where practical.

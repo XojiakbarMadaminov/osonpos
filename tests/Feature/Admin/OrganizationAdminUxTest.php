@@ -100,6 +100,33 @@ it('redirects the removed admin dashboard to the first authorized section', func
         ->assertRedirect('/admin/reports');
 });
 
+it('shows the POS switch in the admin top bar only with POS access', function () {
+    $organization = Organization::factory()->create();
+    $store = Store::factory()->for($organization)->create();
+    $owner = adminOwner($organization, $store);
+    $session = [
+        'current_organization_id' => $organization->id,
+        'current_store_id' => $store->id,
+    ];
+
+    $this->actingAs($owner)->withSession($session)
+        ->get('/admin/reports')
+        ->assertOk()
+        ->assertSee('POSga o‘tish')
+        ->assertSee('href="'.route('pos').'"', false);
+
+    app(OrganizationAuthorization::class)->runForUserInTenant(
+        $owner,
+        $organization,
+        fn (User $user) => $user->roles->first()->revokePermissionTo('pos.access'),
+    );
+
+    $this->actingAs($owner)->withSession($session)
+        ->get('/admin/reports')
+        ->assertOk()
+        ->assertDontSee('POSga o‘tish');
+});
+
 it('keeps store order and user listings inside the current organization', function () {
     $organization = Organization::factory()->create();
     $otherOrganization = Organization::factory()->create();

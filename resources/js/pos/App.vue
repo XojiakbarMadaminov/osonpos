@@ -27,6 +27,11 @@ const navigation = computed(() => [
     { id: 'orders', label: 'Buyurtmalar', visible: auth.can('orders.view') },
     { id: 'shift', label: 'Smena', visible: auth.can('shifts.view') },
 ].filter((item) => item.visible));
+const canOpenAdmin = computed(() => [
+    'reports.view', 'orders.view', 'products.view', 'tables.view', 'shifts.view',
+    'expenses.view', 'stores.view', 'users.view', 'roles.view', 'printers.view',
+    'qr_menu.manage', 'telegram_settings.manage',
+].some((permission) => auth.can(permission)));
 const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
 
 function setOnline(): void {
@@ -105,6 +110,9 @@ onBeforeUnmount(() => {
                             <p class="text-xs text-slate-400">{{ context.bootstrap.user.name }} <span class="opacity-70">({{ context.bootstrap.device.name }})</span></p>
                         </div>
                         <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold" :class="online ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'">{{ online ? 'Onlayn' : 'Oflayn' }}</span>
+                        <a v-if="canOpenAdmin" class="flex min-h-10 shrink-0 items-center rounded-lg border border-slate-700 px-3 text-sm font-medium text-slate-300 transition-colors hover:border-amber-400 hover:bg-amber-400/10 hover:text-amber-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400" href="/admin" target="_blank" rel="noopener noreferrer">
+                            Boshqaruvga o‘tish
+                        </a>
                         <form action="/pos/logout" method="POST" @submit="confirmLogout">
                             <input name="_token" type="hidden" :value="csrfToken">
                             <button class="min-h-10 rounded-lg border border-slate-700 px-3 text-sm font-medium text-slate-300 transition-colors hover:border-red-400 hover:bg-red-500/10 hover:text-red-300" type="submit">

@@ -3,8 +3,10 @@
 namespace App\Providers\Filament;
 
 use App\Domain\Authorization\AccessibleAdminStores;
+use App\Domain\Authorization\OrganizationAuthorization;
 use App\Domain\Platform\PlatformOrganizationAccess;
 use App\Enums\AdminNavigationGroup;
+use App\Enums\OrganizationPermission;
 use App\Http\Controllers\Admin\RedirectAdminHomeController;
 use App\Http\Middleware\InitializeStoreContext;
 use App\Http\Middleware\InitializeTenantContext;
@@ -39,6 +41,13 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->navigationGroups(AdminNavigationGroup::class)
+            ->renderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                fn () => view('filament.admin.components.pos-link', [
+                    'canAccessPos' => request()->user()
+                        && app(OrganizationAuthorization::class)->allows(request()->user(), OrganizationPermission::PosAccess),
+                ]),
+            )
             ->authenticatedRoutes(function (): void {
                 Route::get('/', RedirectAdminHomeController::class)->name('home');
             })
